@@ -40,6 +40,12 @@ export class CreateTeacherDto {
   @IsString()
   @IsIn(['teacher', 'admin'])
   role?: string;
+
+  @IsOptional()
+  sort?: number;
+
+  @IsOptional()
+  is_home_visible?: boolean;
 }
 
 export class UpdateTeacherDto {
@@ -61,6 +67,12 @@ export class UpdateTeacherDto {
   @IsString()
   @IsIn(['teacher', 'admin'])
   role?: string;
+
+  @IsOptional()
+  sort?: number;
+
+  @IsOptional()
+  is_home_visible?: boolean;
 }
 
 export class TeacherQueryDto {

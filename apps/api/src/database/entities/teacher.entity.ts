@@ -40,6 +40,12 @@ export class Teacher {
   @Column({ type: 'varchar', length: 500, nullable: true })
   avatar: string | null;
 
+  @Column({ type: 'int', default: 0 })
+  sort: number;
+
+  @Column({ type: 'boolean', default: true })
+  is_home_visible: boolean;
+
   @Column({ type: 'varchar', length: 20, default: 'teacher' })
   role: string;
 

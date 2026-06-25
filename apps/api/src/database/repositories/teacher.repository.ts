@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Like, ILike } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Teacher } from '../entities/teacher.entity';
 
 export interface TeacherQueryParams {
@@ -12,6 +12,7 @@ export interface TeacherQueryParams {
   role?: string;
   school_id?: number;
   exclude_status?: string;
+  include_content_count?: boolean;
 }
 
 @Injectable()
@@ -41,13 +42,19 @@ export class TeacherRepository {
     return this.repo.find({ where: { status: 'active' } });
   }
 
-  /** 分页 + 筛选查询 */
   async findPaginated(params: TeacherQueryParams) {
     const page = Math.max(1, params.page || 1);
     const size = Math.min(100, Math.max(1, params.size || 20));
     const skip = (page - 1) * size;
 
     const qb = this.repo.createQueryBuilder('teacher');
+
+    // Content count subquery
+    if (params.include_content_count) {
+      qb.loadRelationCountAndMap('teacher.hasContent', 'teacher.contents', 'contentCount', (qb2) =>
+        qb2.where('contentCount.deleted_at IS NULL')
+      );
+    }
 
     if (params.keyword) {
       qb.andWhere(
@@ -71,12 +78,12 @@ export class TeacherRepository {
       qb.andWhere('teacher.status != :exStatus', { exStatus: params.exclude_status });
     }
 
-    qb.orderBy('teacher.id', 'ASC').skip(skip).take(size);
+    qb.orderBy('teacher.sort', 'ASC').addOrderBy('teacher.id', 'ASC').skip(skip).take(size);
 
     const [items, total] = await qb.getManyAndCount();
 
     return {
-      items: items.map((t) => ({
+      items: items.map((t: any) => ({
         id: t.id,
         school_id: t.school_id,
         department_id: t.department_id,
@@ -86,8 +93,11 @@ export class TeacherRepository {
         avatar: t.avatar,
         role: t.role,
         status: t.status,
+        sort: t.sort,
+        is_home_visible: t.is_home_visible,
         last_login_at: t.last_login_at,
         created_at: t.created_at,
+        hasContent: t.hasContent !== undefined ? t.hasContent > 0 : undefined,
       })),
       total,
       page,

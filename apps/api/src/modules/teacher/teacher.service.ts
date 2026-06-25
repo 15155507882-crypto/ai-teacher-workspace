@@ -21,7 +21,6 @@ export class TeacherService {
     private readonly historyRepo: TeacherStatusHistoryRepository
   ) {}
 
-  /** 教师列表 (管理端，支持分页/搜索/筛选) */
   async list(query: TeacherQueryDto) {
     return this.teacherRepo.findPaginated({
       page: query.page,
@@ -33,7 +32,6 @@ export class TeacherService {
     });
   }
 
-  /** 教师公开列表 (首页/教师空间，排除离职教师) */
   async publicList(schoolId: number, departmentId?: number, keyword?: string) {
     return this.teacherRepo.findPaginated({
       page: 1,
@@ -42,14 +40,13 @@ export class TeacherService {
       department_id: departmentId,
       school_id: schoolId,
       exclude_status: 'resigned',
+      include_content_count: true,
     });
   }
 
   async create(dto: CreateTeacherDto) {
     const existing = await this.teacherRepo.findByMobile(dto.mobile);
-    if (existing) {
-      throw new ConflictException('手机号已存在');
-    }
+    if (existing) throw new ConflictException('手机号已存在');
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const teacher = this.teacherRepo.create({
       school_id: dto.school_id,
@@ -60,6 +57,8 @@ export class TeacherService {
       employee_no: dto.employee_no || null,
       role: dto.role || 'teacher',
       status: 'active',
+      sort: dto.sort || 0,
+      is_home_visible: dto.is_home_visible ?? true,
     });
     return this.teacherRepo.save(teacher);
   }
@@ -71,6 +70,8 @@ export class TeacherService {
     if (dto.name !== undefined) teacher.name = dto.name;
     if (dto.employee_no !== undefined) teacher.employee_no = dto.employee_no;
     if (dto.role !== undefined) teacher.role = dto.role;
+    if (dto.sort !== undefined) teacher.sort = dto.sort;
+    if (dto.is_home_visible !== undefined) teacher.is_home_visible = dto.is_home_visible;
     return this.teacherRepo.save(teacher);
   }
 

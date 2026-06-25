@@ -21,7 +21,7 @@ export class GroupLessonComment {
   @Column({ type: 'bigint' })
   teacher_id: number;
 
-  @Column({ type: 'longtext', nullable: true })
+  @Column({ type: 'text', nullable: true })
   comment_text: string | null;
 
   @Column({ type: 'bigint', nullable: true })
@@ -30,7 +30,7 @@ export class GroupLessonComment {
   @CreateDateColumn()
   created_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   deleted_at: Date | null;
 
   @ManyToOne(() => GroupLesson)

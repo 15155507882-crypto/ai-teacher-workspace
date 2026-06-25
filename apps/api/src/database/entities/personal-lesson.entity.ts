@@ -36,7 +36,7 @@ export class PersonalLesson {
   @Column({ type: 'varchar', length: 50, nullable: true })
   lesson_no: string | null;
 
-  @Column({ type: 'longtext', nullable: true })
+  @Column({ type: 'text', nullable: true })
   body_text: string | null;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })

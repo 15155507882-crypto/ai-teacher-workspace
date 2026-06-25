@@ -24,7 +24,7 @@ export class PlanSummary {
   @Column({ type: 'varchar', length: 30 })
   plan_type: string;
 
-  @Column({ type: 'longtext', nullable: true })
+  @Column({ type: 'text', nullable: true })
   body_text: string | null;
 
   @CreateDateColumn()

@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -10,26 +9,26 @@ export default function WorkspacePage() {
   const [session, setSession] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const getToken = () => localStorage.getItem('accessToken');
 
   useEffect(() => {
     const t = localStorage.getItem('teacher');
-    if (!t || !getToken()) {
-      router.push('/login');
-      return;
-    }
-    setTeacher(JSON.parse(t));
+    if (t) setTeacher(JSON.parse(t));
     initWorkspace();
   }, []);
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const initWorkspace = async () => {
     try {
-      const [sessRes] = await Promise.all([
-        fetch('/api/ai/session', { headers: { Authorization: `Bearer ${getToken()}` } }),
-      ]);
+      const sessRes = await fetch('/api/ai/session', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       const sJson = await sessRes.json();
       if (sJson.code === 0 && sJson.data) {
         setSession(sJson.data);
@@ -50,28 +49,20 @@ export default function WorkspacePage() {
     if (!input.trim()) return;
     const text = input;
     setInput('');
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ text }),
-      });
-      const json = await res.json();
-      if (json.code === 0) {
-        // Poll for result
-        const msgId = json.data.messageId;
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now(), sender_type: 'teacher', text_content: text },
-        ]);
-        pollResult(msgId);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), sender_type: 'teacher', text_content: text },
+    ]);
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ text }),
+    });
+    const json = await res.json();
+    if (json.code === 0) pollResult(json.data.messageId);
   };
 
-  const pollResult = async (msgId: number) => {
+  const pollResult = (msgId: number) => {
     const poll = setInterval(async () => {
       const res = await fetch(`/api/ai/recognition/${msgId}`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -79,144 +70,116 @@ export default function WorkspacePage() {
       const json = await res.json();
       if (json.code === 0 && json.data?.status === 'completed') {
         clearInterval(poll);
-        initWorkspace(); // Refresh messages
+        initWorkspace();
       }
-    }, 2000);
+    }, 1500);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
     const form = new FormData();
     form.append('file', file);
-    try {
-      const res = await fetch('/api/ai/upload', {
+    const res = await fetch('/api/ai/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: form,
+    });
+    const json = await res.json();
+    if (json.code === 0) {
+      const cres = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: form,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ file_id: json.data.file_id }),
       });
-      const json = await res.json();
-      if (json.code === 0) {
-        // Send as chat
-        const cres = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-          body: JSON.stringify({ file_id: json.data.file_id }),
-        });
-        const cjson = await cres.json();
-        if (cjson.code === 0) {
-          setMessages((prev) => [
-            ...prev,
-            { id: Date.now(), sender_type: 'teacher', text_content: `📎 ${file.name}` },
-          ]);
-          pollResult(cjson.data.messageId);
-        }
+      const cjson = await cres.json();
+      if (cjson.code === 0) {
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), sender_type: 'teacher', text_content: `📎 ${file.name}` },
+        ]);
+        pollResult(cjson.data.messageId);
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleConfirm = async (msgId: number, result: any, title?: string) => {
-    const res = await fetch('/api/ai/confirm', {
+  const quickConfirm = async (msgId: number) => {
+    const res = await fetch(`/api/ai/recognition/${msgId}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const json = await res.json();
+    if (json.data?.status !== 'completed') return;
+    const r = json.data.result;
+    await fetch('/api/ai/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
       body: JSON.stringify({
         messageId: msgId,
-        type: result.type,
-        title: title || result.title_candidate,
-        subject: result.subject,
-        grade: result.grade,
-        linkedContentId: result.extracted_entities?.recommended_lesson?.id,
-        extractedEntities: result.extracted_entities,
+        type: r.type,
+        title: r.title_candidate,
+        subject: r.subject,
+        grade: r.grade,
+        linkedContentId: r.extracted_entities?.recommended_lesson?.id,
+        extractedEntities: r.extracted_entities,
       }),
     });
-    const json = await res.json();
-    if (json.data?.conflict) {
-      // Version conflict: prompt user
-      alert(json.data.message);
-      return;
-    }
     initWorkspace();
   };
 
-  if (loading)
-    return <div className="flex min-h-screen items-center justify-center">加载中...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-400">加载中...</div>;
 
   return (
-    <div className="mx-auto flex h-screen max-w-2xl flex-col bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
-        <div>
-          <h1 className="font-bold">AI 工作台</h1>
-          <p className="text-xs text-gray-400">{teacher?.name}</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/home" className="text-xs text-blue-500">
-            首页
-          </Link>
-          <Link href={`/teacher/${teacher?.id}`} className="text-xs text-blue-500">
-            我的空间
-          </Link>
-        </div>
+    <div className="flex h-[calc(100vh-0px)] flex-col bg-white">
+      <div className="border-b border-gray-100 px-6 py-4">
+        <h1 className="text-lg font-bold text-gray-800">AI 工作台</h1>
+        <p className="text-xs text-gray-400">上传课件或输入文字，我会帮你整理归档</p>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        {messages.length === 0 && (
+          <div className="py-20 text-center">
+            <div className="text-4xl mb-3">👋</div>
+            <p className="text-gray-400 text-sm">开始上传或输入备课资料</p>
+            <p className="text-gray-300 text-xs mt-1">支持 Word、PPT、PDF、图片</p>
+          </div>
+        )}
         {messages.map((msg: any) => (
           <div
             key={msg.id}
             className={`flex ${msg.sender_type === 'teacher' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
+              className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
                 msg.sender_type === 'teacher'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                  ? 'bg-indigo-600 text-white rounded-br-md'
+                  : 'bg-gray-100 text-gray-700 rounded-bl-md'
               }`}
             >
               {msg.text_content}
-              {msg.sender_type === 'teacher' && msg.id && (
-                <div className="mt-2 flex gap-2 text-xs">
+              {msg.sender_type === 'ai' && msg.message_type === 'action' && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
                   <button
-                    onClick={async () => {
-                      const res = await fetch(`/api/ai/recognition/${msg.id}`, {
-                        headers: { Authorization: `Bearer ${getToken()}` },
-                      });
-                      const json = await res.json();
-                      if (json.data?.status === 'completed') {
-                        handleConfirm(msg.id, json.data.result);
-                      }
-                    }}
-                    className="underline"
+                    onClick={() => quickConfirm(msg.id || msg.id)}
+                    className="text-xs text-indigo-600 hover:underline mr-3"
                   >
-                    确认保存
+                    ✅ 确认保存
                   </button>
                 </div>
               )}
             </div>
           </div>
         ))}
-        {messages.length === 0 && (
-          <div className="py-12 text-center text-sm text-gray-400">
-            👋 开始上传备课资料或输入文字，我会帮你整理归档。
-          </div>
-        )}
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t p-4 flex items-center gap-2">
-        <label className="cursor-pointer text-xl" title="上传文件">
+      <div className="border-t border-gray-100 px-6 py-4 flex items-center gap-3 bg-white">
+        <label className="cursor-pointer text-gray-400 hover:text-indigo-500 text-xl">
           📎
           <input
             type="file"
             className="hidden"
-            onChange={handleFileUpload}
+            onChange={handleUpload}
             accept=".doc,.docx,.ppt,.pptx,.pdf,.jpg,.jpeg,.png,.txt"
-            disabled={uploading}
           />
         </label>
         <input
@@ -224,12 +187,12 @@ export default function WorkspacePage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="输入文字或拖拽文件..."
-          className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          placeholder="输入文字或拖拽文件到此处..."
+          className="flex-1 rounded-full border border-gray-200 bg-gray-50 px-5 py-2.5 text-sm focus:border-indigo-400 focus:bg-white focus:outline-none transition"
         />
         <button
           onClick={sendMessage}
-          className="rounded-full bg-blue-600 px-4 py-2 text-sm text-white"
+          className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition"
         >
           发送
         </button>

@@ -35,8 +35,8 @@ export class AddContentVersionAndSystemConfig1747351000000 implements MigrationI
           { name: 'config_value', type: 'text' },
           { name: 'config_type', type: 'varchar', length: '50', isNullable: true },
           { name: 'description', type: 'varchar', length: '255', isNullable: true },
-          { name: 'created_at', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
-          { name: 'updated_at', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+          { name: 'updated_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
         ],
       }),
       true

@@ -24,7 +24,7 @@ export class Reflection {
   @Column({ type: 'bigint' })
   teacher_id: number;
 
-  @Column({ type: 'longtext' })
+  @Column({ type: 'text' })
   reflection_text: string;
 
   @Column({ type: 'date', nullable: true })

@@ -22,7 +22,7 @@ export class AIMessage {
   @Column({ type: 'varchar', length: 20 })
   message_type: string;
 
-  @Column({ type: 'longtext', nullable: true })
+  @Column({ type: 'text', nullable: true })
   text_content: string | null;
 
   @Column({ type: 'bigint', nullable: true })

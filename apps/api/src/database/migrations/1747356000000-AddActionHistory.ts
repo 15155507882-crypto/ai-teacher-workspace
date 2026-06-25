@@ -23,10 +23,10 @@ export class AddActionHistory1747356000000 implements MigrationInterface {
           { name: 'input_snapshot', type: 'json', isNullable: true },
           { name: 'output_snapshot', type: 'json', isNullable: true },
           { name: 'revert_target_id', type: 'bigint', isNullable: true },
-          { name: 'reverted_at', type: 'datetime', isNullable: true },
+          { name: 'reverted_at', type: 'timestamp', isNullable: true },
           { name: 'error_message', type: 'varchar', length: '255', isNullable: true },
           { name: 'duration_ms', type: 'int', default: 0 },
-          { name: 'created_at', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
         ],
       }),
       true

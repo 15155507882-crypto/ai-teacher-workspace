@@ -52,7 +52,7 @@ export class Teacher {
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   last_login_at: Date | null;
 
   @Column({ type: 'int', default: 1 })
@@ -64,7 +64,7 @@ export class Teacher {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   deleted_at: Date | null;
 
   @ManyToOne(() => Department)

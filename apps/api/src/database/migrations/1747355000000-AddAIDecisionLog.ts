@@ -26,7 +26,7 @@ export class AddAIDecisionLog1747355000000 implements MigrationInterface {
           { name: 'confirmed_by', type: 'bigint', isNullable: true },
           { name: 'confirmed_type', type: 'varchar', length: '30', isNullable: true },
           { name: 'error_message', type: 'text', isNullable: true },
-          { name: 'created_at', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
         ],
       }),
       true

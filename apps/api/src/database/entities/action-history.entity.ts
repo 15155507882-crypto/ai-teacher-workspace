@@ -29,7 +29,7 @@ export class ActionHistory {
   @Column({ type: 'int', nullable: true })
   revert_target_id: number | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   reverted_at: Date | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

@@ -65,7 +65,7 @@ export class Content {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   deleted_at: Date | null;
 
   @ManyToOne(() => Teacher)

@@ -42,6 +42,28 @@ export class AIController {
     return this.aiService.getRecognitionResult(parseInt(messageId, 10));
   }
 
+  /** Dry Run: 预览确认后将要写入的内容 */
+  @Post('confirm/dry-run')
+  async dryRun(@Req() req: any, @Body() dto: ConfirmActionDto) {
+    return this.actionEngine.dryRun(
+      {
+        messageId: dto.messageId,
+        type: dto.type,
+        title: dto.title,
+        subject: dto.subject,
+        grade: dto.grade,
+        linkedContentId: dto.linkedContentId,
+        extractedEntities: dto.extractedEntities,
+      },
+      {
+        teacherId: req.user.teacherId,
+        schoolId: req.user.schoolId,
+        departmentId: req.user.departmentId || 0,
+        operatorName: req.user.name,
+      }
+    );
+  }
+
   /** 确认保存（统一 Action Engine 入口） */
   @Post('confirm')
   async confirm(@Req() req: any, @Body() dto: ConfirmActionDto) {

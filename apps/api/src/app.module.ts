@@ -7,6 +7,8 @@ import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
 import bullmqConfig from './config/bullmq.config';
 import { AuthModule } from './modules/auth/auth.module';
+import { SchoolModule } from './modules/school/school.module';
+import { DepartmentModule } from './modules/department/department.module';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
@@ -51,6 +53,8 @@ import { RolesGuard } from './common/guards/roles.guard';
 
     // 业务模块
     AuthModule,
+    SchoolModule,
+    DepartmentModule,
   ],
   controllers: [],
   providers: [

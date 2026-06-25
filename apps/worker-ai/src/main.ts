@@ -21,9 +21,10 @@ async function bootstrap() {
     'ai-recognition',
     async (job) => {
       const result = await processor.process(job);
-      // Store result in Redis for API polling (keyed by messageId)
       const key = `ai_result:${job.data.messageId}`;
       await redis.set(key, JSON.stringify(result), 'EX', 600);
+      // Store sessionId for API message creation
+      await redis.set(`ai_session:${job.data.messageId}`, String(job.data.sessionId), 'EX', 600);
       return result;
     },
     { connection, concurrency: 3 }
@@ -31,14 +32,6 @@ async function bootstrap() {
 
   console.log('[Worker-AI] AI Recognition worker started');
   console.log('[Worker-AI] Listening on queue: ai-recognition');
-
-  worker.on('completed', (job) => {
-    console.log(`[Worker-AI] Job ${job.id} completed, result cached`);
-  });
-
-  worker.on('failed', (job, err) => {
-    console.error(`[Worker-AI] Job ${job?.id} failed:`, err.message);
-  });
 }
 
 bootstrap().catch(console.error);

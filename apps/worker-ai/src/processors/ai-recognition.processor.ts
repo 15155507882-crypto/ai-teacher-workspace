@@ -1,6 +1,6 @@
 import { Job } from 'bullmq';
 import { IAIAdapter } from '@workspace/adapter-ai';
-import { classifyByKeyword, getPrompt } from '../prompts/prompt-registry';
+import { classifyByKeyword, getPrompt, buildNLReply } from '../prompts/prompt-registry';
 
 export interface AiRecognitionJob {
   sessionId: number;
@@ -26,6 +26,8 @@ export interface AIResult {
   next_action: string;
   extracted_entities: Record<string, any>;
   reason: string;
+  /** 自然语言回复，展示给老师 */
+  nl_reply: string;
 }
 
 export class AiRecognitionProcessor {
@@ -36,15 +38,13 @@ export class AiRecognitionProcessor {
     const attempt = job.attemptsMade + 1;
     const inputText = [fileName, text, fileContent].filter(Boolean).join(' ');
 
-    console.log(`[Worker-AI] Job ${job.id} attempt ${attempt}: processing`);
+    console.log(`[Worker-AI] Job ${job.id} attempt ${attempt}`);
 
-    // Step 1: 关键词预分类选择 Prompt
     const suggestedType = classifyByKeyword(inputText);
     const promptName = suggestedType || 'personal_lesson';
     const prompt = getPrompt(promptName);
     const systemPrompt = prompt?.systemPrompt || '';
 
-    // Step 2: 调用 AI (使用自定义 Prompt)
     let result: AIResult;
     try {
       const aiResult = await this.aiAdapter.recognizeWithPrompt(
@@ -52,21 +52,33 @@ export class AiRecognitionProcessor {
         systemPrompt
       );
 
+      const title = aiResult.title || fileName || '未命名';
+      const subject = aiResult.extractedFields?.subject || '';
+      const grade = aiResult.extractedFields?.grade || '';
+
+      const nlReply = buildNLReply(prompt?.nlReplyTemplate || '我已处理了你的消息。', {
+        title_candidate: title,
+        subject,
+        grade,
+        confidence: aiResult.confidence,
+      });
+
       result = {
         type: aiResult.predictedType || 'unknown',
-        title_candidate: aiResult.title || fileName || '未命名',
-        subject: aiResult.extractedFields?.subject || '',
-        grade: aiResult.extractedFields?.grade || '',
+        title_candidate: title,
+        subject,
+        grade,
         summary: aiResult.summary || '',
         confidence: aiResult.confidence,
         need_user_confirm: true,
         need_lesson_link: aiResult.predictedType === 'reflection',
         next_action: this.getNextAction(aiResult.predictedType),
         extracted_entities: aiResult.extractedFields || {},
-        reason: `Prompt: ${promptName}, ` + (aiResult.extractedFields?.reason || ''),
+        reason: `Prompt: ${promptName}`,
+        nl_reply: nlReply,
       };
     } catch (error: any) {
-      console.error(`[Worker-AI] Job ${job.id} AI failed:`, error.message);
+      console.error(`[Worker-AI] Job ${job.id} failed:`, error.message);
       if (job.attemptsMade < 2) throw error;
       result = {
         type: 'unknown',
@@ -77,11 +89,13 @@ export class AiRecognitionProcessor {
         need_lesson_link: false,
         next_action: 'manual_select',
         extracted_entities: {},
-        reason: `AI调用失败(已重试${attempt}次): ${error.message}`,
+        reason: `AI调用失败(${attempt}次)`,
+        nl_reply:
+          '抱歉，我暂时无法准确判断这份内容属于哪一类。\n\n请选择保存类型：\n1. 个人备课\n2. 集体备课\n3. 教学反思\n4. 计划与总结',
       };
     }
 
-    console.log(`[Worker-AI] Job ${job.id}: type=${result.type} conf=${result.confidence}`);
+    console.log(`[Worker-AI] Job ${job.id}: type=${result.type}`);
     return result;
   }
 

@@ -40,7 +40,10 @@ export class AIService {
     });
     const savedMsg = await this.messageRepo.save(message);
 
-    const job = await this.aiQueue.add('classify-content', {
+    // 记录 sessionId 供后续AI回复使用
+    await this.redis.set(`ai_session:${savedMsg.id}`, String(session.id), 'EX', 600);
+
+    await this.aiQueue.add('classify-content', {
       sessionId: session.id,
       messageId: savedMsg.id,
       teacherId,
@@ -50,21 +53,32 @@ export class AIService {
       scope: dto.scope || 'workspace',
     });
 
-    return {
-      sessionId: session.id,
-      messageId: savedMsg.id,
-      jobId: job.id,
-      status: 'processing',
-    };
+    return { sessionId: session.id, messageId: savedMsg.id, status: 'processing' };
   }
 
-  /** 轮询 AI 识别结果 (从 Redis 读取) */
+  /** 轮询识别结果，首次命中时自动创建AI回复消息 */
   async getRecognitionResult(messageId: number) {
-    const key = `ai_result:${messageId}`;
-    const raw = await this.redis.get(key);
+    const raw = await this.redis.get(`ai_result:${messageId}`);
     if (!raw) return { status: 'pending' };
-    const result = JSON.parse(raw);
-    return { status: 'completed', result };
+
+    const parsed = JSON.parse(raw);
+    const alreadyCreated = await this.redis.get(`ai_msg_created:${messageId}`);
+
+    if (!alreadyCreated) {
+      const sid = await this.redis.get(`ai_session:${messageId}`);
+      if (sid) {
+        const aiMsg = this.messageRepo.create({
+          session_id: parseInt(sid, 10),
+          sender_type: 'ai',
+          message_type: 'action',
+          text_content: parsed.nl_reply,
+        });
+        await this.messageRepo.save(aiMsg);
+        await this.redis.set(`ai_msg_created:${messageId}`, '1', 'EX', 600);
+      }
+    }
+
+    return { status: 'completed', result: parsed };
   }
 
   async getMessages(sessionId: number) {

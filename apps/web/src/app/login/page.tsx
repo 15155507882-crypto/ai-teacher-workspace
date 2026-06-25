@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -8,6 +8,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [schoolName, setSchoolName] = useState('AI 教师工作空间');
+
+  useEffect(() => {
+    fetch('/api/public/school')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.data?.short_name) setSchoolName(j.data.short_name);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,25 +39,39 @@ export default function LoginPage() {
       localStorage.setItem('teacher', JSON.stringify(json.data.teacher));
       router.push('/workspace');
     } catch {
-      setError('网络错误');
+      setError('网络错误，请稍后重试');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-50">
-      <div className="w-full max-w-sm px-4">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary-600)] text-white text-2xl mb-4 shadow-lg shadow-blue-200">
-            📚
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-100">
+      <div className="w-full max-w-[420px] px-4">
+        <div className="text-center mb-10 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[var(--radius-xl)] bg-[var(--color-primary-600)] text-white shadow-lg shadow-blue-200/50 mb-5">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-strong)]">AI 教师工作空间</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">智能备课助手</p>
+          <h1 className="text-display text-[var(--color-text-strong)] mb-1">{schoolName}</h1>
+          <p className="text-body text-[var(--color-text-muted)]">智能备课助手</p>
         </div>
+
         <form
           onSubmit={handleSubmit}
-          className="rounded-[var(--radius-xl)] bg-[var(--color-bg-surface)] p-8 shadow-[var(--shadow-float)] space-y-4"
+          className="rounded-[var(--radius-dialog)] bg-[var(--color-bg-surface)] p-8 shadow-[var(--shadow-float)] space-y-4 animate-fade-in-up"
+          style={{ animationDelay: '80ms' }}
         >
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-normal)] mb-1.5">
@@ -59,7 +83,7 @@ export default function LoginPage() {
               onChange={(e) => setMobile(e.target.value)}
               placeholder="请输入11位手机号"
               maxLength={11}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-2.5 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
               required
             />
           </div>
@@ -72,20 +96,37 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="请输入密码"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-2.5 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
               required
             />
           </div>
-          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+          {error && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 flex items-center gap-2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              {error}
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[var(--color-primary-600)] py-2.5 text-sm font-medium text-white hover:bg-[var(--color-primary-500)] disabled:opacity-50 transition shadow-sm"
+            className="w-full rounded-lg h-11 bg-[var(--color-primary-600)] text-sm font-medium text-white hover:bg-[var(--color-primary-500)] disabled:opacity-50 transition shadow-sm"
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? '登录中...' : '登录进入工作空间'}
           </button>
         </form>
-        <p className="text-center text-xs text-[var(--color-text-muted)] mt-6">
+
+        <p className="text-center text-tiny text-[var(--color-text-muted)] mt-6">
           V1.0 · 仅限在职教师登录
         </p>
       </div>

@@ -53,6 +53,12 @@ export class Content {
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: string;
 
+  @Column({ type: 'int', default: 1 })
+  version: number;
+
+  @Column({ type: 'boolean', default: true })
+  is_latest: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

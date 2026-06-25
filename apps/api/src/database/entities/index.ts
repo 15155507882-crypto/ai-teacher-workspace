@@ -18,3 +18,4 @@ export { ExportTask } from './export-task.entity';
 export { OperationLog } from './operation-log.entity';
 export { LoginLog } from './login-log.entity';
 export { DeletedRecord } from './deleted-record.entity';
+export { SystemConfig } from './system-config.entity';

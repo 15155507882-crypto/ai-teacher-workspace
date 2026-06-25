@@ -28,6 +28,9 @@ export class AISession {
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;
 
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  conversation_title: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

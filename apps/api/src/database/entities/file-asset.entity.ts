@@ -23,8 +23,14 @@ export class FileAsset {
   @Column({ type: 'varchar', length: 20, nullable: true })
   file_ext: string | null;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  extension: string | null;
+
   @Column({ type: 'bigint', default: 0 })
   file_size: number;
+
+  @Column({ type: 'bigint', default: 0 })
+  size: number;
 
   @Column({ type: 'varchar', length: 128, nullable: true })
   sha256: string | null;

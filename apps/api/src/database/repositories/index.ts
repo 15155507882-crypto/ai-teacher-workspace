@@ -18,3 +18,4 @@ export { ExportTaskRepository } from './export-task.repository';
 export { OperationLogRepository } from './operation-log.repository';
 export { LoginLogRepository } from './login-log.repository';
 export { DeletedRecordRepository } from './deleted-record.repository';
+export { SystemConfigRepository } from './system-config.repository';

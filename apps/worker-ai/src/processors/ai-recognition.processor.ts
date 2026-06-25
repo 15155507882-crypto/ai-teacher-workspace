@@ -1,6 +1,12 @@
 import { Job } from 'bullmq';
 import { IAIAdapter } from '@workspace/adapter-ai';
-import { classifyByKeyword, getPrompt, buildNLReply } from '../prompts/prompt-registry';
+import {
+  classifyByKeyword,
+  getPrompt,
+  buildNLReply,
+  sortLessonsByRelevance,
+  computeAcademicTerm,
+} from '../prompts/prompt-registry';
 
 interface RecentLesson {
   id: number;
@@ -35,6 +41,8 @@ export interface AIResult {
   extracted_entities: Record<string, any>;
   reason: string;
   nl_reply: string;
+  academic_year?: string;
+  semester?: string;
 }
 
 export class AiRecognitionProcessor {
@@ -44,6 +52,7 @@ export class AiRecognitionProcessor {
     const { sessionId, messageId, text, fileName, fileContent, recentLessons } = job.data;
     const attempt = job.attemptsMade + 1;
     const inputText = [fileName, text, fileContent].filter(Boolean).join(' ');
+    const term = computeAcademicTerm();
 
     console.log(`[Worker-AI] Job ${job.id} attempt ${attempt}`);
 
@@ -60,22 +69,29 @@ export class AiRecognitionProcessor {
 
       const detectedType = aiResult.predictedType || 'unknown';
       const title = aiResult.title || fileName || '未命名';
+      const subject = aiResult.extractedFields?.subject || '';
 
-      // 推荐最近备课（用于教学反思关联）
-      const bestLesson = recentLessons && recentLessons.length > 0 ? recentLessons[0] : null;
+      // 综合排序最近备课
+      let sortedLessons = recentLessons || [];
+      if (detectedType === 'reflection' && sortedLessons.length > 0) {
+        sortedLessons = sortLessonsByRelevance(sortedLessons, subject, title);
+      }
+      const bestLesson = sortedLessons.length > 0 ? sortedLessons[0] : null;
 
       const nlReply = buildNLReply(detectedType, {
         title_candidate: title,
-        subject: aiResult.extractedFields?.subject || '',
+        subject,
         grade: aiResult.extractedFields?.grade || '',
         recent_lesson_title: bestLesson?.title || '',
-        recent_lesson_count: recentLessons?.length || 0,
+        recent_lesson_count: sortedLessons.length,
+        academic_year: term.academic_year,
+        semester: term.semester,
       });
 
       result = {
         type: detectedType,
         title_candidate: title,
-        subject: aiResult.extractedFields?.subject || '',
+        subject,
         grade: aiResult.extractedFields?.grade || '',
         summary: aiResult.summary || '',
         confidence: aiResult.confidence,
@@ -84,11 +100,13 @@ export class AiRecognitionProcessor {
         next_action: this.getNextAction(detectedType),
         extracted_entities: {
           ...aiResult.extractedFields,
-          recent_lessons: recentLessons || [],
+          recent_lessons: sortedLessons,
           recommended_lesson: bestLesson || null,
         },
         reason: `Prompt:${promptName}`,
         nl_reply: nlReply,
+        academic_year: term.academic_year,
+        semester: term.semester,
       };
     } catch (error: any) {
       console.error(`[Worker-AI] Job ${job.id} failed:`, error.message);

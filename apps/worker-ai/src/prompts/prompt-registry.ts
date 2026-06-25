@@ -106,7 +106,7 @@ export const PROMPT_REGISTRY: Record<string, PromptTemplate> = {
   },
 };
 
-// ============== 建议式表达 NL 模板 ==============
+// ============== 建议式 NL 模板 ==============
 
 export const NL_REPLY_TEMPLATES: Record<string, string[]> = {
   personal_lesson: [
@@ -116,9 +116,9 @@ export const NL_REPLY_TEMPLATES: Record<string, string[]> = {
   ],
 
   reflection: [
-    '收到。这是一份教学反思吧？我看了下，你最近备课里有《{recent_lesson}》，我猜可能想关联这一次。',
+    '收到。这是一份教学反思吧？我猜可能想关联《{recent_lesson}》这节课。',
     '看完了你的反思。最近一次备课是《{recent_lesson}》，我推荐关联到这一课。你觉得呢？',
-    '已读。我猜这份反思和《{recent_lesson}》有关系？如果不是的话，我可以帮你列出最近的备课来选。',
+    '已读。我猜这份反思和《{recent_lesson}》有关系？如果不是的话，我帮你列出最近的备课来选。',
   ],
 
   plan_summary: [
@@ -136,64 +136,48 @@ export const NL_REPLY_TEMPLATES: Record<string, string[]> = {
   ],
 };
 
-// ============== 保存成功后的关联价值 NL ==============
+// ============== 保存成功 + 价值说明 + 下一步建议 ==============
 
 export const SUCCESS_REPLY_TEMPLATES: Record<string, string[]> = {
   personal_lesson: [
-    '已保存。《{title}》已归档到你的个人备课，以后可以在这里随时查看和补充。',
-    '保存好了。你可以在个人备课中找到《{title}》，也可以上传课件和附件。',
+    '已保存。《{title}》已归档到个人备课。以后你可以在这里随时查看，也可以继续上传配套的课件或练习。',
+    '保存好了。你可以在个人备课中找到《{title}》。需要的话，后续还可以补充教案附件或者课后写一份教学反思。',
   ],
+
   reflection: [
-    '已保存，并帮你关联到《{lesson}》这节课。以后查看这份备课时，就能同时看到这次教学反思了。',
-    '好了。已将反思关联到《{lesson}》，后续回顾这节课时，这次反思会一起展示。',
+    '已保存，并帮你关联到《{lesson}》这节课。以后查看这份备课时，就能同时看到这次教学反思了。\n\n{next_hint}',
+    '好了。已将反思关联到《{lesson}》。后续回顾这节课时，这次反思会一起展示，帮你积累教学经验。\n\n{next_hint}',
   ],
+
   plan_summary: [
-    '已保存。《{title}》已归档到{academic_year}{semester}的计划与总结中。',
-    '保存好了。系统已按{academic_year}{semester}自动归档。',
+    '已保存。《{title}》已归档到{academic_year}{semester}的计划与总结中。学期末回顾时会自动汇总到你这一学年的档案里。',
+    '保存好了。《{title}》已按{academic_year}{semester}归档。到了学期末，系统会自动帮你汇总这一年的计划和总结。',
   ],
+
   group_lesson: [
-    '已保存。关于「{title}」的集体备课记录已归档，组内其他老师也可以查看和参与讨论。',
-    '好了。集体备课记录已保存，后续可以继续补充评论和附件。',
+    '已保存。关于「{title}」的集体备课记录已归档，组内其他老师也可以查看和参与讨论。\n\n{next_hint}',
+    '好了。集体备课记录已保存，教研组的老师都可以在这里看到。如果后续有补充意见，可以继续在评论区参与。\n\n{next_hint}',
   ],
 };
 
-// ============== 综合排序 ==============
+// ============== 下一步建议（随机一句） ==============
 
-interface LessonScore {
-  id: number;
-  title: string;
-  date: string | null;
-  subject: string | null;
-  score: number;
-}
+const NEXT_HINTS: Record<string, string[]> = {
+  personal_lesson: [
+    '如果想继续完善，可以上传这节课的课件或配套练习。',
+    '这节课上完之后，随时可以来这里写一份教学反思。',
+  ],
+  reflection: ['下次上完课，也可以随时来这里记录反思，慢慢积累就是一笔很宝贵的教学财富。'],
+  group_lesson: [
+    '其他老师如果参与了这次集体备课，也可以让他们来评论区补充意见。',
+    '后续如果有新的讨论或补充材料，可以继续在这里添加。',
+  ],
+};
 
-export function sortLessonsByRelevance(
-  lessons: { id: number; title: string; date: string | null; subject: string | null }[],
-  reflectionSubject?: string,
-  reflectionTitle?: string
-) {
-  const scored: LessonScore[] = lessons.map((l) => {
-    let score = 0;
-    // 最近时间加权（24h内+30，7天内+20，30天内+10）
-    if (l.date) {
-      const days = (Date.now() - new Date(l.date).getTime()) / 86400000;
-      if (days <= 1) score += 30;
-      else if (days <= 7) score += 20;
-      else if (days <= 30) score += 10;
-    }
-    // 相同学科加权
-    if (reflectionSubject && l.subject && l.subject === reflectionSubject) score += 15;
-    // 标题相似加权（简单包含判断）
-    if (
-      reflectionTitle &&
-      l.title &&
-      (l.title.includes(reflectionTitle) || reflectionTitle.includes(l.title))
-    )
-      score += 10;
-    return { ...l, score };
-  });
-
-  return scored.sort((a, b) => b.score - a.score);
+export function getNextHint(contentType: string): string {
+  const hints = NEXT_HINTS[contentType];
+  if (!hints || hints.length === 0) return '';
+  return hints[Math.floor(Math.random() * hints.length)];
 }
 
 export function classifyByKeyword(text: string): string | null {
@@ -211,41 +195,68 @@ export function getPrompt(name: string): PromptTemplate | undefined {
 
 export function buildNLReply(contentType: string, data: Record<string, any>): string {
   const templates = NL_REPLY_TEMPLATES[contentType] || NL_REPLY_TEMPLATES['unknown'];
-  const idx = Math.floor(Math.random() * templates.length);
-  let text = templates[idx];
-  text = text.replace(/\{subject\}/g, data.subject || '');
-  text = text.replace(/\{grade\}/g, data.grade || '');
-  text = text.replace(/\{title\}/g, data.title_candidate || '');
-  text = text.replace(/\{recent_lesson\}/g, data.recent_lesson_title || '');
-  text = text.replace(/\{academic_year\}/g, data.academic_year || '');
-  text = text.replace(/\{semester\}/g, data.semester || '');
-  text = text.replace(/\{count\}/g, String(data.recent_lesson_count || 0));
-  return text;
+  const tpl = templates[Math.floor(Math.random() * templates.length)];
+  return fillTemplate(tpl, data);
 }
 
 export function buildSuccessReply(contentType: string, data: Record<string, any>): string {
   const templates = SUCCESS_REPLY_TEMPLATES[contentType] || ['已保存。'];
-  const idx = Math.floor(Math.random() * templates.length);
-  let text = templates[idx];
-  text = text.replace(/\{title\}/g, data.title || '');
-  text = text.replace(/\{lesson\}/g, data.linked_lesson_title || '');
-  text = text.replace(/\{academic_year\}/g, data.academic_year || '');
-  text = text.replace(/\{semester\}/g, data.semester || '');
-  return text;
+  const tpl = templates[Math.floor(Math.random() * templates.length)];
+  const hint = getNextHint(contentType);
+  return fillTemplate(tpl, { ...data, next_hint: hint });
 }
 
-/** 计算当前学年学期 */
+function fillTemplate(text: string, data: Record<string, any>): string {
+  return text
+    .replace(/\{subject\}/g, data.subject || '')
+    .replace(/\{grade\}/g, data.grade || '')
+    .replace(/\{title\}/g, data.title || data.title_candidate || '')
+    .replace(/\{recent_lesson\}/g, data.recent_lesson_title || '')
+    .replace(/\{lesson\}/g, data.linked_lesson_title || data.recent_lesson_title || '')
+    .replace(/\{academic_year\}/g, data.academic_year || '')
+    .replace(/\{semester\}/g, data.semester || '')
+    .replace(/\{count\}/g, String(data.recent_lesson_count || 0))
+    .replace(/\{next_hint\}/g, data.next_hint || '');
+}
+
+interface LessonItem {
+  id: number;
+  title: string;
+  date: string | null;
+  subject: string | null;
+}
+
+export function sortLessonsByRelevance(
+  lessons: LessonItem[],
+  reflectionSubject?: string,
+  reflectionTitle?: string
+): (LessonItem & { score: number })[] {
+  return lessons
+    .map((l) => {
+      let score = 0;
+      if (l.date) {
+        const days = (Date.now() - new Date(l.date).getTime()) / 86400000;
+        if (days <= 1) score += 30;
+        else if (days <= 7) score += 20;
+        else if (days <= 30) score += 10;
+      }
+      if (reflectionSubject && l.subject && l.subject === reflectionSubject) score += 15;
+      if (
+        reflectionTitle &&
+        l.title &&
+        (l.title.includes(reflectionTitle) || reflectionTitle.includes(l.title))
+      )
+        score += 10;
+      return { ...l, score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
 export function computeAcademicTerm(): { academic_year: string; semester: string } {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
-
-  let academicYear: string;
-  if (month >= 8) {
-    academicYear = `${year}-${year + 1}学年`;
-  } else {
-    academicYear = `${year - 1}-${year}学年`;
-  }
-  const semester = month >= 8 || month <= 1 ? '上学期' : '下学期';
+  const academicYear = month >= 8 ? `${year}-${year + 1}学年` : `${year - 1}-${year}学年`;
+  const semester = month >= 2 && month <= 7 ? '下学期' : '上学期';
   return { academic_year: academicYear, semester };
 }

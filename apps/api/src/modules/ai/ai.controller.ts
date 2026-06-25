@@ -9,11 +9,11 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AIService } from './ai.service';
-import { ChatDto } from './ai.dto';
+import { ActionEngineService } from './action-engine.service';
+import { ChatDto, ConfirmActionDto } from './ai.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { createStorageAdapter } from '@workspace/adapter-storage';
 import { FileAssetRepository } from '../../database/repositories/file-asset.repository';
@@ -28,6 +28,7 @@ export class AIController {
 
   constructor(
     private readonly aiService: AIService,
+    private readonly actionEngine: ActionEngineService,
     private readonly fileRepo: FileAssetRepository
   ) {}
 
@@ -39,6 +40,34 @@ export class AIController {
   @Get('recognition/:messageId')
   async getRecognition(@Param('messageId') messageId: string) {
     return this.aiService.getRecognitionResult(parseInt(messageId, 10));
+  }
+
+  /** 确认保存（统一 Action Engine 入口） */
+  @Post('confirm')
+  async confirm(@Req() req: any, @Body() dto: ConfirmActionDto) {
+    return this.actionEngine.execute(
+      {
+        messageId: dto.messageId,
+        type: dto.type,
+        title: dto.title,
+        subject: dto.subject,
+        grade: dto.grade,
+        linkedContentId: dto.linkedContentId,
+        extractedEntities: dto.extractedEntities,
+      },
+      {
+        teacherId: req.user.teacherId,
+        schoolId: req.user.schoolId,
+        departmentId: req.user.departmentId || 0,
+        operatorName: req.user.name,
+      }
+    );
+  }
+
+  /** 撤销操作（5分钟内） */
+  @Post('undo/:messageId')
+  async undo(@Param('messageId') messageId: string, @Req() req: any) {
+    return this.actionEngine.undo(parseInt(messageId, 10), req.user.teacherId);
   }
 
   @Post('upload')

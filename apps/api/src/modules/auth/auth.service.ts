@@ -16,6 +16,7 @@ export interface JwtPayload {
   sub: number;
   teacherId: number;
   schoolId: number;
+  departmentId: number;
   role: Role;
   mobile: string;
   name: string;
@@ -54,6 +55,7 @@ export class AuthService {
       sub: teacher.id,
       teacherId: teacher.id,
       schoolId: teacher.school_id,
+      departmentId: teacher.department_id,
       role: teacher.role as Role,
       mobile: teacher.mobile,
       name: teacher.name,
@@ -100,6 +102,7 @@ export class AuthService {
         sub: teacher.id,
         teacherId: teacher.id,
         schoolId: teacher.school_id,
+        departmentId: teacher.department_id,
         role: teacher.role as Role,
         mobile: teacher.mobile,
         name: teacher.name,

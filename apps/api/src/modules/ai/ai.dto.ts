@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNotEmpty } from 'class-validator';
 
 export class ChatDto {
   @IsOptional()
@@ -12,4 +12,32 @@ export class ChatDto {
   @IsOptional()
   @IsString()
   scope?: string;
+}
+
+export class ConfirmActionDto {
+  @IsInt()
+  messageId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  subject?: string;
+
+  @IsOptional()
+  @IsString()
+  grade?: string;
+
+  @IsOptional()
+  @IsInt()
+  linkedContentId?: number;
+
+  @IsOptional()
+  extractedEntities?: Record<string, any>;
 }

@@ -14,6 +14,7 @@ import { AIDecisionLogRepository } from '../../database/repositories/ai-decision
 import { PersonalLessonRepository } from '../../database/repositories/personal-lesson.repository';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
+import { ActionEngineService } from './action-engine.service';
 
 @Module({
   imports: [
@@ -30,12 +31,13 @@ import { AIService } from './ai.service';
   controllers: [AIController],
   providers: [
     AIService,
+    ActionEngineService,
     AISessionRepository,
     AIMessageRepository,
     FileAssetRepository,
     AIDecisionLogRepository,
     PersonalLessonRepository,
   ],
-  exports: [AIService],
+  exports: [AIService, ActionEngineService],
 })
 export class AIModule {}

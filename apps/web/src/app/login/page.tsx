@@ -6,15 +6,16 @@ export default function LoginPage() {
   const router = useRouter();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [captcha, setCaptcha] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [schoolName, setSchoolName] = useState('AI 教师工作空间');
+  const [school, setSchool] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/public/school')
       .then((r) => r.json())
       .then((j) => {
-        if (j.data?.short_name) setSchoolName(j.data.short_name);
+        if (j.data) setSchool(j.data);
       })
       .catch(() => {});
   }, []);
@@ -23,6 +24,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    if (!captcha.trim()) {
+      setError('请输入验证码');
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -37,98 +43,96 @@ export default function LoginPage() {
       localStorage.setItem('accessToken', json.data.tokenPair.accessToken);
       localStorage.setItem('refreshToken', json.data.tokenPair.refreshToken);
       localStorage.setItem('teacher', JSON.stringify(json.data.teacher));
-      router.push('/workspace');
+      router.push('/home');
     } catch {
-      setError('网络错误，请稍后重试');
+      setError('网络错误');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-100">
-      <div className="w-full max-w-[420px] px-4">
-        <div className="text-center mb-10 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[var(--radius-xl)] bg-[var(--color-primary-600)] text-white shadow-lg shadow-blue-200/50 mb-5">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Left brand panel */}
+      <div className="hidden lg:flex w-[480px] bg-gradient-to-br from-blue-600 to-indigo-700 flex-col items-center justify-center p-12 text-white">
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center text-4xl mb-6 mx-auto">
+            📚
           </div>
-          <h1 className="text-display text-[var(--color-text-strong)] mb-1">{schoolName}</h1>
-          <p className="text-body text-[var(--color-text-muted)]">智能备课助手</p>
+          <h1 className="text-3xl font-bold mb-2">{school?.name || 'AI 教师工作空间'}</h1>
+          <p className="text-blue-200 text-sm">智能备课助手 · 学校备课资料共享平台</p>
         </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-[var(--radius-dialog)] bg-[var(--color-bg-surface)] p-8 shadow-[var(--shadow-float)] space-y-4 animate-fade-in-up"
-          style={{ animationDelay: '80ms' }}
-        >
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text-normal)] mb-1.5">
-              手机号
-            </label>
-            <input
-              type="tel"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              placeholder="请输入11位手机号"
-              maxLength={11}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
-              required
-            />
+        <div className="mt-12 text-center text-blue-200/60 text-xs">
+          <p>全校教师均可在线查看备课资料</p>
+          <p className="mt-1">AI 自动识别 · 自动归档 · 自动关联</p>
+        </div>
+      </div>
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-[380px]">
+          <div className="lg:hidden text-center mb-8">
+            <div className="text-3xl mb-2">📚</div>
+            <h1 className="text-xl font-bold text-slate-800">
+              {school?.short_name || 'AI 教师工作空间'}
+            </h1>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text-normal)] mb-1.5">
-              密码
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="请输入密码"
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text-strong)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary-500)] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] transition"
-              required
-            />
-          </div>
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 flex items-center gap-2">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg h-11 bg-[var(--color-primary-600)] text-sm font-medium text-white hover:bg-[var(--color-primary-500)] disabled:opacity-50 transition shadow-sm"
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-4"
           >
-            {loading ? '登录中...' : '登录进入工作空间'}
-          </button>
-        </form>
-
-        <p className="text-center text-tiny text-[var(--color-text-muted)] mt-6">
-          V1.0 · 仅限在职教师登录
-        </p>
+            <h2 className="text-lg font-bold text-slate-800 mb-1">登录</h2>
+            <p className="text-sm text-slate-500 -mt-2 mb-2">使用手机号登录教师工作空间</p>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">手机号</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="请输入手机号"
+                maxLength={11}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="请输入密码"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">验证码</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={captcha}
+                  onChange={(e) => setCaptcha(e.target.value)}
+                  placeholder="请输入验证码"
+                  maxLength={4}
+                  className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none transition"
+                  required
+                />
+                <div className="w-24 h-11 rounded-lg bg-slate-200 flex items-center justify-center text-xs text-slate-500 font-mono select-none">
+                  暂未启用
+                </div>
+              </div>
+            </div>
+            {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
+            >
+              {loading ? '登录中...' : '登录'}
+            </button>
+          </form>
+          <p className="text-center text-xs text-slate-400 mt-4">V1.0 · 仅限在职教师登录</p>
+        </div>
       </div>
     </div>
   );

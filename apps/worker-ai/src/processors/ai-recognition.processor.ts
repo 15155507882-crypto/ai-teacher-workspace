@@ -1,5 +1,6 @@
 import { Job } from 'bullmq';
 import { IAIAdapter } from '@workspace/adapter-ai';
+import { classifyByKeyword, getPrompt } from '../prompts/prompt-registry';
 
 export interface AiRecognitionJob {
   sessionId: number;
@@ -13,70 +14,85 @@ export interface AiRecognitionJob {
   scope?: string;
 }
 
+export interface AIResult {
+  type: string;
+  title_candidate: string;
+  subject?: string;
+  grade?: string;
+  summary: string;
+  confidence: number;
+  need_user_confirm: boolean;
+  need_lesson_link: boolean;
+  next_action: string;
+  extracted_entities: Record<string, any>;
+  reason: string;
+}
+
 export class AiRecognitionProcessor {
   constructor(private aiAdapter: IAIAdapter) {}
 
-  async process(job: Job<AiRecognitionJob>) {
-    const { sessionId, messageId, text, fileName, fileContent, scope } = job.data;
+  async process(job: Job<AiRecognitionJob>): Promise<AIResult> {
+    const { sessionId, messageId, text, fileName, fileContent } = job.data;
+    const attempt = job.attemptsMade + 1;
+    const inputText = [fileName, text, fileContent].filter(Boolean).join(' ');
 
-    const systemPrompt = `你是学校AI教师工作空间的内容识别助手。
-任务：根据用户发送的文字、文件名、文件文本片段，判断内容类型。
-可选类型只能是：personal_lesson、group_lesson、reflection、plan_summary、unknown。
+    console.log(`[Worker-AI] Job ${job.id} attempt ${attempt}: processing`);
 
-规则：
-1. 不允许编造教师姓名、学校、教研组，这些来自系统登录态。
-2. 如果判断为 reflection，必须设置 need_lesson_link=true。
-3. 如果置信度低于0.70，type=unknown。
-4. 输出必须为JSON，不要输出额外说明。
+    // Step 1: 关键词预分类选择 Prompt
+    const suggestedType = classifyByKeyword(inputText);
+    const promptName = suggestedType || 'personal_lesson';
+    const prompt = getPrompt(promptName);
+    const systemPrompt = prompt?.systemPrompt || '';
 
-JSON格式：
-{
-  "type": "personal_lesson|group_lesson|reflection|plan_summary|unknown",
-  "title": "建议标题",
-  "subject": "学科或空",
-  "grade": "年级或空",
-  "summary": "200字内摘要",
-  "confidence": 0.0,
-  "need_user_confirm": true,
-  "need_lesson_link": false,
-  "reason": "判断原因"
-}
+    // Step 2: 调用 AI (使用自定义 Prompt)
+    let result: AIResult;
+    try {
+      const aiResult = await this.aiAdapter.recognizeWithPrompt(
+        { text: inputText, fileName, fileContent },
+        systemPrompt
+      );
 
-优先级规则：
-1. 内容包含课堂效果/学生表现/课后改进 → 教学反思，need_lesson_link=true
-2. 文件名或正文包含教学计划/总结/学期/年度 → 计划与总结
-3. 内容包含集体备课/教研组/组内讨论 → 集体备课
-4. PPT/教案/课件/教学目标 → 个人备课
-5. 无法确定 → unknown`;
+      result = {
+        type: aiResult.predictedType || 'unknown',
+        title_candidate: aiResult.title || fileName || '未命名',
+        subject: aiResult.extractedFields?.subject || '',
+        grade: aiResult.extractedFields?.grade || '',
+        summary: aiResult.summary || '',
+        confidence: aiResult.confidence,
+        need_user_confirm: true,
+        need_lesson_link: aiResult.predictedType === 'reflection',
+        next_action: this.getNextAction(aiResult.predictedType),
+        extracted_entities: aiResult.extractedFields || {},
+        reason: `Prompt: ${promptName}, ` + (aiResult.extractedFields?.reason || ''),
+      };
+    } catch (error: any) {
+      console.error(`[Worker-AI] Job ${job.id} AI failed:`, error.message);
+      if (job.attemptsMade < 2) throw error;
+      result = {
+        type: 'unknown',
+        title_candidate: fileName || '未命名内容',
+        summary: '',
+        confidence: 0,
+        need_user_confirm: true,
+        need_lesson_link: false,
+        next_action: 'manual_select',
+        extracted_entities: {},
+        reason: `AI调用失败(已重试${attempt}次): ${error.message}`,
+      };
+    }
 
-    let userPrompt = '';
-    if (fileName) userPrompt += `文件名: ${fileName}\n`;
-    if (text) userPrompt += `文本内容: ${text}\n`;
-    if (fileContent) userPrompt += `文件内容: ${fileContent}\n`;
-    if (!userPrompt) userPrompt = '无内容';
+    console.log(`[Worker-AI] Job ${job.id}: type=${result.type} conf=${result.confidence}`);
+    return result;
+  }
 
-    const result = await this.aiAdapter.recognize({
-      text: userPrompt,
-      fileName,
-      fileContent,
-      scope,
-    });
-    console.log(
-      `[Worker-AI] Job ${job.id}: type=${result.predictedType} conf=${result.confidence}`
-    );
-
-    return {
-      sessionId,
-      messageId,
-      type: result.predictedType,
-      title: result.title,
-      summary: result.summary || '',
-      subject: result.extractedFields?.subject || '',
-      grade: result.extractedFields?.grade || '',
-      confidence: result.confidence,
-      need_user_confirm: true,
-      need_lesson_link: result.predictedType === 'reflection',
-      reason: result.extractedFields?.reason || '',
+  private getNextAction(type: string): string {
+    const map: Record<string, string> = {
+      personal_lesson: 'confirm_personal_lesson',
+      reflection: 'link_personal_lesson',
+      group_lesson: 'confirm_group_lesson',
+      plan_summary: 'confirm_plan_summary',
+      unknown: 'manual_select',
     };
+    return map[type] || 'manual_select';
   }
 }

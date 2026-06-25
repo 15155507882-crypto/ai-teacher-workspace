@@ -1,16 +1,11 @@
 import { Controller, Get, Delete, Param, Query, Req, Body, UseGuards } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OwnerResource } from '../../common/decorators/owner-resource.decorator';
-import { OwnershipGuard } from '../../common/guards/ownership.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '@workspace/shared';
 
 @Controller()
 export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
-  /** 教师空间：获取某教师的内容列表 (全校可查看) */
   @Get('teachers/:teacherId/contents')
   @UseGuards(JwtAuthGuard)
   async listByTeacher(
@@ -27,14 +22,18 @@ export class ContentController {
     );
   }
 
-  /** 内容详情 */
+  @Get('teachers/:teacherId/content-stats')
+  @UseGuards(JwtAuthGuard)
+  async contentStats(@Param('teacherId') teacherId: string) {
+    return this.contentService.getContentStats(parseInt(teacherId, 10));
+  }
+
   @Get('contents/:id')
   @UseGuards(JwtAuthGuard)
   async detail(@Param('id') id: string) {
     return this.contentService.findById(parseInt(id, 10));
   }
 
-  /** 删除内容 (本人或管理员) */
   @Delete('contents/:id')
   @UseGuards(JwtAuthGuard)
   async delete(@Param('id') id: string, @Req() req: any, @Body('reason') reason?: string) {

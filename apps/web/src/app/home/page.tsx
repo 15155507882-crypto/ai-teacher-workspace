@@ -16,6 +16,7 @@ interface Teacher {
   department_id: number;
   role: string;
   hasContent: boolean;
+  lastContentAt: string | null;
 }
 
 export default function HomePage() {
@@ -26,15 +27,11 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-    fetchData();
+    if (!localStorage.getItem('accessToken')) router.push('/login');
+    else fetchData();
   }, []);
 
   const getToken = () => localStorage.getItem('accessToken');
-
-  const checkAuth = () => {
-    if (!getToken()) router.push('/login');
-  };
 
   const fetchData = async () => {
     try {
@@ -46,10 +43,8 @@ export default function HomePage() {
           headers: { Authorization: `Bearer ${getToken()}` },
         }),
       ]);
-
       const deptJson = await deptRes.json();
       const teacherJson = await teacherRes.json();
-
       if (deptJson.code === 0) setDepartments(deptJson.data);
       if (teacherJson.code === 0) setTeachers(teacherJson.data.items || []);
     } catch (err) {
@@ -70,6 +65,18 @@ export default function HomePage() {
     teachers: filteredTeachers.filter((t) => t.department_id === dept.id),
   }));
 
+  const formatTime = (d: string | null) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    const now = new Date();
+    const diff = now.getTime() - dt.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return '今天';
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    return dt.toLocaleDateString('zh-CN');
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-gray-500">加载中...</div>
@@ -81,7 +88,6 @@ export default function HomePage() {
       <h1 className="mb-2 text-2xl font-bold">AI 教师工作空间</h1>
       <p className="mb-6 text-sm text-gray-500">学校备课资料共享平台</p>
 
-      {/* Search */}
       <div className="mb-6">
         <input
           type="text"
@@ -92,7 +98,6 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Teacher Directory by Department */}
       <div className="space-y-6">
         {teachersByDept.map(
           (dept) =>
@@ -104,25 +109,31 @@ export default function HomePage() {
                     ({dept.teachers.length}人)
                   </span>
                 </h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                   {dept.teachers.map((teacher) => (
                     <Link
                       key={teacher.id}
                       href={`/teacher/${teacher.id}`}
-                      className="flex items-center justify-between rounded-lg border p-3 transition hover:bg-blue-50 hover:border-blue-200"
+                      className="flex flex-col rounded-lg border p-3 transition hover:bg-blue-50 hover:border-blue-200"
                     >
-                      <div>
-                        <div className="font-medium text-sm text-gray-800">{teacher.name}</div>
-                        <div className="text-xs text-gray-400">{teacher.employee_no || '—'}</div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm text-gray-800">{teacher.name}</span>
+                        {teacher.hasContent && <span className="text-xs text-green-500">●</span>}
                       </div>
-                      {teacher.hasContent && <span className="text-xs text-green-500">●</span>}
+                      <span className="text-xs text-gray-400 mt-0.5">
+                        {teacher.employee_no || '—'}
+                      </span>
+                      {teacher.lastContentAt && (
+                        <span className="text-xs text-gray-300 mt-1">
+                          {formatTime(teacher.lastContentAt)}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>
               </div>
             )
         )}
-
         {filteredTeachers.length === 0 && (
           <div className="py-12 text-center text-gray-400">暂无教师</div>
         )}

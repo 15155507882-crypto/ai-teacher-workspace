@@ -49,11 +49,13 @@ export class TeacherRepository {
 
     const qb = this.repo.createQueryBuilder('teacher');
 
-    // Content count subquery
     if (params.include_content_count) {
       qb.loadRelationCountAndMap('teacher.hasContent', 'teacher.contents', 'contentCount', (qb2) =>
         qb2.where('contentCount.deleted_at IS NULL')
       );
+      qb.leftJoin('teacher.contents', 'lastContent', 'lastContent.deleted_at IS NULL')
+        .addSelect('MAX(lastContent.created_at)', 'teacher_last_content_at')
+        .addGroupBy('teacher.id');
     }
 
     if (params.keyword) {
@@ -80,10 +82,12 @@ export class TeacherRepository {
 
     qb.orderBy('teacher.sort', 'ASC').addOrderBy('teacher.id', 'ASC').skip(skip).take(size);
 
-    const [items, total] = await qb.getManyAndCount();
+    const raw = await qb.getRawAndEntities();
+    const items = raw.entities;
+    const total = await qb.getCount();
 
     return {
-      items: items.map((t: any) => ({
+      items: items.map((t: any, i: number) => ({
         id: t.id,
         school_id: t.school_id,
         department_id: t.department_id,
@@ -97,7 +101,8 @@ export class TeacherRepository {
         is_home_visible: t.is_home_visible,
         last_login_at: t.last_login_at,
         created_at: t.created_at,
-        hasContent: t.hasContent !== undefined ? t.hasContent > 0 : undefined,
+        hasContent: (t as any).hasContent !== undefined ? (t as any).hasContent > 0 : undefined,
+        lastContentAt: raw.raw[i]?.teacher_last_content_at || null,
       })),
       total,
       page,

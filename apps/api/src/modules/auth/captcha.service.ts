@@ -66,10 +66,10 @@ export class CaptchaService {
 
   /** Verify captcha */
   async verify(captchaId: string, code: string): Promise<boolean> {
-    if (!captchaId || captchaId === 'none') return true; // none mode skips
+    if (captchaId === 'none') return true;
+    if (!captchaId || !code) return false;
     const stored = await this.redis.get(`captcha:${captchaId}`);
     if (!stored) return false;
-    // Delete after one attempt
     await this.redis.del(`captcha:${captchaId}`);
     return stored === code.trim();
   }

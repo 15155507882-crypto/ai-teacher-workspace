@@ -17,12 +17,18 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, WrappedRespons
       request.headers['x-request-id'] ||
       `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     return next.handle().pipe(
-      map((data) => ({
-        code: 0,
-        message: 'success',
-        data,
-        requestId,
-      }))
+      map((data) => {
+        // If controller already returned a formatted response, pass through
+        if (data && typeof data === 'object' && 'code' in data) {
+          return { ...data, requestId: data.requestId || requestId } as any;
+        }
+        return {
+          code: 0,
+          message: 'success',
+          data,
+          requestId,
+        };
+      })
     );
   }
 }

@@ -17,8 +17,10 @@ export function TeacherWorkspace() {
   const [ctx, setCtx] = useState<WorkspaceContext | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const t = localStorage.getItem('teacher');
     const token = localStorage.getItem('accessToken');
     if (!t || !token) {
@@ -31,10 +33,27 @@ export function TeacherWorkspace() {
 
   const handleRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  if (!ctx) return null;
+  // Show skeleton while loading
+  if (!mounted || !ctx) {
+    return (
+      <div className="flex h-screen bg-slate-50">
+        <div className="w-[280px] shrink-0 bg-white border-r border-slate-200 p-4 space-y-3">
+          <div className="h-5 w-24 bg-slate-200 rounded animate-pulse" />
+          <div className="h-9 w-full bg-slate-200 rounded animate-pulse" />
+          <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
+          <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
+          <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-slate-400 text-sm">加载中...</div>
+        </div>
+        <div className="w-[360px] shrink-0 bg-white border-l border-slate-200 p-4" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-[var(--color-bg-app)] overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
       <ContentSidebar
         ctx={ctx}
         selectedId={selectedContentId}

@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import { AISessionRepository } from '../../database/repositories/ai-session.repository';
 import { AIMessageRepository } from '../../database/repositories/ai-message.repository';
 import { AIDecisionLogRepository } from '../../database/repositories/ai-decision-log.repository';
+import { PersonalLessonRepository } from '../../database/repositories/personal-lesson.repository';
 import { ChatDto } from './ai.dto';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class AIService {
     private readonly sessionRepo: AISessionRepository,
     private readonly messageRepo: AIMessageRepository,
     private readonly decisionLogRepo: AIDecisionLogRepository,
+    private readonly personalLessonRepo: PersonalLessonRepository,
     @InjectQueue('ai-recognition') private readonly aiQueue: Queue
   ) {
     this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -40,8 +42,16 @@ export class AIService {
     });
     const savedMsg = await this.messageRepo.save(message);
 
-    // 记录 sessionId 供后续AI回复使用
     await this.redis.set(`ai_session:${savedMsg.id}`, String(session.id), 'EX', 600);
+
+    // 查询最近3次备课，供教学反思关联使用
+    const recentLessons = await this.personalLessonRepo.findRecentByTeacher(teacherId, 3);
+    const recentData = recentLessons.map((l) => ({
+      id: l.content_id,
+      title: l.content?.title || '未命名',
+      date: l.lesson_date,
+      subject: l.subject,
+    }));
 
     await this.aiQueue.add('classify-content', {
       sessionId: session.id,
@@ -51,19 +61,17 @@ export class AIService {
       text: dto.text,
       fileId: dto.file_id,
       scope: dto.scope || 'workspace',
+      recentLessons: recentData,
     });
 
     return { sessionId: session.id, messageId: savedMsg.id, status: 'processing' };
   }
 
-  /** 轮询识别结果，首次命中时自动创建AI回复消息 */
   async getRecognitionResult(messageId: number) {
     const raw = await this.redis.get(`ai_result:${messageId}`);
     if (!raw) return { status: 'pending' };
-
     const parsed = JSON.parse(raw);
     const alreadyCreated = await this.redis.get(`ai_msg_created:${messageId}`);
-
     if (!alreadyCreated) {
       const sid = await this.redis.get(`ai_session:${messageId}`);
       if (sid) {
@@ -77,7 +85,6 @@ export class AIService {
         await this.redis.set(`ai_msg_created:${messageId}`, '1', 'EX', 600);
       }
     }
-
     return { status: 'completed', result: parsed };
   }
 

@@ -2,6 +2,13 @@ import { Job } from 'bullmq';
 import { IAIAdapter } from '@workspace/adapter-ai';
 import { classifyByKeyword, getPrompt, buildNLReply } from '../prompts/prompt-registry';
 
+interface RecentLesson {
+  id: number;
+  title: string;
+  date: string | null;
+  subject: string | null;
+}
+
 export interface AiRecognitionJob {
   sessionId: number;
   messageId: number;
@@ -12,6 +19,7 @@ export interface AiRecognitionJob {
   fileName?: string;
   fileContent?: string;
   scope?: string;
+  recentLessons?: RecentLesson[];
 }
 
 export interface AIResult {
@@ -33,7 +41,7 @@ export class AiRecognitionProcessor {
   constructor(private aiAdapter: IAIAdapter) {}
 
   async process(job: Job<AiRecognitionJob>): Promise<AIResult> {
-    const { sessionId, messageId, text, fileName, fileContent } = job.data;
+    const { sessionId, messageId, text, fileName, fileContent, recentLessons } = job.data;
     const attempt = job.attemptsMade + 1;
     const inputText = [fileName, text, fileContent].filter(Boolean).join(' ');
 
@@ -42,23 +50,26 @@ export class AiRecognitionProcessor {
     const suggestedType = classifyByKeyword(inputText);
     const promptName = suggestedType || 'personal_lesson';
     const prompt = getPrompt(promptName);
-    const systemPrompt = prompt?.systemPrompt || '';
 
     let result: AIResult;
     try {
       const aiResult = await this.aiAdapter.recognizeWithPrompt(
         { text: inputText, fileName, fileContent },
-        systemPrompt
+        prompt?.systemPrompt || ''
       );
 
       const detectedType = aiResult.predictedType || 'unknown';
       const title = aiResult.title || fileName || '未命名';
 
+      // 推荐最近备课（用于教学反思关联）
+      const bestLesson = recentLessons && recentLessons.length > 0 ? recentLessons[0] : null;
+
       const nlReply = buildNLReply(detectedType, {
         title_candidate: title,
         subject: aiResult.extractedFields?.subject || '',
         grade: aiResult.extractedFields?.grade || '',
-        confidence: aiResult.confidence,
+        recent_lesson_title: bestLesson?.title || '',
+        recent_lesson_count: recentLessons?.length || 0,
       });
 
       result = {
@@ -71,15 +82,17 @@ export class AiRecognitionProcessor {
         need_user_confirm: true,
         need_lesson_link: detectedType === 'reflection',
         next_action: this.getNextAction(detectedType),
-        extracted_entities: aiResult.extractedFields || {},
+        extracted_entities: {
+          ...aiResult.extractedFields,
+          recent_lessons: recentLessons || [],
+          recommended_lesson: bestLesson || null,
+        },
         reason: `Prompt:${promptName}`,
         nl_reply: nlReply,
       };
     } catch (error: any) {
       console.error(`[Worker-AI] Job ${job.id} failed:`, error.message);
       if (job.attemptsMade < 2) throw error;
-
-      const nlReply = buildNLReply('unknown', { title_candidate: fileName || '未命名' });
       result = {
         type: 'unknown',
         title_candidate: fileName || '未命名内容',
@@ -89,8 +102,8 @@ export class AiRecognitionProcessor {
         need_lesson_link: false,
         next_action: 'manual_select',
         extracted_entities: {},
-        reason: `AI失败重试${attempt}次`,
-        nl_reply: nlReply,
+        reason: 'AI失败',
+        nl_reply: buildNLReply('unknown', {}),
       };
     }
 

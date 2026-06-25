@@ -33,43 +33,60 @@ export function TeacherWorkspace() {
 
   const handleRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // Show skeleton while loading
-  if (!mounted || !ctx) {
-    return (
-      <div className="flex h-screen bg-slate-50">
-        <div className="w-[280px] shrink-0 bg-white border-r border-slate-200 p-4 space-y-3">
-          <div className="h-5 w-24 bg-slate-200 rounded animate-pulse" />
-          <div className="h-9 w-full bg-slate-200 rounded animate-pulse" />
-          <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
-          <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
-          <div className="h-6 w-16 bg-slate-200 rounded animate-pulse" />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-slate-400 text-sm">加载中...</div>
-        </div>
-        <div className="w-[360px] shrink-0 bg-white border-l border-slate-200 p-4" />
-      </div>
-    );
-  }
-
+  // ALWAYS render 3-panel grid — never fall back to old UI
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <ContentSidebar
-        ctx={ctx}
-        selectedId={selectedContentId}
-        onSelect={setSelectedContentId}
-        refreshKey={refreshKey}
-      />
-      <AiChatCenter ctx={ctx} onSaved={handleRefresh} />
-      <ContentDetailPanel
-        ctx={ctx}
-        contentId={selectedContentId}
-        onDelete={() => {
-          setSelectedContentId(null);
-          handleRefresh();
-        }}
-        onRefresh={handleRefresh}
-      />
-    </div>
+    <main className="h-screen w-screen overflow-hidden bg-slate-50">
+      <div className="grid h-full grid-cols-[280px_1fr_360px] gap-4 p-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {mounted && ctx ? (
+            <ContentSidebar
+              ctx={ctx}
+              selectedId={selectedContentId}
+              onSelect={setSelectedContentId}
+              refreshKey={refreshKey}
+            />
+          ) : (
+            <div className="p-4 space-y-3">
+              <div className="h-5 w-24 bg-slate-200 rounded animate-pulse" />
+              <div className="h-9 w-full bg-slate-200 rounded animate-pulse" />
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-6 w-3/4 bg-slate-200 rounded animate-pulse" />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          {mounted && ctx ? (
+            <AiChatCenter ctx={ctx} onSaved={handleRefresh} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+              加载中...
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {mounted && ctx ? (
+            <ContentDetailPanel
+              ctx={ctx}
+              contentId={selectedContentId}
+              onDelete={() => {
+                setSelectedContentId(null);
+                handleRefresh();
+              }}
+              onRefresh={handleRefresh}
+            />
+          ) : (
+            <div className="p-4 space-y-3">
+              <div className="h-5 w-20 bg-slate-200 rounded animate-pulse" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-4 w-full bg-slate-200 rounded animate-pulse" />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

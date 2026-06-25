@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-:root {
+@theme {
   --color-primary-600: #2563eb;
   --color-primary-500: #3b82f6;
   --color-primary-50: #eff6ff;
@@ -23,56 +23,54 @@
   --radius-dialog: 24px;
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
   --shadow-float: 0 16px 40px rgba(15, 23, 42, 0.12);
-  --layout-sidebar: 280px;
-  --layout-detail: 360px;
-  --layout-topbar: 64px;
 }
 
-body {
-  background: var(--color-bg-app);
-  color: var(--color-text-normal);
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei',
-    'Noto Sans SC', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  body {
+    background: var(--color-bg-app);
+    color: var(--color-text-normal);
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
-/* Typography utilities */
-.text-display {
-  font-size: 32px;
-  line-height: 40px;
-  font-weight: 700;
-}
-.text-page-title {
-  font-size: 28px;
-  line-height: 36px;
-  font-weight: 700;
-}
-.text-section-title {
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-}
-.text-card-title {
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 600;
-}
-.text-body {
-  font-size: 15px;
-  line-height: 24px;
-}
-.text-caption {
-  font-size: 13px;
-  line-height: 20px;
-}
-.text-tiny {
-  font-size: 12px;
-  line-height: 18px;
+@layer utilities {
+  .text-display {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 700;
+  }
+  .text-page-title {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 700;
+  }
+  .text-section-title {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+  }
+  .text-card-title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .text-body {
+    font-size: 15px;
+    line-height: 24px;
+  }
+  .text-caption {
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .text-tiny {
+    font-size: 12px;
+    line-height: 18px;
+  }
 }
 
-/* Animation keyframes */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -103,25 +101,4 @@ body {
     opacity: 1;
     transform: translateX(0);
   }
-}
-@keyframes pulse-border {
-  0%,
-  100% {
-    border-color: var(--color-border);
-  }
-  50% {
-    border-color: var(--color-primary-500);
-  }
-}
-.animate-fade-in-up {
-  animation: fadeInUp 180ms ease-out;
-}
-.animate-slide-in {
-  animation: slideInRight 200ms ease-out;
-}
-.animate-breathe {
-  animation: breathe 1.8s ease-in-out infinite;
-}
-.animate-pulse-border {
-  animation: pulse-border 2s ease-in-out infinite;
 }

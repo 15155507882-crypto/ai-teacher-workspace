@@ -34,6 +34,12 @@ export class Teacher {
   @Column({ type: 'bigint', nullable: true })
   avatar_file_id: number | null;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  employee_no: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  avatar: string | null;
+
   @Column({ type: 'varchar', length: 20, default: 'teacher' })
   role: string;
 

@@ -33,6 +33,11 @@ export class CreateTeacherDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  employee_no?: string;
+
+  @IsOptional()
+  @IsString()
   @IsIn(['teacher', 'admin'])
   role?: string;
 }
@@ -49,7 +54,35 @@ export class UpdateTeacherDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  employee_no?: string;
+
+  @IsOptional()
+  @IsString()
   @IsIn(['teacher', 'admin'])
+  role?: string;
+}
+
+export class TeacherQueryDto {
+  @IsOptional()
+  page?: number;
+
+  @IsOptional()
+  size?: number;
+
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @IsOptional()
+  department_id?: number;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
   role?: string;
 }
 

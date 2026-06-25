@@ -3,19 +3,30 @@ import { SchoolService } from './school.service';
 import { UpdateSchoolDto } from './school.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { Role } from '@workspace/shared';
 
-@Controller('admin/school')
-@UseGuards(JwtAuthGuard)
+@Controller()
 export class SchoolController {
   constructor(private readonly schoolService: SchoolService) {}
 
-  @Get()
+  /** 公开接口：登录页、首页、PDF导出获取学校信息 */
+  @Get('public/school')
+  @Public()
+  async getPublicSchool() {
+    return this.schoolService.getSchool();
+  }
+
+  /** 管理端：获取学校信息 */
+  @Get('admin/school')
+  @UseGuards(JwtAuthGuard)
   async getSchool() {
     return this.schoolService.getSchool();
   }
 
-  @Put()
+  /** 管理端：更新学校信息 */
+  @Put('admin/school')
+  @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
   async updateSchool(@Body() dto: UpdateSchoolDto) {
     return this.schoolService.updateSchool(dto);

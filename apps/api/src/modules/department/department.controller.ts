@@ -17,6 +17,14 @@ export class DepartmentController {
     return this.departmentService.getList(sid);
   }
 
+  @Get('options')
+  @Roles(Role.ADMIN, Role.TEACHER)
+  async options(@Query('school_id') schoolId: string) {
+    const sid = parseInt(schoolId || '1', 10);
+    const list = await this.departmentService.getList(sid);
+    return list.map((d) => ({ id: d.id, name: d.name, school_id: d.school_id }));
+  }
+
   @Get('tree')
   async tree(@Query('school_id') schoolId: string) {
     const sid = parseInt(schoolId || '1', 10);

@@ -8,6 +8,7 @@ export default registerAs('bullmq', () => ({
     aiRecognition: 'ai-recognition',
     filePreview: 'file-preview',
     pdfExport: 'pdf-export',
+    notification: 'notification',
   },
   defaultJobOptions: {
     removeOnComplete: 100,

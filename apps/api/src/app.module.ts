@@ -42,7 +42,8 @@ import bullmqConfig from './config/bullmq.config';
     BullModule.registerQueue(
       { name: 'ai-recognition' },
       { name: 'file-preview' },
-      { name: 'pdf-export' }
+      { name: 'pdf-export' },
+      { name: 'notification' }
     ),
   ],
   controllers: [],

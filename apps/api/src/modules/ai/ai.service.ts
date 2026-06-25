@@ -1,21 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import Redis from 'ioredis';
 import { AISessionRepository } from '../../database/repositories/ai-session.repository';
 import { AIMessageRepository } from '../../database/repositories/ai-message.repository';
+import { AIDecisionLogRepository } from '../../database/repositories/ai-decision-log.repository';
 import { ChatDto } from './ai.dto';
 
 @Injectable()
 export class AIService {
+  private redis: Redis;
+
   constructor(
     private readonly sessionRepo: AISessionRepository,
     private readonly messageRepo: AIMessageRepository,
+    private readonly decisionLogRepo: AIDecisionLogRepository,
     @InjectQueue('ai-recognition') private readonly aiQueue: Queue
-  ) {}
+  ) {
+    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  }
 
-  /** 聊天入口：创建/获取会话，保存消息，入队 AI 识别，立即返回 */
   async chat(teacherId: number, schoolId: number, dto: ChatDto) {
-    // 获取或创建活跃会话
     let session = await this.sessionRepo.findActiveByTeacher(teacherId);
     if (!session) {
       session = this.sessionRepo.create({
@@ -26,7 +31,6 @@ export class AIService {
       session = await this.sessionRepo.save(session);
     }
 
-    // 保存用户消息
     const message = this.messageRepo.create({
       session_id: session.id,
       sender_type: 'teacher',
@@ -36,7 +40,6 @@ export class AIService {
     });
     const savedMsg = await this.messageRepo.save(message);
 
-    // 异步入队 AI 识别
     const job = await this.aiQueue.add('classify-content', {
       sessionId: session.id,
       messageId: savedMsg.id,
@@ -55,12 +58,19 @@ export class AIService {
     };
   }
 
-  /** 获取会话消息列表 */
+  /** 轮询 AI 识别结果 (从 Redis 读取) */
+  async getRecognitionResult(messageId: number) {
+    const key = `ai_result:${messageId}`;
+    const raw = await this.redis.get(key);
+    if (!raw) return { status: 'pending' };
+    const result = JSON.parse(raw);
+    return { status: 'completed', result };
+  }
+
   async getMessages(sessionId: number) {
     return this.messageRepo.findBySession(sessionId);
   }
 
-  /** 获取教师活跃会话 */
   async getActiveSession(teacherId: number) {
     return this.sessionRepo.findActiveByTeacher(teacherId);
   }

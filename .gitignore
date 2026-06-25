@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+*.log
+storage/uploads/*
+storage/previews/*
+storage/exports/*
+!storage/uploads/.gitkeep
+!storage/previews/.gitkeep
+!storage/exports/.gitkeep
+.DS_Store
+coverage/
+.turbo/

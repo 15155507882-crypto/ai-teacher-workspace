@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/worker-schedule",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scheduled tasks worker (cron jobs)",
+  "scripts": {
+    "dev": "ts-node src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@workspace/shared": "workspace:*",
+    "ioredis": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.5.0"
+  }
+}

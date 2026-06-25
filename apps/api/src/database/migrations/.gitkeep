@@ -1,0 +1,2 @@
+# TypeORM Migration files directory
+# Generated via: pnpm run migration:generate

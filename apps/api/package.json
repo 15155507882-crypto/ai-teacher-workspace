@@ -1,0 +1,52 @@
+{
+  "name": "@workspace/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Teacher Workspace REST API",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "start:prod": "node dist/main",
+    "clean": "rm -rf dist",
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts src/database/migrations/Migration",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
+  },
+  "dependencies": {
+    "@nestjs/bullmq": "^10.0.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/jwt": "^10.0.0",
+    "@nestjs/passport": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/typeorm": "^10.0.0",
+    "@workspace/adapter-ai": "workspace:*",
+    "@workspace/adapter-preview": "workspace:*",
+    "@workspace/adapter-storage": "workspace:*",
+    "@workspace/shared": "workspace:*",
+    "bullmq": "^5.0.0",
+    "class-transformer": "^0.5.0",
+    "class-validator": "^0.14.0",
+    "ioredis": "^5.0.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.0",
+    "pg": "^8.0.0",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.0.0",
+    "typeorm": "^0.3.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/passport-jwt": "^4.0.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.5.0"
+  }
+}

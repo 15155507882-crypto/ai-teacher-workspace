@@ -1,0 +1,39 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY tsconfig.base.json ./
+
+COPY packages/shared/package.json packages/shared/
+COPY packages/adapter-ai/package.json packages/adapter-ai/
+COPY packages/adapter-preview/package.json packages/adapter-preview/
+COPY packages/adapter-storage/package.json packages/adapter-storage/
+COPY apps/api/package.json apps/api/
+
+RUN pnpm install --frozen-lockfile
+
+COPY packages/ packages/
+COPY apps/api/ apps/api/
+
+RUN pnpm --filter @workspace/shared build
+RUN pnpm --filter @workspace/adapter-ai build
+RUN pnpm --filter @workspace/adapter-preview build
+RUN pnpm --filter @workspace/adapter-storage build
+RUN pnpm --filter @workspace/api build
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+EXPOSE 3000
+
+CMD ["node", "dist/apps/api/src/main.js"]

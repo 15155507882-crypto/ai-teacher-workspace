@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/adapter-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI adapter abstraction layer with DeepSeek implementation",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@workspace/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

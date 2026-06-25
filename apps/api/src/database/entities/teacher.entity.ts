@@ -43,6 +43,9 @@ export class Teacher {
   @Column({ type: 'datetime', nullable: true })
   last_login_at: Date | null;
 
+  @Column({ type: 'int', default: 1 })
+  token_version: number;
+
   @CreateDateColumn()
   created_at: Date;
 

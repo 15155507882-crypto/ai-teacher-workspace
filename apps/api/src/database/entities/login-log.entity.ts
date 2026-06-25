@@ -20,6 +20,15 @@ export class LoginLog {
   @Column({ type: 'varchar', length: 64, nullable: true })
   ip: string | null;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  device: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  browser: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  os: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

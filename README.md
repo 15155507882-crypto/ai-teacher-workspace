@@ -113,6 +113,10 @@ docker compose -f docker/docker-compose.yml up -d
 - 禁止跨越 Sprint/Task 开发
 - 先更新文档，再修改代码
 
+### 安全说明
+
+- **Token 存储 (V1)**: Access Token 和 Refresh Token 当前使用 `localStorage` 存储。这是 V1 实现，后续计划升级为 **HttpOnly Cookie** 方案以提升安全性（防止 XSS 窃取 Token）。
+
 ## Architecture Decision Records (ADR)
 
 关键架构决策记录，按时间倒序排列。

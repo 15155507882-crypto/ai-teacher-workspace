@@ -2,17 +2,21 @@ import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto } from './auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const ip = req.ip || req.connection?.remoteAddress;
-    return this.authService.login(dto, ip);
+    const userAgent = req.headers['user-agent'];
+    return this.authService.login(dto, ip, userAgent);
   }
 
+  @Public()
   @Post('refresh')
   async refresh(@Body() dto: RefreshTokenDto) {
     const tokenPair = await this.authService.refresh(dto.refreshToken);

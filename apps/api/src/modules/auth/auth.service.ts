@@ -19,6 +19,7 @@ export interface JwtPayload {
   role: Role;
   mobile: string;
   name: string;
+  tokenVersion: number;
   type: 'access' | 'refresh';
 }
 
@@ -30,17 +31,22 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  async login(dto: LoginDto, ip?: string): Promise<{ tokenPair: TokenPair; teacher: any }> {
+  async login(
+    dto: LoginDto,
+    ip?: string,
+    userAgent?: string
+  ): Promise<{ tokenPair: TokenPair; teacher: any }> {
     const teacher = await this.teacherRepo.findByMobile(dto.mobile);
+    const deviceInfo = this.parseUserAgent(userAgent);
 
     if (!teacher || teacher.status !== 'active') {
-      await this.recordLoginLog(dto.mobile, null, 'failed', '账号不存在或已禁用', ip);
+      await this.recordLoginLog(dto.mobile, null, 'failed', '账号不存在或已禁用', ip, deviceInfo);
       throw new UnauthorizedException('账号或密码错误');
     }
 
     const valid = await bcrypt.compare(dto.password, teacher.password_hash);
     if (!valid) {
-      await this.recordLoginLog(dto.mobile, teacher.id, 'failed', '密码错误', ip);
+      await this.recordLoginLog(dto.mobile, teacher.id, 'failed', '密码错误', ip, deviceInfo);
       throw new UnauthorizedException('账号或密码错误');
     }
 
@@ -51,6 +57,7 @@ export class AuthService {
       role: teacher.role as Role,
       mobile: teacher.mobile,
       name: teacher.name,
+      tokenVersion: teacher.token_version,
     };
 
     const tokenPair = this.generateTokenPair(payload);
@@ -59,7 +66,7 @@ export class AuthService {
     teacher.last_login_at = new Date();
     await this.teacherRepo.save(teacher);
 
-    await this.recordLoginLog(dto.mobile, teacher.id, 'success', undefined, ip);
+    await this.recordLoginLog(dto.mobile, teacher.id, 'success', undefined, ip, deviceInfo);
 
     return {
       tokenPair,
@@ -96,6 +103,7 @@ export class AuthService {
         role: teacher.role as Role,
         mobile: teacher.mobile,
         name: teacher.name,
+        tokenVersion: teacher.token_version,
       };
 
       return this.generateTokenPair(newPayload);
@@ -148,7 +156,8 @@ export class AuthService {
     teacherId: number | null,
     status: string,
     failReason?: string,
-    ip?: string
+    ip?: string,
+    deviceInfo?: { device?: string; browser?: string; os?: string }
   ) {
     const log = this.loginLogRepo.create({
       mobile,
@@ -156,7 +165,35 @@ export class AuthService {
       status,
       fail_reason: failReason || null,
       ip: ip || null,
+      device: deviceInfo?.device || null,
+      browser: deviceInfo?.browser || null,
+      os: deviceInfo?.os || null,
     });
     await this.loginLogRepo.save(log);
+  }
+
+  private parseUserAgent(ua?: string): { device?: string; browser?: string; os?: string } {
+    if (!ua) return {};
+    const info: { device?: string; browser?: string; os?: string } = {};
+
+    // OS detection (simplified)
+    if (ua.includes('Windows NT')) info.os = 'Windows';
+    else if (ua.includes('Mac OS X')) info.os = 'macOS';
+    else if (ua.includes('Linux')) info.os = 'Linux';
+    else if (ua.includes('Android')) info.os = 'Android';
+    else if (ua.includes('iPhone') || ua.includes('iPad')) info.os = 'iOS';
+
+    // Device detection
+    if (ua.includes('Mobile')) info.device = 'Mobile';
+    else if (ua.includes('Tablet')) info.device = 'Tablet';
+    else info.device = 'Desktop';
+
+    // Browser detection (simplified)
+    if (ua.includes('Edg/')) info.browser = 'Edge';
+    else if (ua.includes('Chrome/')) info.browser = 'Chrome';
+    else if (ua.includes('Safari/') && !ua.includes('Chrome/')) info.browser = 'Safari';
+    else if (ua.includes('Firefox/')) info.browser = 'Firefox';
+
+    return info;
   }
 }

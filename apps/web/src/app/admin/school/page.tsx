@@ -36,7 +36,7 @@ export default function AdminSchoolPage() {
     setLoading(false);
   };
   return (
-    <AdminShell title="学校信息">
+    <AdminShell>
       <AppCard className="p-6 max-w-lg">
         <form onSubmit={save} className="space-y-4">
           <div>

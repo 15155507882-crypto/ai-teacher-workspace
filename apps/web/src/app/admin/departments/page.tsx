@@ -95,7 +95,7 @@ export default function AdminDeptPage() {
     ));
 
   return (
-    <AdminShell title="教研组管理">
+    <AdminShell>
       {msg && <div className="mb-4 text-sm text-green-600">{msg}</div>}
       <AppCard className="p-4 mb-4">
         <form onSubmit={save} className="space-y-3">

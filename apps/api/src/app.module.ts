@@ -9,6 +9,7 @@ import bullmqConfig from './config/bullmq.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { SchoolModule } from './modules/school/school.module';
 import { DepartmentModule } from './modules/department/department.module';
+import { TeacherModule } from './modules/teacher/teacher.module';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
@@ -55,6 +56,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AuthModule,
     SchoolModule,
     DepartmentModule,
+    TeacherModule,
   ],
   controllers: [],
   providers: [

@@ -7,6 +7,7 @@ import { FileAsset } from '../../database/entities/file-asset.entity';
 import { AIDecisionLog } from '../../database/entities/ai-decision-log.entity';
 import { PersonalLesson } from '../../database/entities/personal-lesson.entity';
 import { Content } from '../../database/entities/content.entity';
+import { ActionHistory } from '../../database/entities/action-history.entity';
 import { AISessionRepository } from '../../database/repositories/ai-session.repository';
 import { AIMessageRepository } from '../../database/repositories/ai-message.repository';
 import { FileAssetRepository } from '../../database/repositories/file-asset.repository';
@@ -25,6 +26,7 @@ import { ActionEngineService } from './action-engine.service';
       AIDecisionLog,
       PersonalLesson,
       Content,
+      ActionHistory,
     ]),
     BullModule.registerQueue({ name: 'ai-recognition' }),
   ],

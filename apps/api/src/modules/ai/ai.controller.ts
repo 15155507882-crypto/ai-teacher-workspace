@@ -6,19 +6,25 @@ import {
   Body,
   Req,
   UseGuards,
+  Query,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AIService } from './ai.service';
 import { ActionEngineService } from './action-engine.service';
 import { ChatDto, ConfirmActionDto } from './ai.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '@workspace/shared';
+import { ActionHistory } from '../../database/entities/action-history.entity';
 import { createStorageAdapter } from '@workspace/adapter-storage';
 import { FileAssetRepository } from '../../database/repositories/file-asset.repository';
 
-@Controller('ai')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class AIController {
   private storage = createStorageAdapter({
@@ -29,21 +35,21 @@ export class AIController {
   constructor(
     private readonly aiService: AIService,
     private readonly actionEngine: ActionEngineService,
-    private readonly fileRepo: FileAssetRepository
+    private readonly fileRepo: FileAssetRepository,
+    @InjectRepository(ActionHistory) private readonly actionHistoryRepo: Repository<ActionHistory>
   ) {}
 
-  @Post('chat')
+  @Post('ai/chat')
   async chat(@Req() req: any, @Body() dto: ChatDto) {
     return this.aiService.chat(req.user.teacherId, req.user.schoolId, dto);
   }
 
-  @Get('recognition/:messageId')
+  @Get('ai/recognition/:messageId')
   async getRecognition(@Param('messageId') messageId: string) {
     return this.aiService.getRecognitionResult(parseInt(messageId, 10));
   }
 
-  /** Dry Run: 预览确认后将要写入的内容 */
-  @Post('confirm/dry-run')
+  @Post('ai/confirm/dry-run')
   async dryRun(@Req() req: any, @Body() dto: ConfirmActionDto) {
     return this.actionEngine.dryRun(
       {
@@ -64,8 +70,7 @@ export class AIController {
     );
   }
 
-  /** 确认保存（统一 Action Engine 入口） */
-  @Post('confirm')
+  @Post('ai/confirm')
   async confirm(@Req() req: any, @Body() dto: ConfirmActionDto) {
     return this.actionEngine.execute(
       {
@@ -86,13 +91,12 @@ export class AIController {
     );
   }
 
-  /** 撤销操作（5分钟内） */
-  @Post('undo/:messageId')
+  @Post('ai/undo/:messageId')
   async undo(@Param('messageId') messageId: string, @Req() req: any) {
     return this.actionEngine.undo(parseInt(messageId, 10), req.user.teacherId);
   }
 
-  @Post('upload')
+  @Post('ai/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@Req() req: any, @UploadedFile() file: any) {
     if (!file) throw new BadRequestException('请选择文件');
@@ -123,13 +127,25 @@ export class AIController {
     };
   }
 
-  @Get('session')
+  @Get('ai/session')
   async getSession(@Req() req: any) {
     return this.aiService.getActiveSession(req.user.teacherId);
   }
 
-  @Get('session/:sessionId/messages')
+  @Get('ai/session/:sessionId/messages')
   async getMessages(@Param('sessionId') sessionId: string) {
     return this.aiService.getMessages(parseInt(sessionId, 10));
+  }
+
+  // Admin: AI Action History
+  @Get('admin/ai-actions')
+  @Roles(Role.ADMIN)
+  async listActions(@Query('size') size: string) {
+    const take = Math.min(parseInt(size || '50', 10), 200);
+    const items = await this.actionHistoryRepo.find({
+      order: { created_at: 'DESC' },
+      take,
+    });
+    return { items, total: items.length };
   }
 }

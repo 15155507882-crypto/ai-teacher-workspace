@@ -22,6 +22,7 @@ interface Teacher {
 
 export default function AdminTeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [filtered, setFiltered] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,6 +60,9 @@ export default function AdminTeachersPage() {
 
   useEffect(() => {
     fetchTeachers();
+    api('/api/admin/departments/options?school_id=1').then((j) => {
+      if (j.code === 0) setDepartments(j.data);
+    });
   }, []);
   useEffect(() => {
     let list = teachers;
@@ -348,15 +352,20 @@ export default function AdminTeachersPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">组织ID</label>
-                <input
-                  type="number"
+                <label className="block text-sm font-medium text-slate-700 mb-1">组织</label>
+                <select
                   value={form.department_id}
                   onChange={(e) =>
                     setForm({ ...form, department_id: parseInt(e.target.value) || 1 })
                   }
                   className="w-full rounded-lg border px-3 py-2 text-sm"
-                />
+                >
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">角色</label>

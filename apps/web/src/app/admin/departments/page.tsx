@@ -22,6 +22,7 @@ export default function AdminDeptPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<Dept | null>(null);
+  const [target, setTarget] = useState<Dept | null>(null);
   const [form, setForm] = useState({ name: '', parent_id: 0, sort_order: 0, status: 'active' });
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,23 @@ export default function AdminDeptPage() {
     } else setMsg(j.message || '操作失败');
   }
 
+  async function handleDelete() {
+    if (!target) return;
+    const tRes = await api(`/api/home/teachers?school_id=1&department_id=${target.id}`);
+    const activeCount = tRes.data?.items?.filter((t: any) => t.status === 'active').length || 0;
+    if (activeCount > 0) {
+      setMsg(`该组织下有 ${activeCount} 名在职教师，无法删除。请先调整教师组织。`);
+      setDeleteOpen(false);
+      return;
+    }
+    const j = await api(`/api/admin/departments/${target.id}/disable`, { method: 'POST' });
+    if (j.code === 0) {
+      setDeleteOpen(false);
+      fetchDepts();
+      setMsg('已删除');
+    } else setMsg(j.message || '删除失败');
+  }
+
   return (
     <AdminShell>
       <div className="p-6">
@@ -153,6 +171,15 @@ export default function AdminDeptPage() {
                           停用
                         </button>
                       )}
+                      <button
+                        onClick={() => {
+                          setTarget(d);
+                          setDeleteOpen(true);
+                        }}
+                        className="text-xs text-red-400 hover:underline"
+                      >
+                        删除
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -230,6 +257,14 @@ export default function AdminDeptPage() {
             </div>
           </div>
         </AdminDialog>
+
+        <AdminDeleteDialog
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={handleDelete}
+          title={`确认删除「${target?.name}」？`}
+          description={target ? '删除前会检查该组织下是否有在职教师。' : ''}
+        />
       </div>
     </AdminShell>
   );

@@ -1,15 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCaptcha } from '@/hooks/useCaptcha';
+import { Captcha } from '@/components/captcha';
 
 export default function LoginPage() {
   const router = useRouter();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [captcha, setCaptcha] = useState('');
+  const [captchaCode, setCaptchaCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [school, setSchool] = useState<any>(null);
+  const captcha = useCaptcha();
 
   useEffect(() => {
     fetch('/api/public/school')
@@ -24,20 +27,16 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    if (!captcha.trim()) {
-      setError('请输入验证码');
-      setLoading(false);
-      return;
-    }
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile, password }),
+        body: JSON.stringify({ mobile, password, captchaId: captcha.captchaId, captchaCode }),
       });
       const json = await res.json();
       if (json.code !== 0) {
         setError(json.message || '登录失败');
+        if (json.message?.includes('验证码')) captcha.refresh();
         return;
       }
       localStorage.setItem('accessToken', json.data.tokenPair.accessToken);
@@ -51,9 +50,12 @@ export default function LoginPage() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSubmit(e);
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Left brand panel */}
       <div className="hidden lg:flex w-[480px] bg-gradient-to-br from-blue-600 to-indigo-700 flex-col items-center justify-center p-12 text-white">
         <div className="text-center">
           <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center text-4xl mb-6 mx-auto">
@@ -67,7 +69,6 @@ export default function LoginPage() {
           <p className="mt-1">AI 自动识别 · 自动归档 · 自动关联</p>
         </div>
       </div>
-      {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-[380px]">
           <div className="lg:hidden text-center mb-8">
@@ -79,6 +80,7 @@ export default function LoginPage() {
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-4"
+            onKeyDown={handleKeyDown}
           >
             <h2 className="text-lg font-bold text-slate-800 mb-1">登录</h2>
             <p className="text-sm text-slate-500 -mt-2 mb-2">使用手机号登录教师工作空间</p>
@@ -92,6 +94,7 @@ export default function LoginPage() {
                 maxLength={11}
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
                 required
+                tabIndex={1}
               />
             </div>
             <div>
@@ -103,23 +106,28 @@ export default function LoginPage() {
                 placeholder="请输入密码"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
                 required
+                tabIndex={2}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">验证码</label>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-3">
+                <Captcha
+                  imageBase64={captcha.imageBase64}
+                  loading={captcha.loading}
+                  error={captcha.error}
+                  onRefresh={captcha.refresh}
+                />
                 <input
                   type="text"
-                  value={captcha}
-                  onChange={(e) => setCaptcha(e.target.value)}
-                  placeholder="请输入验证码"
+                  value={captchaCode}
+                  onChange={(e) => setCaptchaCode(e.target.value)}
+                  placeholder="输入答案"
                   maxLength={4}
-                  className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none transition"
+                  className="w-24 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-blue-500 focus:bg-white focus:outline-none transition text-center font-mono"
                   required
+                  tabIndex={3}
                 />
-                <div className="w-24 h-11 rounded-lg bg-slate-200 flex items-center justify-center text-xs text-slate-500 font-mono select-none">
-                  暂未启用
-                </div>
               </div>
             </div>
             {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
@@ -127,6 +135,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
+              tabIndex={4}
             >
               {loading ? '登录中...' : '登录'}
             </button>

@@ -8,6 +8,7 @@ import { TeacherRepository } from '../../database/repositories/teacher.repositor
 import { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { CaptchaService } from './captcha.service';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -20,7 +21,7 @@ import { JwtStrategy } from './jwt.strategy';
     TypeOrmModule.forFeature([Teacher, LoginLog]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TeacherRepository, LoginLogRepository],
+  providers: [AuthService, CaptchaService, JwtStrategy, TeacherRepository, LoginLogRepository],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

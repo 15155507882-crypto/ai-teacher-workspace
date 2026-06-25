@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Length } from 'class-validator';
+import { IsString, IsNotEmpty, Length, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsString()
@@ -10,6 +10,14 @@ export class LoginDto {
   @IsNotEmpty()
   @Length(6, 30, { message: '密码长度6-30位' })
   password: string;
+
+  @IsOptional()
+  @IsString()
+  captchaId?: string;
+
+  @IsOptional()
+  @IsString()
+  captchaCode?: string;
 }
 
 export class RefreshTokenDto {

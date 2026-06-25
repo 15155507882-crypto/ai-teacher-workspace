@@ -18,7 +18,6 @@ interface Teacher {
   role: string;
   status: string;
   last_login_at: string | null;
-  created_at: string;
 }
 
 export default function AdminTeachersPage() {
@@ -34,23 +33,29 @@ export default function AdminTeachersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [msg, setMsg] = useState('');
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '',
     mobile: '',
     employee_no: '',
     department_id: 1,
     role: 'teacher',
-    status: 'active',
     password: '',
   });
   const [pwdForm, setPwdForm] = useState({ password: '', confirm: '' });
 
-  const t = () => localStorage.getItem('accessToken') || '';
-  const fetcher = (url: string, opts?: any) =>
-    fetch(url, {
-      headers: { Authorization: `Bearer ${t()}`, 'Content-Type': 'application/json' },
-      ...opts,
-    }).then((r) => r.json());
+  async function api(url: string, options?: RequestInit) {
+    const token = localStorage.getItem('accessToken') || '';
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+    return res.json();
+  }
 
   useEffect(() => {
     fetchTeachers();
@@ -67,14 +72,14 @@ export default function AdminTeachersPage() {
     setFiltered(list);
   }, [keyword, statusFilter, roleFilter, teachers]);
 
-  const fetchTeachers = async () => {
+  async function fetchTeachers() {
     setLoading(true);
-    const j = await fetcher('/api/admin/teachers?size=200');
+    const j = await api('/api/admin/teachers?size=200');
     if (j.code === 0) setTeachers(j.data.items || []);
     setLoading(false);
-  };
+  }
 
-  const openNew = () => {
+  function openNew() {
     setEditing(null);
     setForm({
       name: '',
@@ -82,12 +87,11 @@ export default function AdminTeachersPage() {
       employee_no: '',
       department_id: 1,
       role: 'teacher',
-      status: 'active',
       password: '',
     });
     setDialogOpen(true);
-  };
-  const openEdit = (t: Teacher) => {
+  }
+  function openEdit(t: Teacher) {
     setEditing(t);
     setForm({
       name: t.name,
@@ -95,15 +99,15 @@ export default function AdminTeachersPage() {
       employee_no: t.employee_no || '',
       department_id: t.department_id,
       role: t.role,
-      status: t.status,
       password: '',
     });
     setDialogOpen(true);
-  };
+  }
 
-  const save = async () => {
+  async function save() {
+    setSaving(true);
     const j = editing
-      ? await fetcher(`/api/admin/teachers/${editing.id}`, {
+      ? await api(`/api/admin/teachers/${editing.id}`, {
           method: 'PUT',
           body: JSON.stringify({
             name: form.name,
@@ -112,7 +116,7 @@ export default function AdminTeachersPage() {
             role: form.role,
           }),
         })
-      : await fetcher('/api/admin/teachers', {
+      : await api('/api/admin/teachers', {
           method: 'POST',
           body: JSON.stringify({ school_id: 1, ...form }),
         });
@@ -120,15 +124,16 @@ export default function AdminTeachersPage() {
       setDialogOpen(false);
       fetchTeachers();
       setMsg(editing ? '更新成功' : '创建成功');
-    } else setMsg(j.message || '操作失败');
-  };
+    } else setMsg(j.message || '保存失败');
+    setSaving(false);
+  }
 
-  const resetPwd = async () => {
+  async function resetPwd() {
     if (!target || pwdForm.password !== pwdForm.confirm) {
       setMsg('两次密码不一致');
       return;
     }
-    const j = await fetcher(`/api/admin/teachers/${target.id}/reset-password`, {
+    const j = await api(`/api/admin/teachers/${target.id}/reset-password`, {
       method: 'POST',
       body: JSON.stringify({ password: pwdForm.password }),
     });
@@ -136,11 +141,11 @@ export default function AdminTeachersPage() {
       setResetPwdOpen(false);
       setMsg('密码已重置');
     } else setMsg(j.message || '操作失败');
-  };
+  }
 
-  const handleResign = async () => {
+  async function handleResign() {
     if (!target) return;
-    const j = await fetcher(`/api/admin/teachers/${target.id}/resign`, {
+    const j = await api(`/api/admin/teachers/${target.id}/resign`, {
       method: 'POST',
       body: JSON.stringify({ reason: '管理员操作' }),
     });
@@ -149,10 +154,10 @@ export default function AdminTeachersPage() {
       fetchTeachers();
       setMsg('已设为离职');
     } else setMsg(j.message || '操作失败');
-  };
+  }
 
-  const handleRestore = async (id: number) => {
-    const j = await fetcher(`/api/admin/teachers/${id}/restore`, {
+  async function handleRestore(id: number) {
+    const j = await api(`/api/admin/teachers/${id}/restore`, {
       method: 'POST',
       body: JSON.stringify({ reason: '管理员操作' }),
     });
@@ -160,7 +165,7 @@ export default function AdminTeachersPage() {
       fetchTeachers();
       setMsg('已恢复');
     } else setMsg(j.message || '操作失败');
-  };
+  }
 
   return (
     <AdminShell>
@@ -176,19 +181,25 @@ export default function AdminTeachersPage() {
             </button>
           }
         />
-        {msg && <div className="mb-3 text-sm p-3 rounded-lg bg-blue-50 text-blue-700">{msg}</div>}
+        {msg && (
+          <div
+            className={`mb-3 text-sm p-3 rounded-lg ${msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
+          >
+            {msg}
+          </div>
+        )}
 
         <AdminFilterBar>
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="搜索姓名/手机号/编号..."
-            className="w-56 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className="w-56 rounded-lg border px-3 py-2 text-sm"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className="rounded-lg border px-3 py-2 text-sm"
           >
             <option value="">全部状态</option>
             <option value="active">在职</option>
@@ -198,7 +209,7 @@ export default function AdminTeachersPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            className="rounded-lg border px-3 py-2 text-sm"
           >
             <option value="">全部角色</option>
             <option value="teacher">教师</option>
@@ -214,9 +225,9 @@ export default function AdminTeachersPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+              <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
                   <th className="p-3 text-left">姓名</th>
                   <th className="p-3 text-left">手机号</th>
@@ -229,7 +240,7 @@ export default function AdminTeachersPage() {
               </thead>
               <tbody>
                 {filtered.map((t) => (
-                  <tr key={t.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={t.id} className="border-t hover:bg-slate-50">
                     <td className="p-3 font-medium text-slate-800">{t.name}</td>
                     <td className="p-3 text-slate-500">{t.mobile}</td>
                     <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
@@ -284,7 +295,7 @@ export default function AdminTeachersPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-slate-400">
-                      {keyword || statusFilter || roleFilter ? '无匹配结果' : '暂无教师'}
+                      暂无数据
                     </td>
                   </tr>
                 )}
@@ -293,7 +304,6 @@ export default function AdminTeachersPage() {
           </div>
         )}
 
-        {/* Form Dialog */}
         <AdminDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
@@ -321,7 +331,7 @@ export default function AdminTeachersPage() {
               </div>
               {!editing && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">初始密码</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
                   <input
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -338,7 +348,7 @@ export default function AdminTeachersPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">组织</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">组织ID</label>
                 <input
                   type="number"
                   value={form.department_id}
@@ -363,21 +373,21 @@ export default function AdminTeachersPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setDialogOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200"
+                className="px-4 py-2 text-sm rounded-lg border"
               >
                 取消
               </button>
               <button
                 onClick={save}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                disabled={saving}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                保存
+                {saving ? '保存中...' : '保存'}
               </button>
             </div>
           </div>
         </AdminDialog>
 
-        {/* Reset Password Dialog */}
         <AdminDialog
           open={resetPwdOpen}
           onClose={() => setResetPwdOpen(false)}
@@ -403,7 +413,7 @@ export default function AdminTeachersPage() {
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               />
             </div>
-            <p className="text-xs text-slate-400">重置后教师需使用新密码登录</p>
+            <p className="text-xs text-slate-400">重置后需使用新密码登录</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setResetPwdOpen(false)}
@@ -421,7 +431,6 @@ export default function AdminTeachersPage() {
           </div>
         </AdminDialog>
 
-        {/* Resign Dialog */}
         <AdminDeleteDialog
           open={resignOpen}
           onClose={() => setResignOpen(false)}

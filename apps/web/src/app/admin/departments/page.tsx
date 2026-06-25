@@ -5,7 +5,6 @@ import {
   AdminDialog,
   AdminDeleteDialog,
   AdminStatusTag,
-  AdminFilterBar,
   AdminPageHeader,
 } from '@/components/admin-ui';
 
@@ -15,7 +14,6 @@ interface Dept {
   parent_id: number;
   sort_order: number;
   status: string;
-  school_id: number;
 }
 
 export default function AdminDeptPage() {
@@ -24,73 +22,72 @@ export default function AdminDeptPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<Dept | null>(null);
-  const [target, setTarget] = useState<Dept | null>(null);
   const [form, setForm] = useState({ name: '', parent_id: 0, sort_order: 0, status: 'active' });
   const [msg, setMsg] = useState('');
-
-  const t = () => localStorage.getItem('accessToken') || '';
-  const fetcher = (url: string, opts?: any) =>
-    fetch(url, {
-      headers: { Authorization: `Bearer ${t()}`, 'Content-Type': 'application/json' },
-      ...opts,
-    }).then((r) => r.json());
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchDepts();
   }, []);
 
-  const fetchDepts = async () => {
-    setLoading(true);
-    const j = await fetcher('/api/admin/departments?school_id=1');
-    if (j.code === 0) setDepts(j.data || []);
-    setLoading(false);
-  };
+  async function api(url: string, options?: RequestInit) {
+    const token = localStorage.getItem('accessToken') || '';
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+    return res.json();
+  }
 
-  const openNew = () => {
+  async function fetchDepts() {
+    setLoading(true);
+    const j = await api('/api/admin/departments?school_id=1');
+    if (j.code === 0) setDepts(j.data || []);
+    else setMsg(j.message || '加载失败');
+    setLoading(false);
+  }
+
+  function openNew() {
     setEditing(null);
     setForm({ name: '', parent_id: 0, sort_order: 0, status: 'active' });
     setDialogOpen(true);
-  };
-  const openEdit = (d: Dept) => {
+  }
+  function openEdit(d: Dept) {
     setEditing(d);
     setForm({ name: d.name, parent_id: d.parent_id, sort_order: d.sort_order, status: d.status });
     setDialogOpen(true);
-  };
+  }
 
-  const save = async () => {
-    const j = editing
-      ? await fetcher(`/api/admin/departments/${editing.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(form),
-        })
-      : await fetcher('/api/admin/departments', {
-          method: 'POST',
-          body: JSON.stringify({ school_id: 1, ...form }),
-        });
+  async function save() {
+    setSaving(true);
+    const url = editing ? `/api/admin/departments/${editing.id}` : '/api/admin/departments';
+    const method = editing ? 'PUT' : 'POST';
+    const body = editing ? form : { school_id: 1, ...form };
+
+    const j = await api(url, { method, body: JSON.stringify(body) });
     if (j.code === 0) {
       setDialogOpen(false);
       fetchDepts();
       setMsg(editing ? '更新成功' : '创建成功');
-    } else setMsg(j.message || '操作失败');
-  };
+    } else setMsg(j.message || '保存失败');
+    setSaving(false);
+  }
 
-  const confirmDelete = async () => {
-    if (!target) return;
-    // Check teachers first
-    const teachers = await fetcher(`/api/home/teachers?school_id=1&department_id=${target.id}`);
-    const activeCount = teachers.data?.items?.filter((t: any) => t.status === 'active').length || 0;
-    if (activeCount > 0) {
-      setMsg(`该组织下有 ${activeCount} 名在职教师，无法删除`);
-      setDeleteOpen(false);
-      return;
-    }
-    const j = await fetcher(`/api/admin/departments/${target.id}/disable`);
+  async function handleDisable(d: Dept) {
+    setMsg('');
+    const j = await api(`/api/admin/departments/${d.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...d, status: 'disabled' }),
+    });
     if (j.code === 0) {
-      setDeleteOpen(false);
       fetchDepts();
       setMsg('已停用');
     } else setMsg(j.message || '操作失败');
-  };
+  }
 
   return (
     <AdminShell>
@@ -106,7 +103,13 @@ export default function AdminDeptPage() {
             </button>
           }
         />
-        {msg && <div className="mb-3 text-sm p-3 rounded-lg bg-blue-50 text-blue-700">{msg}</div>}
+        {msg && (
+          <div
+            className={`mb-3 text-sm p-3 rounded-lg ${msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
+          >
+            {msg}
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-2">
@@ -119,11 +122,11 @@ export default function AdminDeptPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                 <tr>
-                  <th className="p-3 text-left font-medium">名称</th>
-                  <th className="p-3 text-left font-medium">上级ID</th>
-                  <th className="p-3 text-left font-medium">排序</th>
-                  <th className="p-3 text-left font-medium">状态</th>
-                  <th className="p-3 text-right font-medium">操作</th>
+                  <th className="p-3 text-left">名称</th>
+                  <th className="p-3 text-left">上级ID</th>
+                  <th className="p-3 text-left">排序</th>
+                  <th className="p-3 text-left">状态</th>
+                  <th className="p-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,22 +138,21 @@ export default function AdminDeptPage() {
                     <td className="p-3">
                       <AdminStatusTag status={d.status} />
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right space-x-2">
                       <button
                         onClick={() => openEdit(d)}
-                        className="text-xs text-blue-600 hover:underline mr-2"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         编辑
                       </button>
-                      <button
-                        onClick={() => {
-                          setTarget(d);
-                          setDeleteOpen(true);
-                        }}
-                        className="text-xs text-red-500 hover:underline"
-                      >
-                        停用
-                      </button>
+                      {d.status === 'active' && (
+                        <button
+                          onClick={() => handleDisable(d)}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          停用
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -166,7 +168,6 @@ export default function AdminDeptPage() {
           </div>
         )}
 
-        {/* Form Dialog */}
         <AdminDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
@@ -178,7 +179,7 @@ export default function AdminDeptPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border px-3 py-2 text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -188,7 +189,7 @@ export default function AdminDeptPage() {
                   type="number"
                   value={form.parent_id}
                   onChange={(e) => setForm({ ...form, parent_id: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -197,7 +198,7 @@ export default function AdminDeptPage() {
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -206,7 +207,7 @@ export default function AdminDeptPage() {
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border px-3 py-2 text-sm"
               >
                 <option value="active">启用</option>
                 <option value="disabled">停用</option>
@@ -215,28 +216,20 @@ export default function AdminDeptPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setDialogOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600"
+                className="px-4 py-2 text-sm rounded-lg border"
               >
                 取消
               </button>
               <button
                 onClick={save}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                disabled={saving}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                保存
+                {saving ? '保存中...' : '保存'}
               </button>
             </div>
           </div>
         </AdminDialog>
-
-        {/* Delete Dialog */}
-        <AdminDeleteDialog
-          open={deleteOpen}
-          onClose={() => setDeleteOpen(false)}
-          onConfirm={confirmDelete}
-          title={`停用「${target?.name}」？`}
-          description="停用后该组织将不可用于新增教师分配。"
-        />
       </div>
     </AdminShell>
   );

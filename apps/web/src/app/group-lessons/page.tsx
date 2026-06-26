@@ -51,11 +51,7 @@ export default function GroupLessonsPage() {
   }, []);
 
   const filtered = items.filter((i) => {
-    if (
-      filteredSearch &&
-      !(i.title?.includes(filteredSearch) || i.teacher_name?.includes(filteredSearch))
-    )
-      return false;
+    if (search && !(i.title?.includes(search) || i.teacher_name?.includes(search))) return false;
     if (semester && i.academic_year !== semester) return false;
     return true;
   });
@@ -114,7 +110,6 @@ export default function GroupLessonsPage() {
           <Button
             size="default"
             onClick={() => {
-              setFilteredSearch(search);
               setPage(1);
             }}
           >
@@ -148,7 +143,7 @@ export default function GroupLessonsPage() {
                     <td className="p-3 font-medium text-base text-slate-700">{item.title}</td>
                     <td className="p-3">
                       <Badge variant="green">
-                        {item.subject || item.group_lesson_type || '集体备课'}
+                        {detail.subject || detail.group_lesson_type || '集体备课'}
                       </Badge>
                     </td>
                     <td className="p-3 text-sm text-slate-500">
@@ -198,7 +193,7 @@ export default function GroupLessonsPage() {
             <div className="space-y-5">
               <div className="flex gap-2">
                 <Badge variant="green">
-                  {item.subject || item.group_lesson_type || '集体备课'}
+                  {detail.subject || detail.group_lesson_type || '集体备课'}
                 </Badge>
                 <span className="text-sm text-slate-500">
                   {detail.academic_year || '2026-2027学年'} {detail.semester || '上学期'}

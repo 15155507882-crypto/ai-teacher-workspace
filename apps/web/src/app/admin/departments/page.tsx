@@ -155,47 +155,44 @@ export default function AdminDeptPage() {
                     return a.sort_order - b.sort_order;
                   })
                   .map((d) => (
-                  <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="p-3 text-slate-500">{d.sort_order}</td>
-                    <td className="p-3 font-medium text-slate-800">{d.name}</td>
-                    <td className="p-3 text-slate-500">
-                      {d.parent_id ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id : '学校（顶级）'}
-                    </td>
-                      {d.parent_id
-                        ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id
-                        : '学校（顶级）'}
-                    </td>
-                    <td className="p-3 text-slate-500">{d.sort_order}</td>
-                    <td className="p-3">
-                      <AdminStatusTag status={d.status} />
-                    </td>
-                    <td className="p-3 text-right space-x-2">
-                      <button
-                        onClick={() => openEdit(d)}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        编辑
-                      </button>
-                      {d.status === 'active' && (
+                    <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
+                      <td className="p-3 text-slate-500">{d.sort_order}</td>
+                      <td className="p-3 font-medium text-slate-800">{d.name}</td>
+                      <td className="p-3 text-slate-500">
+                        {d.parent_id
+                          ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id
+                          : '学校（顶级）'}
+                      </td>
+                      <td className="p-3">
+                        <AdminStatusTag status={d.status} />
+                      </td>
+                      <td className="p-3 text-right space-x-2">
                         <button
-                          onClick={() => handleDisable(d)}
-                          className="text-xs text-red-500 hover:underline"
+                          onClick={() => openEdit(d)}
+                          className="text-xs text-blue-600 hover:underline"
                         >
-                          停用
+                          编辑
                         </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setTarget(d);
-                          setDeleteOpen(true);
-                        }}
-                        className="text-xs text-red-400 hover:underline"
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {d.status === 'active' && (
+                          <button
+                            onClick={() => handleDisable(d)}
+                            className="text-xs text-red-500 hover:underline"
+                          >
+                            停用
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setTarget(d);
+                            setDeleteOpen(true);
+                          }}
+                          className="text-xs text-red-400 hover:underline"
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 {depts.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-slate-400">

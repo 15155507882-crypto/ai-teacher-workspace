@@ -50,11 +50,7 @@ export default function PlansPage() {
   }, []);
 
   const filtered = items.filter((i) => {
-    if (
-      filteredSearch &&
-      !(i.title?.includes(filteredSearch) || i.teacher_name?.includes(filteredSearch))
-    )
-      return false;
+    if (search && !(i.title?.includes(search) || i.teacher_name?.includes(search))) return false;
     if (semester && i.academic_year !== semester) return false;
     return true;
   });
@@ -106,7 +102,6 @@ export default function PlansPage() {
           <Button
             size="default"
             onClick={() => {
-              setFilteredSearch(search);
               setPage(1);
             }}
           >

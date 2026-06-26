@@ -14,12 +14,12 @@ export default function PlansPage() {
   const [search, setSearch] = useState('');
   const [detail, setDetail] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
-  const tc = localStorage.getItem('teacher');
-  const currentUser = tc ? JSON.parse(tc) : null;
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const canDelete = (item: any) =>
     currentUser?.role === 'admin' || item.teacher_id === currentUser?.id;
 
   useEffect(() => {
+    setCurrentUser(JSON.parse(localStorage.getItem('teacher') || 'null'));
     (async () => {
       const tRes = await fetch('/api/home/teachers?school_id=1', {
         headers: { Authorization: `Bearer ${tk()}` },

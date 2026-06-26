@@ -117,7 +117,7 @@ export default function PlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.slice(0, 50).map((item, i) => (
+                {filtered.slice((page - 1) * pageSize, page * pageSize).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
                     <td className="p-3 text-xs text-slate-400">{i + 1}</td>
                     <td className="p-3 font-medium text-slate-700">{formatTitle(item)}</td>

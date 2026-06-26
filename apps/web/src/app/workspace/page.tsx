@@ -75,18 +75,11 @@ export default function WorkspacePage() {
 
   const removeAttachment = (id: number) => setAttachments(prev => prev.filter(a=>a.id!==id));
 
-  const startUpload = async () => {
-    for (const a of attachments.filter(a=>!a.uploading)) {
-      a.uploading = true;
-      setAttachments([...attachments]);
-    }
-  };
-
   const send = async () => {
     if (!input.trim() && attachments.length===0) return;
     const text = input; setInput('');
     const atts = [...attachments]; setAttachments([]);
-    if (atts.length>0) await startUpload();
+    
     
     const attachNames = atts.map(a=>a.name).join(', ');
     const displayText = text + (attachNames ? (text?'\n':'')+'📎 '+attachNames : '');

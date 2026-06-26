@@ -12,22 +12,38 @@ export default function PlansPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [semester, setSemester] = useState('2026-2027学年上学期');
+  const [semester, setSemester] = useState('');
   const [detail, setDetail] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
 
   useEffect(() => {
-    fetch('/api/teachers/1/contents?content_type=plan_summary&size=500', {
-      headers: { Authorization: `Bearer ${tk()}` },
-    })
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.code === 0) setItems(j.data.items || []);
-      })
-      .finally(() => setLoading(false));
+    (async () => {
+      const tRes = await fetch('/api/home/teachers?school_id=1', {
+        headers: { Authorization: `Bearer ${tk()}` },
+      }).then((r) => r.json());
+      const allTeachers = tRes.data?.items || [];
+      const all: any[] = [];
+      for (const t of allTeachers) {
+        try {
+          const cRes = await fetch(
+            `/api/teachers/${t.id}/contents?content_type=plan_summary&size=200`,
+            { headers: { Authorization: `Bearer ${tk()}` } }
+          ).then((r) => r.json());
+          if (cRes.code === 0 && cRes.data?.items)
+            cRes.data.items.forEach((c: any) => {
+              c.teacher_name = t.name;
+              all.push(c);
+            });
+        } catch {}
+      }
+      setItems(all);
+      setLoading(false);
+    })();
   }, []);
 
-  const filtered = items.filter((i) => (search ? i.title?.includes(search) : true));
+  const filtered = items.filter((i) =>
+    search ? i.title?.includes(search) || i.teacher_name?.includes(search) : true
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -40,8 +56,8 @@ export default function PlansPage() {
             onChange={(e) => setSemester(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm"
           >
+            <option value="">全部学期</option>
             <option>2026-2027学年上学期</option>
-            <option>2025-2026学年下学期</option>
           </select>
           <Input
             value={search}
@@ -52,7 +68,7 @@ export default function PlansPage() {
         </FilterBar>
         {loading ? (
           <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
             ))}
           </div>
@@ -70,11 +86,13 @@ export default function PlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item, i) => (
+                {filtered.slice(0, 50).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-slate-400">{i + 1}</td>
-                    <td className="p-3 text-xs text-slate-500">教师</td>
-                    <td className="p-3 text-xs text-slate-500">{item.academic_year || semester}</td>
+                    <td className="p-3 text-xs text-slate-400">{i + 1}</td>
+                    <td className="p-3 text-xs text-slate-500">{item.teacher_name}</td>
+                    <td className="p-3 text-xs text-slate-500">
+                      {item.academic_year || semester || '2026-2027学年上学期'}
+                    </td>
                     <td className="p-3 font-medium text-slate-700">{item.title}</td>
                     <td className="p-3 text-xs text-slate-400">
                       {new Date(item.created_at).toLocaleDateString('zh-CN')}
@@ -98,7 +116,7 @@ export default function PlansPage() {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {!loading && filtered.length === 0 && (
               <div className="p-12 text-center text-slate-400">暂无计划与总结</div>
             )}
           </div>
@@ -107,7 +125,7 @@ export default function PlansPage() {
           {detail && (
             <div className="space-y-5">
               <div className="flex gap-2">
-                <Badge variant="purple">{detail.plan_type || '计划总结'}</Badge>
+                <Badge variant="purple">计划总结</Badge>
                 <span className="text-sm text-slate-500">{detail.academic_year || semester}</span>
               </div>
               <div>
@@ -124,10 +142,7 @@ export default function PlansPage() {
                   下载
                 </Button>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-slate-600 mb-3">留言记录</h4>
-                <Timeline items={[]} emptyText="暂无留言" />
-              </div>
+              <Timeline items={[]} emptyText="暂无留言" />
             </div>
           )}
         </Drawer>

@@ -8,50 +8,46 @@ import { Drawer } from '@/components/ui/drawer';
 import { Timeline } from '@/components/ui/timeline';
 import { FilterBar } from '@/components/ui/filter-bar';
 
-const typeLabel: Record<string, string> = {
-  unit: '单元备课',
-  topic: '主题备课',
-  weekly: '周备课',
-  other: '其他',
-};
-
 export default function GroupLessonsPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [semester, setSemester] = useState('2026-2027学年上学期');
+  const [semester, setSemester] = useState('');
   const [week, setWeek] = useState('');
   const [detail, setDetail] = useState<any>(null);
-
   const tk = () => localStorage.getItem('accessToken') || '';
 
   useEffect(() => {
-    fetch('/api/teachers/1/contents?content_type=group_lesson&size=500', {
-      headers: { Authorization: `Bearer ${tk()}` },
-    })
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.code === 0) setItems(j.data.items || []);
-      })
-      .finally(() => setLoading(false));
+    (async () => {
+      const tRes = await fetch('/api/home/teachers?school_id=1', {
+        headers: { Authorization: `Bearer ${tk()}` },
+      }).then((r) => r.json());
+      const allTeachers = tRes.data?.items || [];
+      setTeachers(allTeachers);
+      const all: any[] = [];
+      for (const t of allTeachers) {
+        try {
+          const cRes = await fetch(
+            `/api/teachers/${t.id}/contents?content_type=group_lesson&size=200`,
+            { headers: { Authorization: `Bearer ${tk()}` } }
+          ).then((r) => r.json());
+          if (cRes.code === 0 && cRes.data?.items) {
+            cRes.data.items.forEach((c: any) => {
+              c.teacher_name = t.name;
+              all.push(c);
+            });
+          }
+        } catch {}
+      }
+      setItems(all);
+      setLoading(false);
+    })();
   }, []);
 
-  const filtered = items.filter((i) => {
-    if (search && !i.title?.includes(search)) return false;
-    return true;
-  });
-
-  const openDetail = async (item: any) => {
-    try {
-      const r = await fetch(`/api/contents/${item.id}`, {
-        headers: { Authorization: `Bearer ${tk()}` },
-      });
-      const j = await r.json();
-      setDetail(j.code === 0 ? j.data : item);
-    } catch {
-      setDetail(item);
-    }
-  };
+  const filtered = items.filter((i) =>
+    search ? i.title?.includes(search) || i.teacher_name?.includes(search) : true
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -64,6 +60,7 @@ export default function GroupLessonsPage() {
             onChange={(e) => setSemester(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm"
           >
+            <option value="">全部学期</option>
             <option>2026-2027学年上学期</option>
             <option>2025-2026学年下学期</option>
           </select>
@@ -89,7 +86,7 @@ export default function GroupLessonsPage() {
 
         {loading ? (
           <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
             ))}
           </div>
@@ -103,27 +100,39 @@ export default function GroupLessonsPage() {
                   <th className="p-3 text-left">学年学期</th>
                   <th className="p-3 text-left">周次</th>
                   <th className="p-3 text-left">备课内容</th>
+                  <th className="p-3 text-left">教师</th>
                   <th className="p-3 text-left">创建时间</th>
                   <th className="p-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item, i) => (
+                {filtered.slice(0, 50).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-slate-400">{i + 1}</td>
+                    <td className="p-3 text-xs text-slate-400">{i + 1}</td>
                     <td className="p-3">
-                      <Badge variant="green">
-                        {typeLabel[item.extracted_entities?.type] || '集体备课'}
-                      </Badge>
+                      <Badge variant="green">集体备课</Badge>
                     </td>
-                    <td className="p-3 text-xs text-slate-500">{item.academic_year || semester}</td>
+                    <td className="p-3 text-xs text-slate-500">
+                      {item.academic_year || semester || '2026-2027学年上学期'}
+                    </td>
                     <td className="p-3 text-xs text-slate-500">—</td>
                     <td className="p-3 font-medium text-slate-700">{item.title}</td>
+                    <td className="p-3 text-xs text-slate-500">{item.teacher_name}</td>
                     <td className="p-3 text-xs text-slate-400">
                       {new Date(item.created_at).toLocaleDateString('zh-CN')}
                     </td>
                     <td className="p-3 text-right">
-                      <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const r = await fetch(`/api/contents/${item.id}`, {
+                            headers: { Authorization: `Bearer ${tk()}` },
+                          });
+                          const j = await r.json();
+                          setDetail(j.code === 0 ? j.data : item);
+                        }}
+                      >
                         查看
                       </Button>
                     </td>
@@ -131,18 +140,19 @@ export default function GroupLessonsPage() {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {!loading && filtered.length === 0 && (
               <div className="p-12 text-center text-slate-400">暂无集体备课记录</div>
             )}
           </div>
         )}
-
         <Drawer open={!!detail} onClose={() => setDetail(null)} title="集体备课详情">
           {detail && (
             <div className="space-y-5">
               <div className="flex gap-2">
-                <Badge variant="green">{typeLabel[detail.group_lesson_type] || '集体备课'}</Badge>
-                <span className="text-sm text-slate-500">{detail.academic_year || semester}</span>
+                <Badge variant="green">集体备课</Badge>
+                <span className="text-sm text-slate-500">
+                  {detail.academic_year || '2026-2027学年上学期'}
+                </span>
               </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-800">{detail.title}</h3>

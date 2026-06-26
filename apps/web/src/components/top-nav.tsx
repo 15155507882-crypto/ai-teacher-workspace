@@ -40,7 +40,7 @@ export function TopNav() {
       <Link href="/home" className="flex items-center gap-3 mr-8">
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
           {school?.logo_file_id ? (
-            <span className="text-[10px]">{school.short_name?.[0]}</span>
+            <img src={`/api/files/${school.logo_file_id}/preview`} alt="logo" className="w-full h-full object-cover" />
           ) : (
             school?.short_name?.[0] || '校'
           )}

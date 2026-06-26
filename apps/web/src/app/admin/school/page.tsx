@@ -26,13 +26,29 @@ export default function AdminSchoolPage() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const token = localStorage.getItem('accessToken');
+
+    // Upload logo first if there's a new one
+    let logoFileId = null;
+    if (logoFile) {
+      const formData = new FormData();
+      formData.append('file', logoFile);
+      const uploadRes = await fetch('/api/ai/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const uploadJson = await uploadRes.json();
+      if (uploadJson.code === 0) logoFileId = uploadJson.data.file_id;
+    }
+
     const res = await fetch('/api/admin/school', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, short_name: shortName }),
+      body: JSON.stringify({ name, short_name: shortName, logo_file_id: logoFileId }),
     });
     const json = await res.json();
     setMsg(json.code === 0 ? '保存成功' : json.message);

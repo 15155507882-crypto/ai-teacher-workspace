@@ -20,3 +20,6 @@ export { LoginLog } from './login-log.entity';
 export { DeletedRecord } from './deleted-record.entity';
 export { SystemConfig } from './system-config.entity';
 export { AIDecisionLog } from './ai-decision-log.entity';
+export { AiProvider } from './ai-provider.entity';
+export { AiConfig } from './ai-config.entity';
+export { AiCallLog } from './ai-call-log.entity';

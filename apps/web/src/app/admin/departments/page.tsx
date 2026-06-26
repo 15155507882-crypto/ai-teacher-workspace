@@ -141,7 +141,7 @@ export default function AdminDeptPage() {
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                 <tr>
                   <th className="p-3 text-left">名称</th>
-                  <th className="p-3 text-left">上级ID</th>
+                  <th className="p-3 text-left">上级组织</th>
                   <th className="p-3 text-left">排序</th>
                   <th className="p-3 text-left">状态</th>
                   <th className="p-3 text-right">操作</th>
@@ -151,7 +151,11 @@ export default function AdminDeptPage() {
                 {depts.map((d) => (
                   <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="p-3 font-medium text-slate-800">{d.name}</td>
-                    <td className="p-3 text-slate-500">{d.parent_id || '—'}</td>
+                    <td className="p-3 text-slate-500">
+                      {d.parent_id
+                        ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id
+                        : '学校（顶级）'}
+                    </td>
                     <td className="p-3 text-slate-500">{d.sort_order}</td>
                     <td className="p-3">
                       <AdminStatusTag status={d.status} />
@@ -211,13 +215,21 @@ export default function AdminDeptPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">上级组织ID</label>
-                <input
-                  type="number"
+                <label className="block text-sm font-medium text-slate-700 mb-1">上级组织</label>
+                <select
                   value={form.parent_id}
                   onChange={(e) => setForm({ ...form, parent_id: parseInt(e.target.value) || 0 })}
                   className="w-full rounded-lg border px-3 py-2 text-sm"
-                />
+                >
+                  <option value={0}>学校（顶级）</option>
+                  {depts
+                    .filter((d) => d.id !== editing?.id)
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">排序</label>

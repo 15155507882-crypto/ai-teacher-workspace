@@ -8,6 +8,7 @@ import {
   AdminFilterBar,
   AdminPageHeader,
 } from '@/components/admin-ui';
+import { Pagination } from '@/components/ui/pagination';
 
 interface Teacher {
   id: number;
@@ -31,8 +32,10 @@ export default function AdminTeachersPage() {
   const [editing, setEditing] = useState<Teacher | null>(null);
   const [target, setTarget] = useState<Teacher | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [roleFilter, setRoleFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -233,6 +236,7 @@ export default function AdminTeachersPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
+                  <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">姓名</th>
                   <th className="p-3 text-left">手机号</th>
                   <th className="p-3 text-left">编号</th>
@@ -243,8 +247,9 @@ export default function AdminTeachersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t) => (
+                {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => (
                   <tr key={t.id} className="border-t hover:bg-slate-50">
+                    <td className="p-3 text-sm text-slate-400">{(page - 1) * pageSize + i + 1}</td>
                     <td className="p-3 font-medium text-slate-800">{t.name}</td>
                     <td className="p-3 text-slate-500">{t.mobile}</td>
                     <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
@@ -307,6 +312,7 @@ export default function AdminTeachersPage() {
             </table>
           </div>
         )}
+        <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
 
         <AdminDialog
           open={dialogOpen}

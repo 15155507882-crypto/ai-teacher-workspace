@@ -1,6 +1,7 @@
 'use client';
 import { AdminShell } from '@/components/admin-shell';
-import { AppButton, AppCard } from '@/components/ui/base';
+import { AppCard } from '@/components/ui/base';
+import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 export default function AdminSchoolPage() {
@@ -97,9 +98,9 @@ export default function AdminSchoolPage() {
               {msg}
             </div>
           )}
-          <AppButton type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading ? '保存中...' : '保存'}
-          </AppButton>
+          </Button>
         </form>
       </AppCard>
     </AdminShell>

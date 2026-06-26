@@ -174,7 +174,7 @@ export default function AdminDeptPage() {
                       <td className="p-3 font-medium text-slate-800">{d.name}</td>
                       <td className="p-3 text-slate-500">
                         {d.parent_id
-                          ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id
+                          ? depts.find((x) => x.id === d.parent_id)?.name || ''
                           : '学校（顶级）'}
                       </td>
                       <td className="p-3">

@@ -28,9 +28,7 @@ export default function HomePage() {
     const t = localStorage.getItem('accessToken');
     if (!t) return;
     Promise.all([
-      fetch('/api/admin/departments/options?school_id=1', {
-        headers: { Authorization: `Bearer ${t}` },
-      }).then((r) => r.json()),
+      fetch('/api/home/groups', { headers: { Authorization: `Bearer ${t}` } }).then((r) => r.json()),
       fetch('/api/home/teachers?school_id=1', { headers: { Authorization: `Bearer ${t}` } }).then(
         (r) => r.json()
       ),

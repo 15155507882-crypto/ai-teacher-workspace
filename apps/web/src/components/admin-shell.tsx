@@ -6,6 +6,7 @@ const menuItems = [
   { href: '/admin/school', label: '🏫 学校信息', key: 'school' },
   { href: '/admin/departments', label: '📋 组织管理', key: 'departments' },
   { href: '/admin/teachers', label: '👥 教师管理', key: 'teachers' },
+  { href: '/admin/home-groups', label: '📂 备课组目录', key: 'home-groups' },
   { href: '/admin/roles', label: '🔑 角色管理', key: 'roles' },
   { href: '/admin/ai-config', label: '🤖 AI 配置', key: 'ai-config' },
   { href: '/admin/ai-logs', label: '📊 AI 日志', key: 'ai-logs' },

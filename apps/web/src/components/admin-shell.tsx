@@ -61,22 +61,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-slate-700 flex items-center justify-between">
-          <span className="text-xs text-slate-400 truncate">{teacher.name}</span>
-          <div className="flex gap-1">
+        <div className="p-4 border-t border-slate-700 space-y-2">
+          <span className="text-xs text-slate-400 truncate block">{teacher.name}</span>
+          <div className="flex gap-2">
             <button
-              onClick={() => router.push('/workspace')}
-              className="text-xs text-slate-500 hover:text-white"
-              title="返回工作台"
+              onClick={() => router.push('/home')}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition flex-1 text-center"
             >
-              ←
+              🏠 回到主页
             </button>
             <button
               onClick={logout}
-              className="text-xs text-slate-500 hover:text-red-400"
-              title="退出"
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-red-600 hover:text-white transition flex-1 text-center"
             >
-              ⏻
+              退出登录
             </button>
           </div>
         </div>

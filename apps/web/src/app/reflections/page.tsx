@@ -104,6 +104,7 @@ export default function ReflectionsPage() {
             <table className="w-full text-base">
               <thead className="bg-slate-50 text-sm text-slate-500">
                 <tr>
+                  <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">课程名称</th>
                   <th className="p-3 text-left">学年学期</th>
                   <th className="p-3 text-left">教师</th>
@@ -114,6 +115,7 @@ export default function ReflectionsPage() {
               <tbody>
                 {filtered.slice((page - 1) * pageSize, page * pageSize).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
+                    <td className="p-3 text-sm text-slate-400">{(page - 1) * pageSize + i + 1}</td>
                     <td className="p-3 font-medium text-base text-slate-700">
                       {item.title} 的教学反思
                     </td>

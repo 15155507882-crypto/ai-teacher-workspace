@@ -109,7 +109,7 @@ export default function PlansPage() {
             <table className="w-full text-base">
               <thead className="bg-slate-50 text-sm text-slate-500">
                 <tr>
-                  <th className="p-3 text-left w-12">序号</th>
+                  <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">名称</th>
                   <th className="p-3 text-left">教师</th>
                   <th className="p-3 text-left">创建时间</th>

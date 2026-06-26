@@ -104,7 +104,7 @@ export default function PersonalLessonsPage() {
             <table className="w-full text-base">
               <thead className="bg-slate-50 text-sm text-slate-500">
                 <tr>
-                  <th className="p-3 text-left w-12">序号</th>
+                  <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">备课内容</th>
                   <th className="p-3 text-left">学年学期</th>
                   <th className="p-3 text-left">教师</th>

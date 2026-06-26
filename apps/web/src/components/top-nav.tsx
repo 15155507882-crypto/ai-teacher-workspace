@@ -28,6 +28,7 @@ export function TopNav() {
 
   const navItems = [
     { href: '/home', label: '首页' },
+    { href: '/workspace', label: '备课' },
     { href: '/group-lessons', label: '集体备课' },
     { href: '/personal-lessons', label: '个人备课' },
     { href: '/plans', label: '计划与总结' },

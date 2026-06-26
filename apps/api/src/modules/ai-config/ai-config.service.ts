@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AiProvider } from '../../database/entities/ai-provider.entity';
 import { AiConfig } from '../../database/entities/ai-config.entity';
 import { AiCallLog } from '../../database/entities/ai-call-log.entity';
+import { encrypt, decrypt } from '../../common/crypto/aes';
 
 @Injectable()
 export class AiConfigService {
@@ -17,8 +18,12 @@ export class AiConfigService {
     return this.providerRepo.find({ where: { enabled: true }, order: { sort_order: 'ASC' } });
   }
 
-  getConfig() {
-    return this.configRepo.findOne({ where: { school_id: 1 }, relations: ['provider'] });
+  async getConfig() {
+    const config = await this.configRepo.findOne({ where: { school_id: 1 }, relations: ['provider'] });
+    if (config?.api_key_encrypted) {
+      try { config.api_key_encrypted = decrypt(config.api_key_encrypted); } catch {}
+    }
+    return config;
   }
 
   async saveConfig(data: {
@@ -27,6 +32,9 @@ export class AiConfigService {
     base_url?: string;
     default_model?: string;
   }) {
+    if (data.api_key_encrypted) {
+      data.api_key_encrypted = encrypt(data.api_key_encrypted);
+    }
     let config = await this.configRepo.findOne({ where: { school_id: 1 } });
     if (!config) config = this.configRepo.create({ school_id: 1, ...data });
     else Object.assign(config, data);

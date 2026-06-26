@@ -13,6 +13,7 @@ import { TeacherModule } from './modules/teacher/teacher.module';
 import { ContentModule } from './modules/content/content.module';
 import { AIModule } from './modules/ai/ai.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
+import { HomeGroupModule } from './modules/home-group/home-group.module';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
@@ -63,6 +64,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     ContentModule,
     AIModule,
     AiConfigModule,
+    HomeGroupModule,
   ],
   controllers: [],
   providers: [],

@@ -23,3 +23,4 @@ export { AIDecisionLog } from './ai-decision-log.entity';
 export { AiProvider } from './ai-provider.entity';
 export { AiConfig } from './ai-config.entity';
 export { AiCallLog } from './ai-call-log.entity';
+export { HomeGroup } from './home-group.entity';

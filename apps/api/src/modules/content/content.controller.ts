@@ -1,7 +1,10 @@
 import { Controller, Get, Delete, Param, Query, Req, Body, UseGuards, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ContentService } from './content.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { FileAsset } from '../../database/entities/file-asset.entity';
 import { createStorageAdapter } from '@workspace/adapter-storage';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,7 +13,10 @@ import * as path from 'path';
 export class ContentController {
   private storage = createStorageAdapter({ type: 'local', basePath: process.env.STORAGE_LOCAL_PATH || './storage' });
 
-  constructor(private readonly contentService: ContentService) {}
+  constructor(
+    private readonly contentService: ContentService,
+    @InjectRepository(FileAsset) private readonly fileRepo: Repository<FileAsset>,
+  ) {}
 
   @Get('teachers/:teacherId/contents')
   @UseGuards(JwtAuthGuard)
@@ -40,37 +46,31 @@ export class ContentController {
   @UseGuards(JwtAuthGuard)
   async downloadFile(@Param('id') id: string, @Res() res: Response) {
     try {
-      const storageKey = `original/${id}`;
-      const result = await this.storage.get(storageKey);
+      const file = await this.fileRepo.findOne({ where: { id: parseInt(id) } });
+      if (!file) return res.status(404).json({ code: 40400, message: '文件不存在' });
+      const result = await this.storage.get(file.storage_key);
       if (result?.body) {
         res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="file-${id}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${file.original_name}"`);
         res.send(result.body);
         return;
       }
     } catch {}
-    res.status(404).json({ code: 40400, message: '文件不存在', data: null, requestId: '' });
+    res.status(404).json({ code: 40400, message: '文件不存在' });
   }
 
   @Get('files/:id/preview')
-  @UseGuards(JwtAuthGuard)
   async previewFile(@Param('id') id: string, @Res() res: Response) {
     try {
-      const storageKey = `original/${id}`;
-      const result = await this.storage.get(storageKey);
+      const file = await this.fileRepo.findOne({ where: { id: parseInt(id) } });
+      if (!file) return res.status(404).json({ code: 40400, message: '文件不存在' });
+      const result = await this.storage.get(file.storage_key);
       if (result?.body) {
-        const mime = result.contentType || '';
-        if (mime.startsWith('image/') || mime === 'application/pdf') {
-          res.setHeader('Content-Type', mime);
-          res.send(result.body);
-          return;
-        }
-        // For other files, return as download
-        res.setHeader('Content-Type', mime || 'application/octet-stream');
+        res.setHeader('Content-Type', file.mime_type || result.contentType || 'application/octet-stream');
         res.send(result.body);
         return;
       }
     } catch {}
-    res.status(404).json({ code: 40400, message: '文件不存在', data: null, requestId: '' });
+    res.status(404).json({ code: 40400, message: '文件不存在' });
   }
 }

@@ -81,10 +81,10 @@ export default function AdminHomeGroupsPage() {
                 <tr key={g.id} className="border-t hover:bg-slate-50">
                   <td className="p-3 text-slate-400 text-sm">{(page - 1) * pageSize + i + 1}</td>
                   <td className="p-3 font-medium text-slate-800">{g.name}</td>
-                  <td className="p-3 text-slate-500">{g.parent_id ? groups.find(x => x.id === g.parent_id)?.name || g.parent_id : '顶级'}</td>
+                  <td className="p-3 text-slate-500">{g.parent_id ? groups.find(x => x.id === g.parent_id)?.name || '' : '顶级'}</td>
                   <td className="p-3 text-slate-500">{g.sort_order}</td>
                   <td className="p-3">{g.is_home_visible ? <span className="text-green-600 text-xs">可见</span> : <span className="text-slate-400 text-xs">隐藏</span>}</td>
-                  <td className="p-3"><AdminStatusTag status={g.status} /></td>
+                  <td className="p-3">{g.status === "active" ? <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-green-50 text-green-700">启用</span> : <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-orange-50 text-orange-700">停用</span>}</td>
                   <td className="p-3 text-xs text-slate-400 max-w-[120px] truncate">{g.remark || '—'}</td>
                   <td className="p-3 text-right space-x-1">
                     <button onClick={() => openTeachers(g)} className="text-xs text-blue-500 hover:underline">老师</button>

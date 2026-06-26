@@ -12,6 +12,7 @@ export default function ReflectionsPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [semester, setSemester] = useState('2026-2027学年上学期');
   const [detail, setDetail] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
   const [currentUser, setCurrentUser] = useState<any>(null);

@@ -180,13 +180,21 @@ export default function WorkspacePage() {
                         {msg.result && (
                           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             <div className="flex flex-wrap gap-2 text-xs">
-                              {[{k:'type',v:msg.result.type,l:'分类'},{k:'title_candidate',v:msg.result.title_candidate,l:'标题'},{k:'subject',v:msg.result.subject,l:'学科'},{k:'grade',v:msg.result.grade,l:'年级'}].map(f=>f.v&&(
+                              {[{k:'type',v:({ personal_lesson: '个人备课', reflection: '教学反思', group_lesson: '集体备课', plan_summary: '计划总结' })[msg.result.type] || msg.result.type, l:'分类'},{k:'title_candidate',v:msg.result.title_candidate,l:'标题'},{k:'subject',v:msg.result.subject,l:'学科'},{k:'grade',v:msg.result.grade,l:'年级'}].map(f=>f.v&&(
                                 <span key={f.k} className="bg-blue-50 text-blue-700 rounded-lg px-2.5 py-1">{f.l}: {f.v}</span>
                               ))}
                             </div>
                             <div className="flex gap-2">
                               <Button size="sm" onClick={()=>confirm(msg.id,msg.result)}>确认保存</Button>
-                              <Button size="sm" variant="outline">修改分类</Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                      const types = ['personal_lesson','reflection','group_lesson','plan_summary'];
+                      const labels = { personal_lesson: '个人备课', reflection: '教学反思', group_lesson: '集体备课', plan_summary: '计划总结' };
+                      const t = prompt('请选择分类:\n1. 个人备课\n2. 教学反思\n3. 集体备课\n4. 计划与总结\n\n输入数字1-4:', types.indexOf(msg.result.type) + 1);
+                      if (t && parseInt(t) >= 1 && parseInt(t) <= 4) {
+                        msg.result.type = types[parseInt(t) - 1];
+                        setMessages([...messages]);
+                      }
+                    }}>修改分类</Button>
                             </div>
                           </div>
                         )}

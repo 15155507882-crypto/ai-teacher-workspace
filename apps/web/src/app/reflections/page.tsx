@@ -49,9 +49,15 @@ export default function ReflectionsPage() {
     })();
   }, []);
 
-  const filtered = items.filter((i) =>
-    search ? i.title?.includes(search) || i.teacher_name?.includes(search) : true
-  );
+  const filtered = items.filter((i) => {
+    if (
+      filteredSearch &&
+      !(i.title?.includes(filteredSearch) || i.teacher_name?.includes(filteredSearch))
+    )
+      return false;
+    if (semester && i.academic_year !== semester) return false;
+    return true;
+  });
 
   const handleDelete = async (item: any) => {
     if (!confirm('确认删除？')) return;
@@ -92,6 +98,15 @@ export default function ReflectionsPage() {
             placeholder="搜索课程名或反思内容..."
             className="w-56"
           />
+          <Button
+            size="default"
+            onClick={() => {
+              setFilteredSearch(search);
+              setPage(1);
+            }}
+          >
+            搜索
+          </Button>
         </FilterBar>
         {loading ? (
           <div className="space-y-2">

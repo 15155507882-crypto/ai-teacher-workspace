@@ -64,25 +64,57 @@ export function TopNav() {
         ))}
       </nav>
       <div className="flex-1" />
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Link
           href={`/teacher/${teacher.id}`}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800"
+          className="px-3 py-1.5 text-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+          title="我的空间"
         >
-          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600 font-medium">
-            {teacher.name?.[0]}
-          </div>
-          <span className="hidden sm:inline">{teacher.name}</span>
+          👤 我的空间
         </Link>
         {teacher.role === 'admin' && (
           <Link
             href="/admin/teachers"
-            className="text-sm text-slate-400 hover:text-slate-600"
+            className="px-3 py-1.5 text-sm text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
             title="后台管理"
           >
-            ⚙️
+            ⚙️ 后台管理
           </Link>
         )}
+        <div className="relative group">
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition">
+            <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600 font-medium">
+              {teacher.name?.[0]}
+            </span>
+            <span>{teacher.name}</span>
+            <svg
+              className="w-3 h-3 text-slate-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 hidden group-hover:block z-50">
+            <div className="px-4 py-2 border-b border-slate-100">
+              <p className="text-sm font-medium text-slate-800">{teacher.name}</p>
+              <p className="text-xs text-slate-400">
+                {teacher.role === 'admin' ? '管理员' : '教师'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/login';
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+            >
+              退出登录
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   );

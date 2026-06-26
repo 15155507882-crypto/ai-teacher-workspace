@@ -54,6 +54,7 @@ export default function TeacherSpacePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [previewFile, setPreviewFile] = useState<any>(null);
   const [settingsForm, setSettingsForm] = useState({ name: '', mobile: '', employee_no: '' });
   const [pwdForm, setPwdForm] = useState({ password: '', confirm: '' });
   const tk = () => localStorage.getItem('accessToken') || '';
@@ -341,6 +342,23 @@ export default function TeacherSpacePage() {
               <div className="flex gap-2 mt-4 justify-end">
                 <button onClick={() => setShowPwd(false)} className="px-4 py-2 text-sm rounded-lg border">取消</button>
                 <button onClick={() => { setShowPwd(false); alert('密码修改成功(接口待接入)'); }} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white">保存</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {previewFile && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setPreviewFile(null)} />
+            <div className="relative w-[720px] bg-white shadow-2xl overflow-y-auto animate-slide-in">
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold truncate">{previewFile.title}</h3>
+                <div className="flex gap-2">
+                  <a href={previewFile.url.replace("/preview","/download")} download className="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-700">下载</a>
+                  <button onClick={() => setPreviewFile(null)} className="text-xl text-slate-400">&times;</button>
+                </div>
+              </div>
+              <div className="p-4">
+                <iframe src={previewFile.url} className="w-full min-h-[600px] border-0" title="预览" />
               </div>
             </div>
           </div>

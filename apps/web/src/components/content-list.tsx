@@ -31,6 +31,7 @@ export function ContentList({ contentType, title }: { contentType: string; title
   const [search, setSearch] = useState('');
   const [cardMode, setCardMode] = useState(false);
   const [detail, setDetail] = useState<any>(null);
+  const [previewFile, setPreviewFile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
@@ -230,6 +231,21 @@ export function ContentList({ contentType, title }: { contentType: string; title
           </div>
         )}
       </div>
+        {previewFile && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setPreviewFile(null)} />
+            <div className="relative w-[720px] bg-white shadow-2xl overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold truncate">{previewFile.title}</h3>
+                <div className="flex gap-2">
+                  <a href={previewFile.url.replace("/preview","/download")} download className="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-700">下载</a>
+                  <button onClick={() => setPreviewFile(null)} className="text-xl text-slate-400">&times;</button>
+                </div>
+              </div>
+              <div className="p-4"><iframe src={previewFile.url} className="w-full min-h-[600px] border-0" title="预览" /></div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

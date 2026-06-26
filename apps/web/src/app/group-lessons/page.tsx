@@ -69,6 +69,15 @@ export default function GroupLessonsPage() {
         <h1 className="text-xl font-bold text-slate-800 mb-4">集体备课</h1>
         <FilterBar>
           <select
+            value={semester}
+            onChange={(e) => setSemester(e.target.value)}
+            className="rounded-lg border px-3 py-2 text-sm"
+          >
+            <option value="">全部学期</option>
+            <option>2026-2027学年上学期</option>
+            <option>2025-2026学年下学期</option>
+          </select>
+          <select
             value={week}
             onChange={(e) => setWeek(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm"

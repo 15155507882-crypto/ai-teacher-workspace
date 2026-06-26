@@ -12,9 +12,12 @@ export default function PlansPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [semester, setSemester] = useState('');
   const [detail, setDetail] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
+  const tc = localStorage.getItem('teacher');
+  const currentUser = tc ? JSON.parse(tc) : null;
+  const canDelete = (item: any) =>
+    currentUser?.role === 'admin' || item.teacher_id === currentUser?.id;
 
   useEffect(() => {
     (async () => {
@@ -45,20 +48,29 @@ export default function PlansPage() {
     search ? i.title?.includes(search) || i.teacher_name?.includes(search) : true
   );
 
+  const handleDelete = async (item: any) => {
+    if (!confirm('确认删除？')) return;
+    const r = await fetch(`/api/contents/${item.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${tk()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: '手动删除' }),
+    });
+    const j = await r.json();
+    if (j.code === 0) setItems(items.filter((i) => i.id !== item.id));
+    else alert(j.message || '删除失败');
+  };
+
+  const formatTitle = (item: any) => {
+    const year = item.academic_year || '2026-2027学年上学期';
+    return year + ' ' + item.title;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
         <h1 className="text-xl font-bold text-slate-800 mb-4">计划与总结</h1>
         <FilterBar>
-          <select
-            value={semester}
-            onChange={(e) => setSemester(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm"
-          >
-            <option value="">全部学期</option>
-            <option>2026-2027学年上学期</option>
-          </select>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -78,9 +90,8 @@ export default function PlansPage() {
               <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
                   <th className="p-3 text-left w-12">序号</th>
-                  <th className="p-3 text-left">教师</th>
-                  <th className="p-3 text-left">学年学期</th>
                   <th className="p-3 text-left">名称</th>
+                  <th className="p-3 text-left">教师</th>
                   <th className="p-3 text-left">创建时间</th>
                   <th className="p-3 text-right">操作</th>
                 </tr>
@@ -89,15 +100,12 @@ export default function PlansPage() {
                 {filtered.slice(0, 50).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
                     <td className="p-3 text-xs text-slate-400">{i + 1}</td>
+                    <td className="p-3 font-medium text-slate-700">{formatTitle(item)}</td>
                     <td className="p-3 text-xs text-slate-500">{item.teacher_name}</td>
-                    <td className="p-3 text-xs text-slate-500">
-                      {item.academic_year || semester || '2026-2027学年上学期'}
-                    </td>
-                    <td className="p-3 font-medium text-slate-700">{item.title}</td>
                     <td className="p-3 text-xs text-slate-400">
                       {new Date(item.created_at).toLocaleDateString('zh-CN')}
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right space-x-1">
                       <Button
                         variant="outline"
                         size="sm"
@@ -111,6 +119,16 @@ export default function PlansPage() {
                       >
                         查看
                       </Button>
+                      {canDelete(item) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500"
+                          onClick={() => handleDelete(item)}
+                        >
+                          删除
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -126,7 +144,7 @@ export default function PlansPage() {
             <div className="space-y-5">
               <div className="flex gap-2">
                 <Badge variant="purple">计划总结</Badge>
-                <span className="text-sm text-slate-500">{detail.academic_year || semester}</span>
+                <span className="text-sm text-slate-500">{detail.academic_year}</span>
               </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-800">{detail.title}</h3>

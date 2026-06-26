@@ -226,7 +226,8 @@ export default function WorkspacePage() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="text-5xl mb-4">✨</div>
                 <h3 className="text-lg font-semibold text-slate-700 mb-1">
-                  你好{teacher?.name ? `，${teacher.name}` : ''}
+                  副标题: 上传教学资料, AI 自动识别分类并生成备课、反思、计划与总结记录。 你好
+                  {teacher?.name ? `，${teacher.name}` : ''}
                 </h3>
                 <p className="text-sm text-slate-400">上传课件或输入文字开始备课</p>
               </div>

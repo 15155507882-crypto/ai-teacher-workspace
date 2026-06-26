@@ -12,6 +12,7 @@ import { DepartmentModule } from './modules/department/department.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
 import { ContentModule } from './modules/content/content.module';
 import { AIModule } from './modules/ai/ai.module';
+import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
@@ -61,6 +62,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     TeacherModule,
     ContentModule,
     AIModule,
+    AiConfigModule,
   ],
   controllers: [],
   providers: [],

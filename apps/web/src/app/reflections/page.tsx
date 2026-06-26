@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Drawer } from '@/components/ui/drawer';
 import { Timeline } from '@/components/ui/timeline';
 import { FilterBar } from '@/components/ui/filter-bar';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function ReflectionsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -14,8 +15,11 @@ export default function ReflectionsPage() {
   const [search, setSearch] = useState('');
   const [semester, setSemester] = useState('2026-2027学年上学期');
   const [detail, setDetail] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const tk = () => localStorage.getItem('accessToken') || '';
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const resetPage = () => setPage(1);
   const canDelete = (item: any) =>
     currentUser?.role === 'admin' || item.teacher_id === currentUser?.id;
 
@@ -69,7 +73,10 @@ export default function ReflectionsPage() {
         <FilterBar>
           <select
             value={semester}
-            onChange={(e) => setSemester(e.target.value)}
+            onChange={(e) => {
+              setSemester(e.target.value);
+              resetPage();
+            }}
             className="rounded-lg border px-3 py-2 text-sm"
           >
             <option value="">全部学期</option>
@@ -78,7 +85,10 @@ export default function ReflectionsPage() {
           </select>
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              resetPage();
+            }}
             placeholder="搜索课程名或反思内容..."
             className="w-56"
           />
@@ -146,6 +156,7 @@ export default function ReflectionsPage() {
             )}
           </div>
         )}
+        <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
         <Drawer open={!!detail} onClose={() => setDetail(null)} title="教学反思详情">
           {detail && (
             <div className="space-y-5">

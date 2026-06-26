@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Drawer } from '@/components/ui/drawer';
 import { Timeline } from '@/components/ui/timeline';
 import { FilterBar } from '@/components/ui/filter-bar';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function GroupLessonsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -15,8 +16,11 @@ export default function GroupLessonsPage() {
   const [semester, setSemester] = useState('2026-2027学年上学期');
   const [week, setWeek] = useState('');
   const [detail, setDetail] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const tk = () => localStorage.getItem('accessToken') || '';
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const resetPage = () => setPage(1);
   const canDelete = (item: any) =>
     currentUser?.role === 'admin' || item.teacher_id === currentUser?.id;
 
@@ -70,7 +74,10 @@ export default function GroupLessonsPage() {
         <FilterBar>
           <select
             value={semester}
-            onChange={(e) => setSemester(e.target.value)}
+            onChange={(e) => {
+              setSemester(e.target.value);
+              resetPage();
+            }}
             className="rounded-lg border px-3 py-2 text-sm"
           >
             <option value="">全部学期</option>
@@ -91,7 +98,10 @@ export default function GroupLessonsPage() {
           </select>
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              resetPage();
+            }}
             placeholder="搜索备课内容..."
             className="w-56"
           />
@@ -122,7 +132,9 @@ export default function GroupLessonsPage() {
                     <td className="p-3 text-xs text-slate-400">{i + 1}</td>
                     <td className="p-3 font-medium text-slate-700">{item.title}</td>
                     <td className="p-3">
-                      <Badge variant="green">集体备课</Badge>
+                      <Badge variant="green">
+                        {item.subject || item.group_lesson_type || '集体备课'}
+                      </Badge>
                     </td>
                     <td className="p-3 text-xs text-slate-500">
                       {item.academic_year || '2026-2027学年上学期'}
@@ -165,11 +177,14 @@ export default function GroupLessonsPage() {
             )}
           </div>
         )}
+        <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
         <Drawer open={!!detail} onClose={() => setDetail(null)} title="集体备课详情">
           {detail && (
             <div className="space-y-5">
               <div className="flex gap-2">
-                <Badge variant="green">集体备课</Badge>
+                <Badge variant="green">
+                  {item.subject || item.group_lesson_type || '集体备课'}
+                </Badge>
                 <span className="text-sm text-slate-500">
                   {detail.academic_year || '2026-2027学年上学期'}
                 </span>

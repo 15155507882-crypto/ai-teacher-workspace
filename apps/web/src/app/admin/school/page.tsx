@@ -20,6 +20,9 @@ export default function AdminSchoolPage() {
         if (j.data) {
           setName(j.data.name);
           setShortName(j.data.short_name);
+          if (j.data.logo_file_id) {
+            setLogo(`/api/files/${j.data.logo_file_id}/preview`);
+          }
         }
       });
   }, []);

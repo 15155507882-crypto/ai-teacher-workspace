@@ -25,6 +25,7 @@ export default function WorkspacePage() {
   const [thinking, setThinking] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(0);
   const [works, setWorks] = useState<WorkItem[]>([]);
+  const [linkedLessonId, setLinkedLessonId] = useState<number|null>(null);
   const [workSearch, setWorkSearch] = useState('');
   const [workFilter, setWorkFilter] = useState('');
   const [highlightId, setHighlightId] = useState<number|null>(null);
@@ -125,7 +126,7 @@ export default function WorkspacePage() {
   };
 
   const confirm = async (msgId: number, result: any) => {
-    const r = await fetch('/api/ai/confirm', { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${tk()}`}, body:JSON.stringify({ messageId:msgId, type:result.type, title:result.title_candidate, subject:result.subject, grade:result.grade, linkedContentId:result.extracted_entities?.recommended_lesson?.id }) });
+    const r = await fetch('/api/ai/confirm', { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${tk()}`}, body:JSON.stringify({ messageId:msgId, type:result.type, title:result.title_candidate, subject:result.subject, grade:result.grade, linkedContentId:linkedLessonId || result.extracted_entities?.recommended_lesson?.id }) });
     const j = await r.json();
     if (j.data?.conflict) {
       setMessages(prev => [...prev, { id:Date.now(), sender:'ai', text:j.data.message }]);

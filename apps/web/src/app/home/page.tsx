@@ -14,6 +14,8 @@ interface Teacher {
   department_id: number;
   hasContent: boolean;
   lastContentAt: string | null;
+  personalLessonCount?: number;
+  reflectionCount?: number;
 }
 
 export default function HomePage() {
@@ -33,9 +35,27 @@ export default function HomePage() {
         (r) => r.json()
       ),
     ])
-      .then(([d, tchr]) => {
+      .then(async ([d, tchr]) => {
         if (d.code === 0) setDepts(d.data);
-        if (tchr.code === 0) setTeachers(tchr.data.items || []);
+        if (tchr.code === 0) {
+          const list = tchr.data.items || [];
+          // Fetch stats for each teacher
+          const enriched = await Promise.all(
+            list.map(async (t: any) => {
+              try {
+                const sRes = await fetch(`/api/teachers/${t.id}/content-stats`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                }).then((r) => r.json());
+                if (sRes.code === 0) {
+                  t.personalLessonCount = sRes.data.personal_lesson;
+                  t.reflectionCount = sRes.data.reflection;
+                }
+              } catch {}
+              return t;
+            })
+          );
+          setTeachers(enriched);
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -43,15 +63,15 @@ export default function HomePage() {
   const filtered = keyword
     ? teachers.filter((t) => t.name.includes(keyword) || t.employee_no?.includes(keyword))
     : teachers;
-
   const grouped = depts
     .map((d) => ({ ...d, teachers: filtered.filter((t) => t.department_id === d.id) }))
     .filter((g) => g.teachers.length > 0);
 
   if (loading)
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400">
-        加载中...
+      <div className="min-h-screen bg-slate-50">
+        <TopNav />
+        <div className="flex items-center justify-center h-64 text-slate-400">加载中...</div>
       </div>
     );
 
@@ -62,23 +82,21 @@ export default function HomePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-slate-800">教师名录</h1>
-            <p className="text-sm text-slate-500 mt-0.5">按教研组浏览全校教师备课资料</p>
           </div>
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="搜索教师..."
-            className="w-56 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            className="w-56 rounded-lg border bg-white px-4 py-2 text-sm"
           />
         </div>
-
         <div className="space-y-6">
           {grouped.map((g) => (
-            <div key={g.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+            <div key={g.id} className="bg-white rounded-xl border overflow-hidden">
+              <div className="px-5 py-3 bg-slate-50 border-b">
                 <h2 className="text-sm font-semibold text-slate-700">
                   {g.name}{' '}
-                  <span className="font-normal text-slate-400 ml-1">({g.teachers.length}人)</span>
+                  <span className="text-slate-400 font-normal">({g.teachers.length}人)</span>
                 </h2>
               </div>
               <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -92,14 +110,10 @@ export default function HomePage() {
                       {t.name[0]}
                     </div>
                     <p className="text-sm font-medium text-slate-700">{t.name}</p>
-                    {t.employee_no && (
-                      <p className="text-xs text-slate-400 mt-0.5">{t.employee_no}</p>
-                    )}
-                    {t.hasContent && (
-                      <span className="mt-1 text-[10px] text-green-500 bg-green-50 px-1.5 py-0.5 rounded">
-                        有资料
-                      </span>
-                    )}
+                    <div className="flex gap-2 mt-1 text-xs text-slate-400">
+                      <span>📖 {(t as any).personalLessonCount || 0}</span>
+                      <span>📝 {(t as any).reflectionCount || 0}</span>
+                    </div>
                   </Link>
                 ))}
               </div>

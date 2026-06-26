@@ -119,6 +119,32 @@ export class TeacherService {
     return teacher;
   }
 
+  async batchImport(rows: any[]) {
+    const results: any[] = [];
+    for (const row of rows) {
+      try {
+        const existing = await this.teacherRepo.findByMobile(row.mobile);
+        if (existing) { results.push({ mobile: row.mobile, status: '跳过', reason: '手机号已存在' }); continue; }
+        const passwordHash = await bcrypt.hash(row.password || '123456', 10);
+        const teacher = this.teacherRepo.create({
+          school_id: row.school_id || 1,
+          department_id: row.department_id || 1,
+          mobile: row.mobile,
+          password_hash: passwordHash,
+          name: row.name,
+          employee_no: row.employee_no || null,
+          role: row.role || 'teacher',
+          status: 'active',
+        });
+        await this.teacherRepo.save(teacher);
+        results.push({ mobile: row.mobile, status: '成功', name: row.name });
+      } catch (e: any) {
+        results.push({ mobile: row.mobile, status: '失败', reason: e.message });
+      }
+    }
+    return { total: rows.length, results };
+  }
+
   private async recordHistory(
     teacherId: number,
     fromStatus: string,

@@ -80,4 +80,11 @@ export class TeacherController {
     const did = departmentId ? parseInt(departmentId, 10) : undefined;
     return this.teacherService.publicList(sid, did, keyword);
   }
+
+  @Post('admin/teachers/batch-import')
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  async batchImport(@Body() body: { teachers: any[] }) {
+    return this.teacherService.batchImport(body.teachers || []);
+  }
 }

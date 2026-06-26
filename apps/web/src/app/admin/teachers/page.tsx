@@ -180,12 +180,35 @@ export default function AdminTeachersPage() {
         <AdminPageHeader
           title="教师管理"
           action={
-            <button
-              onClick={openNew}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              + 新增教师
-            </button>
+            <div className="flex gap-2">
+              <a href="/teacher-import-template.csv" download className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                📥 下载模板
+              </a>
+              <label className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 cursor-pointer">
+                📤 批量导入
+                <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const text = await file.text();
+                  const lines = text.split('\n').filter(l => l.trim());
+                  const headers = lines[0].split(',');
+                  const teachers = lines.slice(1).map(line => {
+                    const vals = line.split(',');
+                    return { name: vals[0]?.trim(), mobile: vals[1]?.trim(), password: vals[2]?.trim(), employee_no: vals[3]?.trim(), department_id: parseInt(vals[4])||1, role: vals[5]?.trim()||'teacher', school_id: 1 };
+                  }).filter(t => t.name && t.mobile);
+                  if (!confirm(`确认导入 ${teachers.length} 名教师？`)) return;
+                  const r = await api('/api/admin/teachers/batch-import', { method: 'POST', body: JSON.stringify({ teachers }) });
+                  if (r.code === 0) {
+                    setMsg(`导入完成: 成功${r.data.results.filter((x:any)=>x.status==='成功').length}人, 跳过${r.data.results.filter((x:any)=>x.status==='跳过').length}人`);
+                    fetchTeachers();
+                  } else setMsg(r.message || '导入失败');
+                  e.target.value = '';
+                }} />
+              </label>
+              <button onClick={openNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                + 新增教师
+              </button>
+            </div>
           }
         />
         {msg && (

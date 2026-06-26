@@ -21,6 +21,9 @@ export default function AdminDeptPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [teacherOpen, setTeacherOpen] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<any[]>([]);
+  const [selectedTeachers, setSelectedTeachers] = useState<number[]>([]);
   const [editing, setEditing] = useState<Dept | null>(null);
   const [target, setTarget] = useState<Dept | null>(null);
   const [form, setForm] = useState({ name: '', parent_id: 0, sort_order: 0, status: 'active' });
@@ -29,6 +32,9 @@ export default function AdminDeptPage() {
 
   useEffect(() => {
     fetchDepts();
+    api('/api/admin/teachers?status=active&size=200').then((j) => {
+      if (j.code === 0) setAllTeachers(j.data.items || []);
+    });
   }, []);
 
   async function api(url: string, options?: RequestInit) {
@@ -105,6 +111,12 @@ export default function AdminDeptPage() {
       fetchDepts();
       setMsg('已删除');
     } else setMsg(j.message || '删除失败');
+  }
+
+  function openTeachers(d: Dept) {
+    setTarget(d);
+    setSelectedTeachers(allTeachers.filter(t => t.department_id === d.id).map(t => t.id));
+    setTeacherOpen(true);
   }
 
   return (
@@ -273,6 +285,22 @@ export default function AdminDeptPage() {
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>
+          </div>
+        </AdminDialog>
+
+        <AdminDialog open={teacherOpen} onClose={() => setTeacherOpen(false)} title={`管理教师 — ${target?.name || ''}`} width="max-w-xl">
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {allTeachers.filter(t => t.status === 'active').map((t: any) => (
+              <label key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" checked={selectedTeachers.includes(t.id)} onChange={() => { setSelectedTeachers(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]); }} />
+                <span className="text-sm">{t.name}</span>
+                <span className="text-xs text-slate-400">{t.mobile}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button onClick={() => setTeacherOpen(false)} className="px-4 py-2 text-sm rounded-lg border">取消</button>
+            <button onClick={async () => { for (const tid of selectedTeachers) { await api(`/api/admin/teachers/${tid}`, { method: 'PUT', body: JSON.stringify({ department_id: target!.id }) }); } setTeacherOpen(false); fetchDepts(); setMsg('已更新'); }} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
           </div>
         </AdminDialog>
 

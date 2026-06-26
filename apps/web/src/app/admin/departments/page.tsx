@@ -24,6 +24,7 @@ export default function AdminDeptPage() {
   const [teacherOpen, setTeacherOpen] = useState(false);
   const [allTeachers, setAllTeachers] = useState<any[]>([]);
   const [selectedTeachers, setSelectedTeachers] = useState<number[]>([]);
+  const [teacherSearch, setTeacherSearch] = useState('');
   const [editing, setEditing] = useState<Dept | null>(null);
   const [target, setTarget] = useState<Dept | null>(null);
   const [form, setForm] = useState({ name: '', parent_id: 0, sort_order: 0, status: 'active' });
@@ -115,7 +116,8 @@ export default function AdminDeptPage() {
 
   function openTeachers(d: Dept) {
     setTarget(d);
-    setSelectedTeachers(allTeachers.filter(t => t.department_id === d.id).map(t => t.id));
+    setTeacherSearch('');
+    setSelectedTeachers(allTeachers.filter((t) => t.department_id === d.id).map((t) => t.id));
     setTeacherOpen(true);
   }
 
@@ -201,6 +203,12 @@ export default function AdminDeptPage() {
                           className="text-xs text-red-400 hover:underline"
                         >
                           删除
+                        </button>
+                        <button
+                          onClick={() => openTeachers(d)}
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          教师
                         </button>
                       </td>
                     </tr>
@@ -289,8 +297,9 @@ export default function AdminDeptPage() {
         </AdminDialog>
 
         <AdminDialog open={teacherOpen} onClose={() => setTeacherOpen(false)} title={`管理教师 — ${target?.name || ''}`} width="max-w-xl">
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {allTeachers.filter(t => t.status === 'active').map((t: any) => (
+          <input value={teacherSearch} onChange={e => setTeacherSearch(e.target.value)} placeholder="搜索教师姓名/手机号..." className="w-full rounded-lg border px-3 py-2 text-sm mb-3" />
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {allTeachers.filter(t => t.status === 'active').filter(t => !teacherSearch || t.name.includes(teacherSearch) || t.mobile.includes(teacherSearch)).map((t: any) => (
               <label key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
                 <input type="checkbox" checked={selectedTeachers.includes(t.id)} onChange={() => { setSelectedTeachers(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]); }} />
                 <span className="text-sm">{t.name}</span>

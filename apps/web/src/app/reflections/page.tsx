@@ -120,7 +120,7 @@ export default function ReflectionsPage() {
                       {item.title} 的教学反思
                     </td>
                     <td className="p-3 text-sm text-slate-500">
-                      {item.academic_year || '2026-2027学年上学期'}
+                      {item.academic_year || '2026-2027学年'} {item.semester || '上学期'}
                     </td>
                     <td className="p-3 text-sm text-slate-500">{item.teacher_name}</td>
                     <td className="p-3 text-sm text-slate-400">
@@ -164,7 +164,9 @@ export default function ReflectionsPage() {
         <Drawer open={!!detail} onClose={() => setDetail(null)} title="教学反思详情">
           {detail && (
             <div className="space-y-5">
-              <p className="text-sm text-slate-500">{detail.academic_year}</p>
+              <p className="text-sm text-slate-500">
+                {detail.academic_year} {detail.semester}
+              </p>
               <div>
                 <h3 className="text-base font-semibold text-slate-800">
                   {detail.title} 的教学反思

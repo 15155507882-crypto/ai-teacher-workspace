@@ -104,15 +104,12 @@ export default function HomePage() {
                   <Link
                     key={t.id}
                     href={`/teacher/${t.id}`}
-                    className="flex flex-col items-center p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition text-center"
+                    className="flex flex-col p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition"
                   >
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm mb-2">
-                      {t.name[0]}
-                    </div>
-                    <p className="text-sm font-medium text-slate-700">{t.name}</p>
-                    <div className="flex gap-2 mt-1 text-xs text-slate-400">
-                      <span>📖 {(t as any).personalLessonCount || 0}</span>
-                      <span>📝 {(t as any).reflectionCount || 0}</span>
+                    <p className="text-base font-semibold text-slate-800 mb-1">{t.name}</p>
+                    <div className="flex gap-3 text-sm text-slate-500">
+                      <span>📖 备课 {(t as any).personalLessonCount || 0}</span>
+                      <span>📝 反思 {(t as any).reflectionCount || 0}</span>
                     </div>
                   </Link>
                 ))}

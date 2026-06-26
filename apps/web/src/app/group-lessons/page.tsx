@@ -137,7 +137,7 @@ export default function GroupLessonsPage() {
                       </Badge>
                     </td>
                     <td className="p-3 text-sm text-slate-500">
-                      {item.academic_year || '2026-2027学年上学期'}
+                      {item.academic_year || '2026-2027学年'} {item.semester || '上学期'}
                     </td>
                     <td className="p-3 text-sm text-slate-500">—</td>
                     <td className="p-3 text-sm text-slate-400">
@@ -186,7 +186,7 @@ export default function GroupLessonsPage() {
                   {item.subject || item.group_lesson_type || '集体备课'}
                 </Badge>
                 <span className="text-sm text-slate-500">
-                  {detail.academic_year || '2026-2027学年上学期'}
+                  {detail.academic_year || '2026-2027学年'} {detail.semester || '上学期'}
                 </span>
               </div>
               <div>

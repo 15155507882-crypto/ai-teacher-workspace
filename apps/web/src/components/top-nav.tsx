@@ -36,7 +36,7 @@ export function TopNav() {
   ];
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center px-6 shrink-0 z-10">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center px-6 shrink-0 z-10 sticky top-0">
       <Link href="/home" className="flex items-center gap-3 mr-8">
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
           {school?.short_name?.[0] || '校'}

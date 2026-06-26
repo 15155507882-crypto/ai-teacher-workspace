@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SchoolRepository } from '../../database/repositories/school.repository';
-import { UpdateSchoolDto } from './school.dto';
+import { UpdateSchoolDto, UpdateSchoolSettingsDto } from './school.dto';
 
 @Injectable()
 export class SchoolService {
@@ -33,5 +33,20 @@ export class SchoolService {
     }
 
     return this.schoolRepo.save(school);
+  }
+
+  /** 更新学校设置(学年/学期等) */
+  async updateSettings(dto: UpdateSchoolSettingsDto) {
+    const school = await this.getSchool();
+    const settings = school.settings || {};
+
+    if (dto.academic_years !== undefined) settings.academic_years = dto.academic_years;
+    if (dto.current_year !== undefined) settings.current_year = dto.current_year;
+    if (dto.semesters !== undefined) settings.semesters = dto.semesters;
+    if (dto.current_semester !== undefined) settings.current_semester = dto.current_semester;
+
+    school.settings = settings;
+    await this.schoolRepo.save(school);
+    return settings;
   }
 }

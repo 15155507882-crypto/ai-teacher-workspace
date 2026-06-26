@@ -211,6 +211,17 @@ export default function AdminRolesPage() {
               >
                 取消
               </button>
+              {!editing && (
+                <button
+                  onClick={() => {
+                    setForm({ name: '', code: '', desc: '' });
+                    setMsg('Mock: 已保存，继续添加');
+                  }}
+                  className="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50"
+                >
+                  保存并继续
+                </button>
+              )}
               <button
                 onClick={() => {
                   setEditOpen(false);

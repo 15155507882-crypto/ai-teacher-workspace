@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { TeacherRepository } from '../../database/repositories/teacher.repository';
+import { DepartmentRepository } from '../../database/repositories/department.repository';
 import { TeacherStatusHistoryRepository } from '../../database/repositories/teacher-status-history.repository';
 import {
   CreateTeacherDto,
@@ -18,6 +19,7 @@ import {
 export class TeacherService {
   constructor(
     private readonly teacherRepo: TeacherRepository,
+    private readonly departmentRepo: DepartmentRepository,
     private readonly historyRepo: TeacherStatusHistoryRepository
   ) {}
 
@@ -124,16 +126,44 @@ export class TeacherService {
     for (const row of rows) {
       try {
         const existing = await this.teacherRepo.findByMobile(row.mobile);
-        if (existing) { results.push({ mobile: row.mobile, status: '跳过', reason: '手机号已存在' }); continue; }
+        if (existing) {
+          results.push({ mobile: row.mobile, status: '跳过', reason: '手机号已存在' });
+          continue;
+        }
+        // Resolve department: support name string, ID number, or /-separated names
+        let departmentId = row.department_id;
+        if (typeof departmentId === 'string' && isNaN(Number(departmentId))) {
+          // Department name (or /-separated names) — resolve to first matching ID
+          const names = String(departmentId)
+            .split('/')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          for (const name of names) {
+            const depts = await this.departmentRepo.findBySchool(row.school_id || 1);
+            const dept = depts.find((d) => d.name === name || d.name.includes(name));
+            if (dept) {
+              departmentId = dept.id;
+              break;
+            }
+          }
+          if (typeof departmentId === 'string') departmentId = 1; // fallback
+        }
+        // Role mapping: Chinese → English
+        const roleMap: Record<string, string> = { 教师: 'teacher', 管理员: 'admin' };
+        const role = roleMap[row.role] || row.role || 'teacher';
+        // Gender mapping
+        const genderMap: Record<string, string> = { 男: 'male', 女: 'female' };
+        const gender = genderMap[row.gender] || row.gender || null;
         const passwordHash = await bcrypt.hash(row.password || '123456', 10);
         const teacher = this.teacherRepo.create({
           school_id: row.school_id || 1,
-          department_id: row.department_id || 1,
+          department_id: Number(departmentId) || 1,
           mobile: row.mobile,
           password_hash: passwordHash,
           name: row.name,
           employee_no: row.employee_no || null,
-          role: row.role || 'teacher',
+          gender,
+          role,
           status: 'active',
         });
         await this.teacherRepo.save(teacher);
@@ -143,6 +173,43 @@ export class TeacherService {
       }
     }
     return { total: rows.length, results };
+  }
+
+  /** 教师自服务：更新个人资料 */
+  async updateProfile(
+    teacherId: number,
+    body: { name?: string; mobile?: string; gender?: string; employee_no?: string }
+  ) {
+    const teacher = await this.teacherRepo.findById(teacherId);
+    if (!teacher) throw new NotFoundException('教师不存在');
+    if (body.name !== undefined) teacher.name = body.name;
+    if (body.mobile !== undefined) teacher.mobile = body.mobile;
+    if (body.gender !== undefined) teacher.gender = body.gender || null;
+    if (body.employee_no !== undefined) teacher.employee_no = body.employee_no || null;
+    await this.teacherRepo.save(teacher);
+    return { id: teacher.id, name: teacher.name, mobile: teacher.mobile, gender: teacher.gender };
+  }
+
+  /** 教师自服务：修改密码 */
+  async changePassword(teacherId: number, oldPassword: string, newPassword: string) {
+    const teacher = await this.teacherRepo.findById(teacherId);
+    if (!teacher) throw new NotFoundException('教师不存在');
+    const valid = await bcrypt.compare(oldPassword, teacher.password_hash);
+    if (!valid) throw new BadRequestException('当前密码错误');
+    if (newPassword.length < 6) throw new BadRequestException('新密码至少6位');
+    teacher.password_hash = await bcrypt.hash(newPassword, 10);
+    teacher.token_version = (teacher.token_version || 1) + 1;
+    await this.teacherRepo.save(teacher);
+    return { success: true };
+  }
+
+  /** 教师自服务：更新头像 */
+  async updateAvatar(teacherId: number, fileId: number) {
+    const teacher = await this.teacherRepo.findById(teacherId);
+    if (!teacher) throw new NotFoundException('教师不存在');
+    teacher.avatar_file_id = fileId;
+    await this.teacherRepo.save(teacher);
+    return { avatar_file_id: fileId };
   }
 
   private async recordHistory(

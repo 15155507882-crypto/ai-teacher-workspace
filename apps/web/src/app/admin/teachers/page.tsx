@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { AdminShell } from '@/components/admin-shell';
 import {
   AdminDialog,
@@ -43,6 +44,7 @@ export default function AdminTeachersPage() {
     mobile: '',
     employee_no: '',
     department_id: 1,
+    gender: '',
     role: 'teacher',
     password: '',
   });
@@ -93,6 +95,7 @@ export default function AdminTeachersPage() {
       mobile: '',
       employee_no: '',
       department_id: 1,
+      gender: '',
       role: 'teacher',
       password: '',
     });
@@ -105,6 +108,7 @@ export default function AdminTeachersPage() {
       mobile: t.mobile,
       employee_no: t.employee_no || '',
       department_id: t.department_id,
+      gender: (t as any).gender || '',
       role: t.role,
       password: '',
     });
@@ -120,6 +124,7 @@ export default function AdminTeachersPage() {
             name: form.name,
             department_id: form.department_id,
             employee_no: form.employee_no,
+            gender: form.gender || null,
             role: form.role,
           }),
         })
@@ -131,6 +136,30 @@ export default function AdminTeachersPage() {
       setDialogOpen(false);
       fetchTeachers();
       setMsg(editing ? '更新成功' : '创建成功');
+    } else setMsg(j.message || '保存失败');
+    setSaving(false);
+  }
+
+  async function saveAndContinue() {
+    if (editing) return save(); // 编辑模式不支持继续添加
+    setSaving(true);
+    const j = await api('/api/admin/teachers', {
+      method: 'POST',
+      body: JSON.stringify({ school_id: 1, ...form }),
+    });
+    if (j.code === 0) {
+      fetchTeachers();
+      setMsg('已保存，继续添加');
+      // 重置表单，保留组织/角色默认值
+      setForm({
+        name: '',
+        mobile: '',
+        employee_no: '',
+        department_id: form.department_id,
+        gender: '',
+        role: form.role,
+        password: '',
+      });
     } else setMsg(j.message || '保存失败');
     setSaving(false);
   }
@@ -181,31 +210,139 @@ export default function AdminTeachersPage() {
           title="教师管理"
           action={
             <div className="flex gap-2">
-              <a href="/teacher-import-template.csv" download className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+              <a
+                href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+                  `姓名,手机号,密码,编号,性别,组织,角色\n${
+                    departments.length > 0
+                      ? departments
+                          .slice(0, 3)
+                          .map((d) => `, , , , ,${d.name},教师`)
+                          .join('\n')
+                      : '张老师,13800000101,123456,TC001,,请填写组织名称,教师'
+                  }\n`
+                )}`}
+                download="教师导入模板.csv"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              >
                 📥 下载模板
               </a>
               <label className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 cursor-pointer">
                 📤 批量导入
-                <input type="file" className="hidden" accept=".csv" onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const text = await file.text();
-                  const lines = text.split('\n').filter(l => l.trim());
-                  const headers = lines[0].split(',');
-                  const teachers = lines.slice(1).map(line => {
-                    const vals = line.split(',');
-                    return { name: vals[0]?.trim(), mobile: vals[1]?.trim(), password: vals[2]?.trim(), employee_no: vals[3]?.trim(), department_id: parseInt(vals[4])||1, role: vals[5]?.trim()||'teacher', school_id: 1 };
-                  }).filter(t => t.name && t.mobile);
-                  if (!confirm(`确认导入 ${teachers.length} 名教师？`)) return;
-                  const r = await api('/api/admin/teachers/batch-import', { method: 'POST', body: JSON.stringify({ teachers }) });
-                  if (r.code === 0) {
-                    setMsg(`导入完成: 成功${r.data.results.filter((x:any)=>x.status==='成功').length}人, 跳过${r.data.results.filter((x:any)=>x.status==='跳过').length}人`);
-                    fetchTeachers();
-                  } else setMsg(r.message || '导入失败');
-                  e.target.value = '';
-                }} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    // Parse CSV or Excel to array of rows
+                    const rows: string[][] = file.name.endsWith('.csv')
+                      ? (await file.text())
+                          .split('\n')
+                          .filter((l: string) => l.trim())
+                          .map((l: string) => l.split(','))
+                      : await (async () => {
+                          const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), {
+                            type: 'array',
+                          });
+                          return XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], {
+                            header: 1,
+                          });
+                        })();
+                    if (rows.length < 2) {
+                      setMsg('文件为空或格式不正确');
+                      return;
+                    }
+                    const headers = rows[0].map((h: string) => String(h).trim());
+                    // Build header index map for flexible column order
+                    const headerMap: Record<string, number> = {};
+                    headers.forEach((h: string, i: number) => {
+                      headerMap[h] = i;
+                    });
+
+                    // Role mapping: Chinese → English
+                    const roleMap: Record<string, string> = {
+                      教师: 'teacher',
+                      管理员: 'admin',
+                      teacher: 'teacher',
+                      admin: 'admin',
+                    };
+                    // Gender mapping: Chinese → English
+                    const genderMap: Record<string, string> = {
+                      男: 'male',
+                      女: 'female',
+                      male: 'male',
+                      female: 'female',
+                    };
+
+                    // Department name → ID lookup
+                    const deptMap = new Map(departments.map((d) => [d.name, d.id]));
+
+                    const teachers = rows
+                      .slice(1)
+                      .map((vals) => {
+                        const get = (key: string) => {
+                          const idx = headerMap[key];
+                          return idx !== undefined ? String(vals[idx] || '').trim() : '';
+                        };
+                        // Resolve department: try name first, fallback to numeric ID
+                        const deptRaw = get('组织') || get('组织ID') || get('组织id') || '';
+                        const deptNames = deptRaw
+                          .split('/')
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        let department_id = 1;
+                        if (deptNames.length > 0) {
+                          // Try name match
+                          for (const name of deptNames) {
+                            const id =
+                              deptMap.get(name) ||
+                              departments.find((d) => d.name.includes(name))?.id;
+                            if (id) {
+                              department_id = id;
+                              break;
+                            }
+                          }
+                          // Fallback: numeric
+                          if (!deptMap.get(deptNames[0]) && /^\d+$/.test(deptNames[0])) {
+                            department_id = parseInt(deptNames[0]) || 1;
+                          }
+                        }
+                        const roleRaw = get('角色') || 'teacher';
+                        const role = roleMap[roleRaw] || 'teacher';
+                        const genderRaw = get('性别') || '';
+                        const gender = genderMap[genderRaw] || null;
+                        return {
+                          name: get('姓名') || '',
+                          mobile: get('手机号') || '',
+                          password: get('密码') || '123456',
+                          employee_no: get('编号') || '',
+                          gender,
+                          department_id,
+                          role,
+                          school_id: 1,
+                        };
+                      })
+                      .filter((t) => t.name && t.mobile);
+                    if (!confirm(`确认导入 ${teachers.length} 名教师？`)) return;
+                    const r = await api('/api/admin/teachers/batch-import', {
+                      method: 'POST',
+                      body: JSON.stringify({ teachers }),
+                    });
+                    if (r.code === 0) {
+                      setMsg(
+                        `导入完成: 成功${r.data.results.filter((x: any) => x.status === '成功').length}人, 跳过${r.data.results.filter((x: any) => x.status === '跳过').length}人`
+                      );
+                      fetchTeachers();
+                    } else setMsg(r.message || '导入失败');
+                    e.target.value = '';
+                  }}
+                />
               </label>
-              <button onClick={openNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+              <button
+                onClick={openNew}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
                 + 新增教师
               </button>
             </div>
@@ -261,6 +398,7 @@ export default function AdminTeachersPage() {
                 <tr>
                   <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">姓名</th>
+                  <th className="p-3 text-left">性别</th>
                   <th className="p-3 text-left">手机号</th>
                   <th className="p-3 text-left">编号</th>
                   <th className="p-3 text-left">角色</th>
@@ -274,6 +412,13 @@ export default function AdminTeachersPage() {
                   <tr key={t.id} className="border-t hover:bg-slate-50">
                     <td className="p-3 text-sm text-slate-400">{(page - 1) * pageSize + i + 1}</td>
                     <td className="p-3 font-medium text-slate-800">{t.name}</td>
+                    <td className="p-3 text-slate-400 text-xs">
+                      {(t as any).gender === 'male'
+                        ? '男'
+                        : (t as any).gender === 'female'
+                          ? '女'
+                          : '—'}
+                    </td>
                     <td className="p-3 text-slate-500">{t.mobile}</td>
                     <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
                     <td className="p-3">
@@ -381,6 +526,18 @@ export default function AdminTeachersPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">性别</label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                >
+                  <option value="">--</option>
+                  <option value="male">男</option>
+                  <option value="female">女</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">组织</label>
                 <select
                   value={form.department_id}
@@ -415,6 +572,15 @@ export default function AdminTeachersPage() {
               >
                 取消
               </button>
+              {!editing && (
+                <button
+                  onClick={saveAndContinue}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '保存并继续'}
+                </button>
+              )}
               <button
                 onClick={save}
                 disabled={saving}

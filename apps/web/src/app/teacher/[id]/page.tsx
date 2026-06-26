@@ -3,6 +3,44 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 
+// Default avatar styles: 4 male + 4 female variations
+const AVATARS = {
+  male: [
+    'from-blue-500 to-cyan-400', // 蓝天
+    'from-indigo-500 to-blue-400', // 深海
+    'from-teal-500 to-emerald-400', // 森林
+    'from-slate-600 to-slate-400', // 稳重
+  ],
+  female: [
+    'from-pink-400 to-rose-300', // 樱花
+    'from-purple-500 to-violet-400', // 紫藤
+    'from-orange-400 to-amber-300', // 暖阳
+    'from-fuchsia-500 to-pink-400', // 芍药
+  ],
+};
+
+function DefaultAvatar({
+  name,
+  gender,
+  size = 40,
+}: {
+  name: string;
+  gender?: string | null;
+  size?: number;
+}) {
+  const idx = (name.charCodeAt(0) || 0) % 4;
+  const colors = (gender === 'female' ? AVATARS.female : AVATARS.male)[idx];
+  return (
+    <div
+      className={`w-[${size}px] h-[${size}px] rounded-full bg-gradient-to-br ${colors} flex items-center justify-center text-white font-bold text-lg shadow-inner`}
+      style={{ width: size, height: size }}
+      title={name}
+    >
+      {name[0]}
+    </div>
+  );
+}
+
 interface Content {
   id: number;
   title: string;
@@ -81,7 +119,12 @@ export default function TeacherSpacePage() {
       if (tRes.code === 0) {
         const f = tRes.data.items?.find((x: any) => x.id === parseInt(id));
         setTeacher(f || null);
-        if (f) setSettingsForm({ name: f.name || '', mobile: f.mobile || '', employee_no: f.employee_no || '' });
+        if (f)
+          setSettingsForm({
+            name: f.name || '',
+            mobile: f.mobile || '',
+            employee_no: f.employee_no || '',
+          });
       }
       if (cRes.code === 0) setContents(cRes.data.items || []);
       if (sRes.code === 0) setStats(sRes.data);
@@ -127,18 +170,51 @@ export default function TeacherSpacePage() {
       <div className="max-w-6xl mx-auto p-6">
         <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
           <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">{teacher?.name} 的资料空间</h1>
-              <p className="text-sm text-slate-500">编号: {teacher?.employee_no || '—'}</p>
+            <div className="flex items-center gap-4">
+              {teacher?.avatar_file_id ? (
+                <img
+                  src={`/api/files/${teacher.avatar_file_id}/preview`}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-slate-200"
+                  alt={teacher?.name}
+                />
+              ) : (
+                <DefaultAvatar
+                  name={teacher?.name || '?'}
+                  gender={(teacher as any)?.gender}
+                  size={56}
+                />
+              )}
+              <div>
+                <h1 className="text-xl font-bold text-slate-800">{teacher?.name}老师的资料空间</h1>
+              </div>
             </div>
             <div className="relative group">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold cursor-pointer">
-                {teacher?.name?.[0]}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
               </div>
               <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 hidden group-hover:block z-20">
-                <div className="px-3 py-1.5 text-xs text-slate-500 border-b border-slate-100">{teacher?.name}</div>
-                <button onClick={() => setShowSettings(true)} className="w-full text-left px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">✏️ 修改信息</button>
-                <button onClick={() => setShowPwd(true)} className="w-full text-left px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">🔒 修改密码</button>
+                <div className="px-3 py-1.5 text-xs text-slate-500 border-b border-slate-100">
+                  {teacher?.name}
+                </div>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  ✏️ 修改信息
+                </button>
+                <button
+                  onClick={() => setShowPwd(true)}
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  🔒 修改密码
+                </button>
               </div>
             </div>
           </div>
@@ -317,13 +393,49 @@ export default function TeacherSpacePage() {
             <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
               <h3 className="text-lg font-semibold mb-4">修改信息</h3>
               <div className="space-y-3">
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">姓名</label><input value={settingsForm.name} onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" /></div>
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">手机号</label><input value={settingsForm.mobile} onChange={e => setSettingsForm({ ...settingsForm, mobile: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" /></div>
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">编号</label><input value={settingsForm.employee_no} onChange={e => setSettingsForm({ ...settingsForm, employee_no: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" /></div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">姓名</label>
+                  <input
+                    value={settingsForm.name}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">手机号</label>
+                  <input
+                    value={settingsForm.mobile}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, mobile: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">编号</label>
+                  <input
+                    value={settingsForm.employee_no}
+                    onChange={(e) =>
+                      setSettingsForm({ ...settingsForm, employee_no: e.target.value })
+                    }
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 mt-4 justify-end">
-                <button onClick={() => setShowSettings(false)} className="px-4 py-2 text-sm rounded-lg border">取消</button>
-                <button onClick={() => { setShowSettings(false); alert('修改成功(接口待接入)'); }} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white">保存</button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="px-4 py-2 text-sm rounded-lg border"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSettings(false);
+                    alert('修改成功(接口待接入)');
+                  }}
+                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white"
+                >
+                  保存
+                </button>
               </div>
             </div>
           </div>
@@ -336,12 +448,41 @@ export default function TeacherSpacePage() {
             <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
               <h3 className="text-lg font-semibold mb-4">修改密码</h3>
               <div className="space-y-3">
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">新密码</label><input type="password" value={pwdForm.password} onChange={e => setPwdForm({ ...pwdForm, password: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" /></div>
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label><input type="password" value={pwdForm.confirm} onChange={e => setPwdForm({ ...pwdForm, confirm: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" /></div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">新密码</label>
+                  <input
+                    type="password"
+                    value={pwdForm.password}
+                    onChange={(e) => setPwdForm({ ...pwdForm, password: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label>
+                  <input
+                    type="password"
+                    value={pwdForm.confirm}
+                    onChange={(e) => setPwdForm({ ...pwdForm, confirm: e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 mt-4 justify-end">
-                <button onClick={() => setShowPwd(false)} className="px-4 py-2 text-sm rounded-lg border">取消</button>
-                <button onClick={() => { setShowPwd(false); alert('密码修改成功(接口待接入)'); }} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white">保存</button>
+                <button
+                  onClick={() => setShowPwd(false)}
+                  className="px-4 py-2 text-sm rounded-lg border"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPwd(false);
+                    alert('密码修改成功(接口待接入)');
+                  }}
+                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white"
+                >
+                  保存
+                </button>
               </div>
             </div>
           </div>
@@ -353,12 +494,24 @@ export default function TeacherSpacePage() {
               <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold truncate">{previewFile.title}</h3>
                 <div className="flex gap-2">
-                  <a href={previewFile.url.replace("/preview","/download")} download className="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-700">下载</a>
-                  <button onClick={() => setPreviewFile(null)} className="text-xl text-slate-400">&times;</button>
+                  <a
+                    href={previewFile.url.replace('/preview', '/download')}
+                    download
+                    className="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-700"
+                  >
+                    下载
+                  </a>
+                  <button onClick={() => setPreviewFile(null)} className="text-xl text-slate-400">
+                    &times;
+                  </button>
                 </div>
               </div>
               <div className="p-4">
-                <iframe src={previewFile.url} className="w-full min-h-[600px] border-0" title="预览" />
+                <iframe
+                  src={previewFile.url}
+                  className="w-full min-h-[600px] border-0"
+                  title="预览"
+                />
               </div>
             </div>
           </div>

@@ -85,6 +85,26 @@ export default function AdminDeptPage() {
     setSaving(false);
   }
 
+  async function saveAndContinue() {
+    if (editing) return save();
+    setSaving(true);
+    const j = await api('/api/admin/departments', {
+      method: 'POST',
+      body: JSON.stringify({ school_id: 1, ...form }),
+    });
+    if (j.code === 0) {
+      fetchDepts();
+      setMsg('已保存，继续添加');
+      setForm({
+        name: '',
+        parent_id: form.parent_id,
+        sort_order: form.sort_order + 1,
+        status: 'active',
+      });
+    } else setMsg(j.message || '保存失败');
+    setSaving(false);
+  }
+
   async function handleDisable(d: Dept) {
     setMsg('');
     const j = await api(`/api/admin/departments/${d.id}`, {
@@ -285,6 +305,15 @@ export default function AdminDeptPage() {
               >
                 取消
               </button>
+              {!editing && (
+                <button
+                  onClick={saveAndContinue}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                >
+                  {saving ? '保存中...' : '保存并继续'}
+                </button>
+              )}
               <button
                 onClick={save}
                 disabled={saving}
@@ -296,20 +325,69 @@ export default function AdminDeptPage() {
           </div>
         </AdminDialog>
 
-        <AdminDialog open={teacherOpen} onClose={() => setTeacherOpen(false)} title={`管理教师 — ${target?.name || ''}`} width="max-w-xl">
-          <input value={teacherSearch} onChange={e => setTeacherSearch(e.target.value)} placeholder="搜索教师姓名/手机号..." className="w-full rounded-lg border px-3 py-2 text-sm mb-3" />
+        <AdminDialog
+          open={teacherOpen}
+          onClose={() => setTeacherOpen(false)}
+          title={`管理教师 — ${target?.name || ''}`}
+          width="max-w-xl"
+        >
+          <input
+            value={teacherSearch}
+            onChange={(e) => setTeacherSearch(e.target.value)}
+            placeholder="搜索教师姓名/手机号..."
+            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+          />
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {allTeachers.filter(t => t.status === 'active').filter(t => !teacherSearch || t.name.includes(teacherSearch) || t.mobile.includes(teacherSearch)).map((t: any) => (
-              <label key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
-                <input type="checkbox" checked={selectedTeachers.includes(t.id)} onChange={() => { setSelectedTeachers(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]); }} />
-                <span className="text-sm">{t.name}</span>
-                <span className="text-xs text-slate-400">{t.mobile}</span>
-              </label>
-            ))}
+            {allTeachers
+              .filter((t) => t.status === 'active')
+              .filter(
+                (t) =>
+                  !teacherSearch ||
+                  t.name.includes(teacherSearch) ||
+                  t.mobile.includes(teacherSearch)
+              )
+              .map((t: any) => (
+                <label
+                  key={t.id}
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTeachers.includes(t.id)}
+                    onChange={() => {
+                      setSelectedTeachers((prev) =>
+                        prev.includes(t.id) ? prev.filter((id) => id !== t.id) : [...prev, t.id]
+                      );
+                    }}
+                  />
+                  <span className="text-sm">{t.name}</span>
+                  <span className="text-xs text-slate-400">{t.mobile}</span>
+                </label>
+              ))}
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button onClick={() => setTeacherOpen(false)} className="px-4 py-2 text-sm rounded-lg border">取消</button>
-            <button onClick={async () => { for (const tid of selectedTeachers) { await api(`/api/admin/teachers/${tid}`, { method: 'PUT', body: JSON.stringify({ department_id: target!.id }) }); } setTeacherOpen(false); fetchDepts(); setMsg('已更新'); }} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
+            <button
+              onClick={() => setTeacherOpen(false)}
+              className="px-4 py-2 text-sm rounded-lg border"
+            >
+              取消
+            </button>
+            <button
+              onClick={async () => {
+                for (const tid of selectedTeachers) {
+                  await api(`/api/admin/teachers/${tid}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ department_id: target!.id }),
+                  });
+                }
+                setTeacherOpen(false);
+                fetchDepts();
+                setMsg('已更新');
+              }}
+              className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+            >
+              保存
+            </button>
           </div>
         </AdminDialog>
 

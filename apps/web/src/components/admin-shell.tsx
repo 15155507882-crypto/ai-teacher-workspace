@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const menuItems = [
   { href: '/admin/school', label: '🏫 学校信息', key: 'school' },
+  { href: '/admin/settings', label: '⚙️ 系统设置', key: 'settings' },
   { href: '/admin/departments', label: '📋 组织管理', key: 'departments' },
   { href: '/admin/teachers', label: '👥 教师管理', key: 'teachers' },
   { href: '/admin/home-groups', label: '📂 备课组', key: 'home-groups' },

@@ -16,6 +16,36 @@ import { Role } from '@workspace/shared';
 export class TeacherController {
   constructor(private readonly teacherService: TeacherService) {}
 
+  // ==================== Self-service Endpoints ====================
+
+  @Put('teacher/profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(
+    @Req() req: any,
+    @Body() body: { name?: string; mobile?: string; gender?: string; employee_no?: string }
+  ) {
+    return this.teacherService.updateProfile(req.user.teacherId, body);
+  }
+
+  @Post('teacher/change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Req() req: any,
+    @Body() body: { old_password: string; new_password: string }
+  ) {
+    return this.teacherService.changePassword(
+      req.user.teacherId,
+      body.old_password,
+      body.new_password
+    );
+  }
+
+  @Post('teacher/avatar')
+  @UseGuards(JwtAuthGuard)
+  async uploadAvatar(@Req() req: any, @Body() body: { file_id: number }) {
+    return this.teacherService.updateAvatar(req.user.teacherId, body.file_id);
+  }
+
   // ==================== Admin Endpoints ====================
 
   @Get('admin/teachers')

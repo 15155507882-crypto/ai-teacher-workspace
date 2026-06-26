@@ -35,9 +35,12 @@ export class ContentService {
     };
   }
 
-  async getContentStats(teacherId: number) {
+  async getContentStats(teacherId: number, academicYear?: string, semester?: string) {
     const all = await this.contentRepo.findByTeacher(teacherId);
-    const active = all.filter((c) => !c.deleted_at);
+    let active = all.filter((c) => !c.deleted_at);
+    // Filter by current semester if provided
+    if (academicYear) active = active.filter((c) => c.academic_year === academicYear);
+    if (semester) active = active.filter((c) => c.semester === semester);
     const counts: Record<string, number> = {
       personal_lesson: 0,
       reflection: 0,

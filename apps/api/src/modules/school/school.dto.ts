@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateSchoolDto {
   @IsString()
@@ -13,4 +14,29 @@ export class UpdateSchoolDto {
 
   @IsOptional()
   logo_file_id?: number | null;
+}
+
+export class SemesterDto {
+  @IsString() @IsNotEmpty() name: string;
+  @IsString() @IsNotEmpty() start: string;
+  @IsString() @IsNotEmpty() end: string;
+}
+
+export class UpdateSchoolSettingsDto {
+  @IsOptional()
+  @IsArray()
+  academic_years?: string[];
+
+  @IsOptional()
+  @IsString()
+  current_year?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => SemesterDto)
+  semesters?: SemesterDto[];
+
+  @IsOptional()
+  @IsString()
+  current_semester?: string;
 }

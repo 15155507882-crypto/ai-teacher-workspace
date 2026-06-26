@@ -37,6 +37,9 @@ export class Teacher {
   @Column({ type: 'varchar', length: 50, nullable: true })
   employee_no: string | null;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, default: null })
+  gender: string | null;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   avatar: string | null;
 

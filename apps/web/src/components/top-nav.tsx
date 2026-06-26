@@ -2,12 +2,50 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { UserSettingsModal } from './user-settings-modal';
+
+const AVATARS = {
+  male: [
+    'from-blue-500 to-cyan-400',
+    'from-indigo-500 to-blue-400',
+    'from-teal-500 to-emerald-400',
+    'from-slate-600 to-slate-400',
+  ],
+  female: [
+    'from-pink-400 to-rose-300',
+    'from-purple-500 to-violet-400',
+    'from-orange-400 to-amber-300',
+    'from-fuchsia-500 to-pink-400',
+  ],
+};
+
+function AvatarCircle({
+  name,
+  gender,
+  size = 28,
+}: {
+  name: string;
+  gender?: string | null;
+  size?: number;
+}) {
+  const idx = (name?.charCodeAt(0) || 0) % 4;
+  const colors = (gender === 'female' ? AVATARS.female : AVATARS.male)[idx];
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-br ${colors} flex items-center justify-center text-white font-bold shadow-inner shrink-0`}
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
+      {name?.[0]}
+    </div>
+  );
+}
 
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [teacher, setTeacher] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const t = localStorage.getItem('teacher');
@@ -40,7 +78,11 @@ export function TopNav() {
       <Link href="/home" className="flex items-center gap-3 mr-8">
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
           {school?.logo_file_id ? (
-            <img src={`/api/files/${school.logo_file_id}/preview`} alt="logo" className="w-full h-full object-cover" />
+            <img
+              src={`/api/files/${school.logo_file_id}/preview`}
+              alt="logo"
+              className="w-full h-full object-cover"
+            />
           ) : (
             school?.short_name?.[0] || '校'
           )}
@@ -87,9 +129,7 @@ export function TopNav() {
         )}
         <div className="relative group">
           <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition">
-            <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600 font-medium">
-              {teacher.name?.[0]}
-            </span>
+            <AvatarCircle name={teacher.name} gender={(teacher as any)?.gender} size={28} />
             <span>{teacher.name}</span>
             <svg
               className="w-3 h-3 text-slate-400"
@@ -109,6 +149,12 @@ export function TopNav() {
               </p>
             </div>
             <button
+              onClick={() => setSettingsOpen(true)}
+              className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+            >
+              ⚙️ 设置
+            </button>
+            <button
               onClick={() => {
                 localStorage.clear();
                 window.location.href = '/login';
@@ -120,6 +166,13 @@ export function TopNav() {
           </div>
         </div>
       </div>
+      {teacher && (
+        <UserSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          teacher={teacher}
+        />
+      )}
     </header>
   );
 }

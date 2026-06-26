@@ -38,6 +38,11 @@ export class CreateTeacherDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['male', 'female', 'other'])
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
   @IsIn(['teacher', 'admin'])
   role?: string;
 
@@ -62,6 +67,11 @@ export class UpdateTeacherDto {
   @IsString()
   @MaxLength(50)
   employee_no?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['male', 'female', 'other'])
+  gender?: string;
 
   @IsOptional()
   @IsString()

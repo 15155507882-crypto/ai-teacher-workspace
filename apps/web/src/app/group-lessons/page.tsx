@@ -70,7 +70,7 @@ export default function GroupLessonsPage() {
     <div className="min-h-screen bg-slate-50">
       <TopNav />
       <div className="max-w-6xl mx-auto p-6">
-        <h1 className="text-xl font-bold text-slate-800 mb-4">集体备课</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-4">集体备课</h1>
         <FilterBar>
           <select
             value={semester}
@@ -78,7 +78,7 @@ export default function GroupLessonsPage() {
               setSemester(e.target.value);
               resetPage();
             }}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="rounded-lg border px-3 py-2 text-base"
           >
             <option value="">全部学期</option>
             <option>2026-2027学年上学期</option>
@@ -87,7 +87,7 @@ export default function GroupLessonsPage() {
           <select
             value={week}
             onChange={(e) => setWeek(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="rounded-lg border px-3 py-2 text-base"
           >
             <option value="">全部周</option>
             {Array.from({ length: 20 }, (_, i) => i + 1).map((w) => (
@@ -114,8 +114,8 @@ export default function GroupLessonsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
+            <table className="w-full text-base">
+              <thead className="bg-slate-50 text-sm text-slate-500">
                 <tr>
                   <th className="p-3 text-left w-12">序号</th>
                   <th className="p-3 text-left">备课内容</th>
@@ -129,18 +129,18 @@ export default function GroupLessonsPage() {
               <tbody>
                 {filtered.slice((page - 1) * pageSize, page * pageSize).map((item, i) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-xs text-slate-400">{i + 1}</td>
-                    <td className="p-3 font-medium text-slate-700">{item.title}</td>
+                    <td className="p-3 text-sm text-slate-400">{i + 1}</td>
+                    <td className="p-3 font-medium text-base text-slate-700">{item.title}</td>
                     <td className="p-3">
                       <Badge variant="green">
                         {item.subject || item.group_lesson_type || '集体备课'}
                       </Badge>
                     </td>
-                    <td className="p-3 text-xs text-slate-500">
+                    <td className="p-3 text-sm text-slate-500">
                       {item.academic_year || '2026-2027学年上学期'}
                     </td>
-                    <td className="p-3 text-xs text-slate-500">—</td>
-                    <td className="p-3 text-xs text-slate-400">
+                    <td className="p-3 text-sm text-slate-500">—</td>
+                    <td className="p-3 text-sm text-slate-400">
                       {new Date(item.created_at).toLocaleDateString('zh-CN')}
                     </td>
                     <td className="p-3 text-right space-x-1">

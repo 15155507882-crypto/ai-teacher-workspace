@@ -229,7 +229,7 @@ export default function WorkspacePage() {
                   副标题: 上传教学资料, AI 自动识别分类并生成备课、反思、计划与总结记录。 你好
                   {teacher?.name ? `，${teacher.name}` : ''}
                 </h3>
-                <p className="text-sm text-slate-400">上传课件或输入文字开始备课</p>
+                <p className="text-base text-slate-400">上传课件或输入文字开始备课</p>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -243,7 +243,7 @@ export default function WorkspacePage() {
                       ✨
                     </div>
                     <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-base text-slate-700 whitespace-pre-wrap leading-relaxed">
                         {msg.text_content}
                       </p>
                       {msg.pending && (
@@ -270,7 +270,7 @@ export default function WorkspacePage() {
                 <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-xs mt-1 animate-breathe">
                   ✨
                 </div>
-                <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm text-sm text-slate-400 flex items-center gap-2">
+                <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm text-base text-slate-400 flex items-center gap-2">
                   <span className="inline-flex gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-breathe" />
                     <span
@@ -368,7 +368,7 @@ export default function WorkspacePage() {
               </div>
             ))}
             {filteredWorks.length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-8">
+              <p className="text-base text-slate-400 text-center py-8">
                 {works.length === 0 ? '暂无工作记录' : '无匹配结果'}
               </p>
             )}

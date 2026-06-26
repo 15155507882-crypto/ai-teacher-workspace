@@ -140,18 +140,27 @@ export default function AdminDeptPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                 <tr>
+                  <th className="p-3 text-left">排序</th>
                   <th className="p-3 text-left">名称</th>
                   <th className="p-3 text-left">上级组织</th>
-                  <th className="p-3 text-left">排序</th>
                   <th className="p-3 text-left">状态</th>
                   <th className="p-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {depts.map((d) => (
+                {depts
+                  .sort((a, b) => {
+                    if (a.status === 'disabled' && b.status !== 'disabled') return 1;
+                    if (b.status === 'disabled' && a.status !== 'disabled') return -1;
+                    return a.sort_order - b.sort_order;
+                  })
+                  .map((d) => (
                   <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
+                    <td className="p-3 text-slate-500">{d.sort_order}</td>
                     <td className="p-3 font-medium text-slate-800">{d.name}</td>
                     <td className="p-3 text-slate-500">
+                      {d.parent_id ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id : '学校（顶级）'}
+                    </td>
                       {d.parent_id
                         ? depts.find((x) => x.id === d.parent_id)?.name || d.parent_id
                         : '学校（顶级）'}

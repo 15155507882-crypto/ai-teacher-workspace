@@ -90,7 +90,9 @@ export default function AdminTeachersPage() {
     ]);
     if (dRes.code === 0) setDepartments(dRes.data);
     if (tRes.code === 0) {
-      const deptMap = new Map((dRes.data || []).map((d: any) => [d.id, d.name]));
+      const deptMap = new Map(
+        (dRes.data || []).map((d: any) => [Number(d.id), d.name] as [number, string])
+      );
       setTeachers(
         (tRes.data.items || []).map((t: Teacher) => ({
           ...t,
@@ -465,7 +467,9 @@ export default function AdminTeachersPage() {
               </thead>
               <tbody>
                 {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => {
-                  const deptMap = new Map(departments.map((d) => [d.id, d.name]));
+                  const deptMap = new Map(
+                    departments.map((d) => [Number(d.id), d.name] as [number, string])
+                  );
                   const roleMap: Record<string, string> = { teacher: '教师', admin: '管理员' };
                   const roles = (t.role || '')
                     .split(',')
@@ -473,16 +477,20 @@ export default function AdminTeachersPage() {
                     .filter(Boolean);
                   // 合并 department_name 和 department_ids 显示
                   const deptNames: string[] = [];
-                  if (t.department_name) deptNames.push(t.department_name);
+                  // 先收集所有去重ID
+                  const allDeptIds = new Set<number>();
+                  if (t.department_id) allDeptIds.add(Number(t.department_id));
                   if (t.department_ids) {
                     t.department_ids.split(',').forEach((idStr) => {
                       const did = Number(idStr.trim());
-                      if (did && did !== t.department_id) {
-                        const name = deptMap.get(did);
-                        if (name && !deptNames.includes(name)) deptNames.push(name);
-                      }
+                      if (did) allDeptIds.add(did);
                     });
                   }
+                  // 按ID查名称
+                  allDeptIds.forEach((did) => {
+                    const name = deptMap.get(did) || '';
+                    if (name) deptNames.push(name);
+                  });
                   return (
                     <tr key={t.id} className="border-t hover:bg-slate-50">
                       <td className="p-3 text-sm text-slate-400">

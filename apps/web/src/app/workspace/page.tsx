@@ -202,14 +202,37 @@ export default function WorkspacePage() {
     }, 1200);
   };
 
+  const TYPE_LABEL: Record<string, string> = {
+    personal_lesson: '个人备课', reflection: '教学反思', teaching_reflection: '教学反思',
+    group_lesson: '集体备课', plan_summary: '计划总结',
+    semester_plan: '学期计划', semester_summary: '学期总结',
+  };
+
+  const normalizeType = (t: string) => {
+    if (t === 'teaching_reflection') return 'reflection';
+    return t;
+  };
+
   const confirm = async (msgId: number, result: any) => {
+    const apiMsgId = Number(msgId);
+    const type = normalizeType(result.type);
+    const title = result.title_candidate || result.title || '未命名内容';
+    console.log('[AI-CONFIRM-PAYLOAD]', { messageId: apiMsgId, type, title, subject: result.subject, grade: result.grade });
+    if (!apiMsgId || apiMsgId <= 0) {
+      setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: '识别结果异常：缺少消息ID，请重新识别。' }]);
+      return;
+    }
+    if (!title || title === '未命名内容') {
+      setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: '请先填写标题。' }]);
+      return;
+    }
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, saving: true } : m));
     try {
       const r = await fetch('/api/ai/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
         body: JSON.stringify({
-          messageId: msgId, type: result.type, title: result.title_candidate,
+          messageId: apiMsgId, type, title,
           subject: result.subject, grade: result.grade,
           linkedContentId: linkedLessonId || result.extracted_entities?.recommended_lesson?.id,
         }),
@@ -317,15 +340,7 @@ export default function WorkspacePage() {
                               {[
                                 {
                                   k: 'type',
-                                  v:
-                                    (
-                                      {
-                                        personal_lesson: '个人备课',
-                                        reflection: '教学反思',
-                                        group_lesson: '集体备课',
-                                        plan_summary: '计划总结',
-                                      } as Record<string, string>
-                                    )[msg.result.type] || msg.result.type,
+                                  v: TYPE_LABEL[normalizeType(msg.result.type)] || msg.result.type,
                                   l: '分类',
                                 },
                                 { k: 'title_candidate', v: msg.result.title_candidate, l: '标题' },
@@ -352,8 +367,8 @@ export default function WorkspacePage() {
                                 </Button>
                               )}
                               <select
-                                value={msg.result.type}
-                                onChange={e => modifyType(msg.id, e.target.value)}
+                                value={normalizeType(msg.result.type)}
+                                onChange={e => modifyType(msg.id, normalizeType(e.target.value))}
                                 className="text-xs rounded border bg-white px-2 py-1.5 text-slate-600"
                               >
                                 <option value="personal_lesson">个人备课</option>

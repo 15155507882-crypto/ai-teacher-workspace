@@ -79,7 +79,7 @@ class RateLimiter {
 // ======= API 通信 =======
 async function fetchConfigFromApi(): Promise<WorkerConfig | null> {
   const host = process.env.API_INTERNAL_URL || 'http://localhost:3000';
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     try {
       const res = await fetch(`${host}/api/admin/ai-configs/active/internal`, {
         signal: AbortSignal.timeout(5000),
@@ -96,7 +96,7 @@ async function fetchConfigFromApi(): Promise<WorkerConfig | null> {
         };
       }
     } catch {}
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 5000));
   }
   return null;
 }

@@ -44,7 +44,7 @@ export class AIService {
       sender_type: 'teacher',
       message_type: dto.file_id ? 'file' : 'text',
       text_content: dto.text || null,
-      file_id: dto.file_id || null,
+      file_id: dto.file_id ? Number(dto.file_id) : null,
     });
     const savedMsg = await this.messageRepo.save(message);
 
@@ -68,17 +68,38 @@ export class AIService {
         const file = await this.fileAssetRepo.findById(fid);
         if (file) {
           fileName = file.original_name || '';
+          console.log('[FILE-ASSET-LOAD]', { file_id: fid, original_name: fileName, mime_type: file.mime_type, storage_key: file.storage_key });
           const fs = require('fs');
           const path = require('path');
           const filePath = path.resolve('./storage', file.storage_key || '');
-          if (fs.existsSync(filePath)) {
-            fileContent = fs.readFileSync(filePath, 'utf-8').slice(0, 10000);
+          const exists = fs.existsSync(filePath);
+          console.log('[FILE-PATH-CHECK]', { filePath, exists, size: exists ? fs.statSync(filePath).size : 0 });
+
+          if (exists) {
+            if (fileName.endsWith('.txt')) {
+              fileContent = fs.readFileSync(filePath, 'utf-8').slice(0, 10000);
+            } else if (fileName.endsWith('.docx')) {
+              // docx: 解压ZIP，提取document.xml中的文本
+              try {
+                const AdmZip = require('adm-zip');
+                const zip = new AdmZip(filePath);
+                const docXml = zip.readAsText('word/document.xml');
+                // 简单提取 <w:t> 标签内容
+                const texts = docXml.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+                fileContent = texts.map((t: string) => t.replace(/<\/?w:t[^>]*>/g, '')).join('').slice(0, 10000);
+                console.log('[DOCX-EXTRACT-RESULT]', { textLength: fileContent.length, textPreview: fileContent.slice(0, 100) });
+              } catch (e: any) {
+                console.error('[DOCX-EXTRACT-FAILED]', e.message?.slice(0, 200));
+                fileContent = `[docx解析失败: ${e.message?.slice(0, 100)}]`;
+              }
+            }
           }
         }
       } catch (e: any) {
-        console.error('File read error:', e.message?.slice(0, 100));
+        console.error('[FILE-READ-ERROR]', e.message?.slice(0, 200));
       }
     }
+    console.log('[AI-JOB-ENQUEUE]', { text: (dto.text||'').slice(0,50), file_id: dto.file_id, fileName, fileContentLen: fileContent.length });
 
     await this.aiQueue.add('classify-content', {
       sessionId: session.id,

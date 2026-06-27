@@ -202,27 +202,43 @@ export default function WorkspacePage() {
   };
 
   const confirm = async (msgId: number, result: any) => {
-    const r = await fetch('/api/ai/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
-      body: JSON.stringify({
-        messageId: msgId,
-        type: result.type,
-        title: result.title_candidate,
-        subject: result.subject,
-        grade: result.grade,
-        linkedContentId: linkedLessonId || result.extracted_entities?.recommended_lesson?.id,
-      }),
-    });
-    const j = await r.json();
-    if (j.data?.conflict) {
-      setMessages((prev) => [...prev, { id: Date.now(), sender: 'ai', text: j.data.message }]);
-      return;
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, saving: true } : m));
+    try {
+      const r = await fetch('/api/ai/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+        body: JSON.stringify({
+          messageId: msgId, type: result.type, title: result.title_candidate,
+          subject: result.subject, grade: result.grade,
+          linkedContentId: linkedLessonId || result.extracted_entities?.recommended_lesson?.id,
+        }),
+      });
+      const j = await r.json();
+      if (j.data?.conflict) {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, saving: false } : m));
+        setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: j.data.message }]);
+        return;
+      }
+      if (j.code === 0) {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, result: undefined, saved: true } : m));
+        loadWorks();
+      } else {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, saving: false } : m));
+        setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: '保存失败: ' + (j.message || '未知错误') }]);
+      }
+    } catch {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, saving: false } : m));
     }
-    if (j.code === 0) {
-      setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, result: undefined } : m)));
-      loadWorks();
-    }
+  };
+
+  const modifyType = (msgId: number, newType: string) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId && m.result) {
+        const labels: Record<string,string> = { personal_lesson:'个人备课',reflection:'教学反思',group_lesson:'集体备课',plan_summary:'计划总结' };
+        return { ...m, result: { ...m.result, type: newType, title_candidate: (labels[newType]||newType) + ': ' + (m.result.title_candidate||'') } };
+      }
+      return m;
+    }));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -302,38 +318,24 @@ export default function WorkspacePage() {
                                   )
                               )}
                             </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={() => confirm(msg.id, msg.result)}>
-                                确认保存
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const types = [
-                                    'personal_lesson',
-                                    'reflection',
-                                    'group_lesson',
-                                    'plan_summary',
-                                  ];
-                                  const labels = {
-                                    personal_lesson: '个人备课',
-                                    reflection: '教学反思',
-                                    group_lesson: '集体备课',
-                                    plan_summary: '计划总结',
-                                  };
-                                  const t = prompt(
-                                    '请选择分类:\n1. 个人备课\n2. 教学反思\n3. 集体备课\n4. 计划与总结\n\n输入数字1-4:',
-                                    types.indexOf(msg.result.type) + 1
-                                  );
-                                  if (t && parseInt(t) >= 1 && parseInt(t) <= 4) {
-                                    msg.result.type = types[parseInt(t) - 1];
-                                    setMessages([...messages]);
-                                  }
-                                }}
+                            <div className="flex gap-2 flex-wrap items-center">
+                              {msg.saved ? (
+                                <span className="text-sm text-green-600">✅ 已保存</span>
+                              ) : (
+                                <Button size="sm" onClick={() => confirm(msg.id, msg.result)} disabled={(msg as any).saving}>
+                                  {(msg as any).saving ? '保存中...' : '确认保存'}
+                                </Button>
+                              )}
+                              <select
+                                value={msg.result.type}
+                                onChange={e => modifyType(msg.id, e.target.value)}
+                                className="text-xs rounded border bg-white px-2 py-1.5 text-slate-600"
                               >
-                                修改分类
-                              </Button>
+                                <option value="personal_lesson">个人备课</option>
+                                <option value="reflection">教学反思</option>
+                                <option value="group_lesson">集体备课</option>
+                                <option value="plan_summary">计划总结</option>
+                              </select>
                             </div>
                           </div>
                         )}

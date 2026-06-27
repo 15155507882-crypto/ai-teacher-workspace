@@ -492,9 +492,14 @@ async function bootstrap() {
         const chatKey2 = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
         const chatUsed2 = parseInt((await redis.get(chatKey2)) || '0');
         const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const hasApiKey = config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key';
+        console.log('[LLM-CONFIG]', { provider: config.providerName, model: config.model, hasApiKey, baseUrl: config.baseUrl });
         let nlReply = '';
+        let llmCalled = false;
         try {
-          if (config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
+          if (hasApiKey) {
+            console.log('[LLM-CALL-START]', { messageId, scene: scene.scene, hasFile: !!fileName, file_id: job.data.fileId, promptLen: inputText.length });
+            llmCalled = true;
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), CFG.httpTimeout);
             const res = await fetch(`${config.baseUrl}/chat/completions`, {
@@ -518,11 +523,10 @@ async function bootstrap() {
             }
           }
           if (!nlReply || nlReply.length < 5) {
-            nlReply = '你好！我是AI教学助手，有什么可以帮你的吗？';
+            nlReply = hasApiKey ? '当前 AI 模型暂时不可用，请稍后重试或联系管理员检查模型配置。' : '当前 AI 模型未配置或不可用，请管理员到系统设置 → AI 配置中配置有效模型。';
           }
         } catch {
-          const greet = inputText.includes('？') || inputText.includes('吗') ? '这是一个好问题，让我想想...' : '你好！我是AI教学助手，有什么可以帮你的吗？';
-          nlReply = greet;
+              nlReply = hasApiKey ? '当前 AI 模型暂时不可用，请稍后重试或联系管理员检查模型配置。' : '当前 AI 模型未配置或不可用，请管理员到系统设置 → AI 配置中配置有效模型。';
         }
         const result = {
           scene: 'normal_chat', isBusinessScene: false, type: 'normal_chat',

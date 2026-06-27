@@ -125,7 +125,9 @@ export default function HomePage() {
               </div>
             </div>
           ))}
-          {grouped.length === 0 && <div className="text-center py-16 text-slate-400">暂无数据</div>}
+          {filtered.length === 0 && (
+            <div className="text-center py-16 text-slate-400">暂无数据</div>
+          )}
         </div>
       </div>
     </div>

@@ -1,12 +1,19 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { AdminShell } from '@/components/admin-shell';
-import { AdminPageHeader } from '@/components/admin-ui';
+import { AdminPageHeader, AdminDialog } from '@/components/admin-ui';
+
+interface SemesterEntry {
+  name: string;
+  year: string;
+  start: string;
+  end: string;
+}
 
 interface SchoolSettings {
   academic_years?: string[];
   current_year?: string;
-  semesters?: { name: string; start: string; end: string }[];
+  semesters?: SemesterEntry[];
   current_semester?: string;
 }
 
@@ -23,16 +30,47 @@ async function api(url: string, options?: RequestInit) {
   return res.json();
 }
 
+function getStatus(sem: SemesterEntry, currentYear?: string, currentSemester?: string) {
+  const today = new Date().toISOString().split('T')[0];
+  if (sem.year === currentYear && sem.name === currentSemester) return 'using';
+  if (sem.end && sem.end < today) return 'expired';
+  if (sem.start && sem.start > today) return 'upcoming';
+  return 'normal';
+}
+
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  using: { label: '使用中', cls: 'bg-green-50 text-green-700' },
+  expired: { label: '过期', cls: 'bg-gray-100 text-gray-500' },
+  upcoming: { label: '未到', cls: 'bg-blue-50 text-blue-600' },
+  normal: { label: '未生效', cls: 'bg-slate-50 text-slate-500' },
+};
+
+function StatusTag({ status }: { status: string }) {
+  const cfg = STATUS_MAP[status] || STATUS_MAP.normal;
+  return (
+    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 export default function SchoolSettingsPage() {
   const [settings, setSettings] = useState<SchoolSettings>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [form, setForm] = useState<SemesterEntry>({
+    name: '',
+    year: '',
+    start: '',
+    end: '',
+  });
 
   useEffect(() => {
     api('/api/admin/school/settings')
       .then((j) => {
-        // Handle both wrapped {code:0, data:...} and unwrapped responses
         const data = j.data !== undefined ? j.data : j;
         if (j.code !== undefined && j.code !== 0) {
           setMsg(j.message || '加载失败');
@@ -44,42 +82,73 @@ export default function SchoolSettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function save() {
+  async function save(newSettings?: SchoolSettings) {
+    const s = newSettings || settings;
     setSaving(true);
     setMsg('');
     const j = await api('/api/admin/school/settings', {
       method: 'PUT',
-      body: JSON.stringify(settings),
+      body: JSON.stringify(s),
     });
-    if (j.code === undefined || j.code === 0) setMsg('✅ 设置已保存');
-    else setMsg(j.message || '保存失败');
+    if (j.code === undefined || j.code === 0) {
+      setSettings(s);
+      setMsg('✅ 已保存');
+    } else {
+      setMsg(j.message || '保存失败');
+    }
     setSaving(false);
   }
 
-  const years = settings.academic_years || [];
   const semesters = settings.semesters || [];
+  const years = settings.academic_years || [];
 
-  function addYear() {
-    setSettings({ ...settings, academic_years: [...years, ''] });
-  }
-  function updateYear(i: number, val: string) {
-    const arr = [...years];
-    arr[i] = val;
-    setSettings({ ...settings, academic_years: arr });
-  }
-  function removeYear(i: number) {
-    setSettings({ ...settings, academic_years: years.filter((_, idx) => idx !== i) });
+  function openAdd() {
+    setEditingIndex(null);
+    setForm({ name: '', year: settings.current_year || years[0] || '', start: '', end: '' });
+    setDialogOpen(true);
   }
 
-  function addSemester() {
-    setSettings({ ...settings, semesters: [...semesters, { name: '', start: '', end: '' }] });
+  function openEdit(index: number) {
+    setEditingIndex(index);
+    setForm({ ...semesters[index] });
+    setDialogOpen(true);
   }
-  function updateSemester(i: number, field: keyof (typeof semesters)[0], val: string) {
-    const arr = semesters.map((s, idx) => (idx === i ? { ...s, [field]: val } : s));
-    setSettings({ ...settings, semesters: arr });
+
+  function handleSaveDialog() {
+    if (!form.name || !form.year || !form.start || !form.end) {
+      setMsg('请填写完整信息');
+      return;
+    }
+    const newSemesters = [...semesters];
+    if (editingIndex !== null) {
+      newSemesters[editingIndex] = form;
+    } else {
+      newSemesters.push(form);
+    }
+    // 自动添加学年到列表
+    const newYears = [...years];
+    if (!newYears.includes(form.year)) {
+      newYears.push(form.year);
+    }
+    const newSettings: SchoolSettings = {
+      ...settings,
+      academic_years: newYears,
+      semesters: newSemesters,
+    };
+    save(newSettings);
+    setDialogOpen(false);
   }
-  function removeSemester(i: number) {
-    setSettings({ ...settings, semesters: semesters.filter((_, idx) => idx !== i) });
+
+  async function handleDelete(index: number) {
+    if (!confirm('确定删除该条目？')) return;
+    const newSemesters = semesters.filter((_, i) => i !== index);
+    const newSettings = { ...settings, semesters: newSemesters };
+    save(newSettings);
+  }
+
+  async function setCurrent(year: string, semester: string) {
+    const newSettings = { ...settings, current_year: year, current_semester: semester };
+    save(newSettings);
   }
 
   if (loading)
@@ -91,9 +160,19 @@ export default function SchoolSettingsPage() {
 
   return (
     <AdminShell>
-      <div className="p-6 max-w-3xl">
-        <AdminPageHeader title="⚙️ 系统设置" />
-        <p className="text-sm text-slate-500 -mt-3 mb-5">配置学年和学期的起始时间</p>
+      <div className="p-6">
+        <AdminPageHeader
+          title="📅 学年管理"
+          action={
+            <button
+              onClick={openAdd}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + 新增
+            </button>
+          }
+        />
+
         {msg && (
           <div
             className={`mb-4 text-sm p-3 rounded-lg ${msg.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
@@ -102,129 +181,166 @@ export default function SchoolSettingsPage() {
           </div>
         )}
 
-        {/* 当前学年/学期 */}
-        <div className="bg-white rounded-xl border p-5 mb-5 space-y-4">
-          <h3 className="font-semibold text-slate-800">当前生效</h3>
+        {/* 当前生效 */}
+        <div className="bg-white rounded-xl border p-4 mb-5 flex items-center gap-6 flex-wrap">
+          <span className="text-sm font-medium text-slate-700 shrink-0">当前生效：</span>
+          <div className="flex items-center gap-2">
+            <select
+              value={settings.current_year || ''}
+              onChange={(e) => setCurrent(e.target.value, settings.current_semester || '')}
+              className="rounded-lg border px-3 py-1.5 text-sm"
+            >
+              <option value="">选择学年</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+            <select
+              value={settings.current_semester || ''}
+              onChange={(e) => setCurrent(settings.current_year || '', e.target.value)}
+              className="rounded-lg border px-3 py-1.5 text-sm"
+            >
+              <option value="">选择学期</option>
+              {semesters
+                .filter((s) => s.year === settings.current_year)
+                .map((s) => (
+                  <option key={s.name + s.year} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <span className="text-xs text-slate-400">选择后自动保存</span>
+        </div>
+
+        {/* 学年学期表格 */}
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-16">序号</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium">学年学期名</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium">时间段</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">状态</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {semesters.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                    暂无数据，点击右上角「新增」添加
+                  </td>
+                </tr>
+              )}
+              {semesters.map((sem, i) => (
+                <tr key={i} className="hover:bg-slate-50/50">
+                  <td className="px-4 py-3 text-slate-500">{i + 1}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {sem.year}学年 {sem.name}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {sem.start} ~ {sem.end}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusTag
+                      status={getStatus(sem, settings.current_year, settings.current_semester)}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEdit(i)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => handleDelete(i)}
+                        className="text-xs text-red-500 hover:underline"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 新增/编辑弹窗 */}
+      <AdminDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={editingIndex !== null ? '编辑学年学期' : '新增学年学期'}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              学年 <span className="text-red-400">*</span>
+            </label>
+            <input
+              value={form.year}
+              onChange={(e) => setForm({ ...form, year: e.target.value })}
+              placeholder="如 2025-2026"
+              className="w-full rounded-lg border px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              学期名 <span className="text-red-400">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="如 第一学期"
+              className="w-full rounded-lg border px-3 py-2 text-sm"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">当前学年</label>
-              <select
-                value={settings.current_year || ''}
-                onChange={(e) => setSettings({ ...settings, current_year: e.target.value })}
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                开始日期 <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.start}
+                onChange={(e) => setForm({ ...form, start: e.target.value })}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
-              >
-                <option value="">-- 请选择 --</option>
-                {years.map(
-                  (y) =>
-                    y && (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    )
-                )}
-              </select>
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">当前学期</label>
-              <select
-                value={settings.current_semester || ''}
-                onChange={(e) => setSettings({ ...settings, current_semester: e.target.value })}
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                结束日期 <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.end}
+                onChange={(e) => setForm({ ...form, end: e.target.value })}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
-              >
-                <option value="">-- 请选择 --</option>
-                {semesters.map(
-                  (s) =>
-                    s.name && (
-                      <option key={s.name} value={s.name}>
-                        {s.name}
-                      </option>
-                    )
-                )}
-              </select>
+              />
             </div>
           </div>
-        </div>
-
-        {/* 学年列表 */}
-        <div className="bg-white rounded-xl border p-5 mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-800">学年列表</h3>
-            <button onClick={addYear} className="text-sm text-blue-600 hover:underline">
-              + 添加学年
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setDialogOpen(false)}
+              className="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSaveDialog}
+              className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+            >
+              保存
             </button>
           </div>
-          <div className="space-y-2">
-            {years.map((year, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <input
-                  value={year}
-                  onChange={(e) => updateYear(i, e.target.value)}
-                  placeholder="如 2025-2026"
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={() => removeYear(i)}
-                  className="text-red-400 text-sm hover:text-red-600"
-                >
-                  删除
-                </button>
-              </div>
-            ))}
-            {years.length === 0 && <p className="text-sm text-slate-400">暂无学年，点击添加</p>}
-          </div>
         </div>
-
-        {/* 学期列表 */}
-        <div className="bg-white rounded-xl border p-5 mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-800">学期设置</h3>
-            <button onClick={addSemester} className="text-sm text-blue-600 hover:underline">
-              + 添加学期
-            </button>
-          </div>
-          <div className="space-y-3">
-            {semesters.map((sem, i) => (
-              <div key={i} className="flex gap-2 items-center flex-wrap">
-                <input
-                  value={sem.name}
-                  onChange={(e) => updateSemester(i, 'name', e.target.value)}
-                  placeholder="学期名称 (如 第一学期)"
-                  className="w-32 rounded-lg border px-3 py-2 text-sm"
-                />
-                <span className="text-xs text-slate-400">起</span>
-                <input
-                  type="date"
-                  value={sem.start}
-                  onChange={(e) => updateSemester(i, 'start', e.target.value)}
-                  className="rounded-lg border px-3 py-2 text-sm"
-                />
-                <span className="text-xs text-slate-400">止</span>
-                <input
-                  type="date"
-                  value={sem.end}
-                  onChange={(e) => updateSemester(i, 'end', e.target.value)}
-                  className="rounded-lg border px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={() => removeSemester(i)}
-                  className="text-red-400 text-sm hover:text-red-600"
-                >
-                  删除
-                </button>
-              </div>
-            ))}
-            {semesters.length === 0 && <p className="text-sm text-slate-400">暂无学期，点击添加</p>}
-          </div>
-        </div>
-
-        <button
-          onClick={save}
-          disabled={saving}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {saving ? '保存中...' : '保存设置'}
-        </button>
-      </div>
+      </AdminDialog>
     </AdminShell>
   );
 }

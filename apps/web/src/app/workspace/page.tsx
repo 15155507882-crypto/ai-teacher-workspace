@@ -20,6 +20,8 @@ export default function WorkspacePage() {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
+  const [mode, setMode] = useState('auto');
+  const [quota, setQuota] = useState({ used: 0, limit: 10, remaining: 10 });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -42,6 +44,8 @@ export default function WorkspacePage() {
     setTeacher(JSON.parse(t));
     loadHistory();
     loadWorks();
+    fetch('/api/ai/chat-quota', { headers: { Authorization: `Bearer ${tk()}` } })
+      .then(r => r.json()).then(j => { if (j.code===0) setQuota(j.data); }).catch(()=>{});
   }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({behavior:'smooth'}); }, [messages,thinking]);
@@ -100,7 +104,7 @@ export default function WorkspacePage() {
       }
       
       setThinkingStep(1);
-      const chat = await fetch('/api/ai/chat', { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${tk()}`}, body:JSON.stringify({ text, file_id: fileId }) }).then(r=>r.json());
+      const chat = await fetch('/api/ai/chat', { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${tk()}`}, body:JSON.stringify({ text, file_id: fileId, mode }) }).then(r=>r.json());
       if (chat.code===0) pollResult(chat.data.messageId);
       else { setThinking(false); }
     } catch { setThinking(false); }
@@ -149,7 +153,7 @@ export default function WorkspacePage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       <TopNav />
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT: Chat 70% */}
@@ -171,7 +175,7 @@ export default function WorkspacePage() {
                       <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-xs shrink-0 mt-1">✨</div>
                       <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm min-w-0">
                         <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                        {msg.result && (
+                        {msg.result && msg.result.isBusinessScene !== false && (
                           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             <div className="flex flex-wrap gap-2 text-xs">
                               {[{k:'type',v:({ personal_lesson: '个人备课', reflection: '教学反思', group_lesson: '集体备课', plan_summary: '计划总结' } as Record<string,string>)[msg.result.type] || msg.result.type, l:'分类'},{k:'title_candidate',v:msg.result.title_candidate,l:'标题'},{k:'subject',v:msg.result.subject,l:'学科'},{k:'grade',v:msg.result.grade,l:'年级'}].map(f=>f.v&&(
@@ -253,14 +257,25 @@ export default function WorkspacePage() {
                   rows={1}
                   className="flex-1 resize-none border-0 bg-transparent py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none min-h-[24px] max-h-[120px]"
                 />
+                <select value={mode} onChange={(e)=>setMode(e.target.value)}
+                  className="text-xs rounded-lg border bg-slate-50 px-2 py-2 text-slate-500 focus:outline-none shrink-0">
+                  <option value="auto">自动识别</option>
+                  <option value="normal_chat">普通聊天</option>
+                  <option value="personal_lesson">个人备课</option>
+                  <option value="group_lesson">集体备课</option>
+                  <option value="semester_plan">学期计划</option>
+                  <option value="semester_summary">学期总结</option>
+                  <option value="teaching_reflection">教学反思</option>
+                </select>
                 <Button size="sm" onClick={send} disabled={!input.trim()&&attachments.length===0} className="mb-0.5">发送</Button>
               </div>
+              {mode==='normal_chat' && <p className="text-xs text-slate-400 mt-1">今日普通聊天剩余 {quota.remaining}/{quota.limit} 次</p>}
             </div>
           </div>
-        </div>
 
         {/* RIGHT: Work results 30% */}
-        <div className="flex-[3] flex flex-col bg-white overflow-y-auto">
+        <div className="flex-[3] flex flex-col bg-white overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0">
           <div className="p-4 border-b border-slate-100 space-y-3">
             <Input value={workSearch} onChange={e=>setWorkSearch(e.target.value)} placeholder="搜索工作记录..." className="text-sm"/>
             <div className="flex gap-1 flex-wrap">

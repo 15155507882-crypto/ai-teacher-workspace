@@ -617,11 +617,15 @@ export default function AdminTeachersPage() {
                         className="sr-only"
                         checked={form.department_ids.includes(d.id)}
                         onChange={() => {
+                          const isChecked = form.department_ids.includes(d.id);
+                          const newIds = isChecked
+                            ? form.department_ids.filter((id) => id !== d.id)
+                            : [...form.department_ids, d.id];
                           setForm({
                             ...form,
-                            department_ids: form.department_ids.includes(d.id)
-                              ? form.department_ids.filter((id) => id !== d.id)
-                              : [...form.department_ids, d.id],
+                            department_ids: newIds,
+                            // 第一个选中的组织作为主部门
+                            department_id: newIds.length > 0 ? newIds[0] : 1,
                           });
                         }}
                       />

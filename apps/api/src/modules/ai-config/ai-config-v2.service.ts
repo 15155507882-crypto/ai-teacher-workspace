@@ -112,13 +112,10 @@ export class AiConfigV2Service {
   /** 设为当前使用（事务） */
   async setActive(id: number) {
     return this.dataSource.transaction(async (mgr) => {
-      const config = await mgr.findOne(AiConfig, { where: { id } });
+      const config = await mgr.findOneBy(AiConfig, { id });
       if (!config) throw new NotFoundException('Provider不存在');
       if (!config.enabled) throw new BadRequestException('已停用的Provider不能设为当前使用');
-
-      // 先清空所有 is_active
-      await mgr.update(AiConfig, {}, { is_active: false });
-      // 设当前
+      await mgr.update(AiConfig, { is_active: true }, { is_active: false });
       await mgr.update(AiConfig, { id }, { is_active: true });
       return { success: true };
     });
@@ -126,16 +123,19 @@ export class AiConfigV2Service {
 
   /** 启用 */
   async enable(id: number) {
-    await this.repo.update({ id }, { enabled: true });
-    const enabled = await this.repo.findOne({ where: { id } });
-    return this.maskConfig(enabled!);
+    const config = await this.repo.findOneBy({ id });
+    if (!config) throw new NotFoundException('Provider不存在');
+    config.enabled = true;
+    return this.maskConfig(await this.repo.save(config));
   }
 
   /** 停用 */
   async disable(id: number) {
-    await this.repo.update({ id }, { enabled: false, is_active: false });
-    const disabled = await this.repo.findOne({ where: { id } });
-    return this.maskConfig(disabled!);
+    const config = await this.repo.findOneBy({ id });
+    if (!config) throw new NotFoundException('Provider不存在');
+    config.enabled = false;
+    config.is_active = false;
+    return this.maskConfig(await this.repo.save(config));
   }
 
   /** 测试连接 */

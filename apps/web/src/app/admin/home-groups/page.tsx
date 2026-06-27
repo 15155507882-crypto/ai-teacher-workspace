@@ -171,7 +171,7 @@ export default function AdminHomeGroupsPage() {
   function openTeachers(g: Group) {
     setEditing(g);
     setTeacherSearch('');
-    const ids = (g as any).teacher_ids || [];
+    const ids = (g as any).teacher_ids || (g as any).teachers?.map((t: any) => Number(t.id)) || [];
     setSelectedTeachers(ids.map(Number));
     setTeacherOpen(true);
   }
@@ -501,10 +501,12 @@ export default function AdminHomeGroupsPage() {
                 >
                   <input
                     type="checkbox"
-                    checked={selectedTeachers.includes(t.id)}
+                    checked={selectedTeachers.includes(Number(t.id))}
                     onChange={() => {
                       setSelectedTeachers((prev) =>
-                        prev.includes(t.id) ? prev.filter((id) => id !== t.id) : [...prev, t.id]
+                        prev.includes(Number(t.id))
+                          ? prev.filter((id) => id !== Number(t.id))
+                          : [...prev, Number(t.id)]
                       );
                     }}
                   />

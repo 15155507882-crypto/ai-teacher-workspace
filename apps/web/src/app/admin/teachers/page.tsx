@@ -627,7 +627,7 @@ export default function AdminTeachersPage() {
                     <label
                       key={d.id}
                       className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
-                        form.department_ids.includes(d.id)
+                        form.department_ids.includes(Number(d.id))
                           ? 'border-blue-400 bg-blue-50 text-blue-700'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                       }`}
@@ -635,13 +635,14 @@ export default function AdminTeachersPage() {
                       <input
                         type="checkbox"
                         className="sr-only"
-                        checked={form.department_ids.includes(d.id)}
+                        checked={form.department_ids.includes(Number(d.id))}
                         onChange={() => {
                           setForm((prev) => {
-                            const isChecked = prev.department_ids.includes(d.id);
+                            const did = Number(d.id);
+                            const isChecked = prev.department_ids.includes(did);
                             const newIds = isChecked
-                              ? prev.department_ids.filter((id) => id !== d.id)
-                              : [...prev.department_ids, d.id];
+                              ? prev.department_ids.filter((id) => id !== did)
+                              : [...prev.department_ids, did];
                             return {
                               ...prev,
                               department_ids: newIds,

@@ -271,10 +271,9 @@ async function bootstrap() {
   const worker = new Worker(
     'ai-recognition',
     async (job) => {
-      const { text, fileName, fileContent, messageId, sessionId, teacherId } = job.data;
+      const { text, fileContent, fileName, messageId, sessionId, teacherId } = job.data;
       const userId = teacherId || 0;
-
-      // 1. 去重
+      const inputText = [text, fileName, fileContent?.slice(0, 500)].filter(Boolean).join(' ');
       const contentHash = crypto
         .createHash('md5')
         .update((text || '') + (fileName || ''))
@@ -406,8 +405,7 @@ async function bootstrap() {
         return result;
       }
 
-      // 4. 场景识别（新增）
-      const inputText = [text, fileName].filter(Boolean).join(' ');
+      // 4. 场景识别
       const scene = detectScene(inputText, job.data.mode);
 
       // auto 模式 + 关键词无法判断 → 调 AI 做场景识别

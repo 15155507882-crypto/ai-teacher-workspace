@@ -6,6 +6,7 @@ import { AISessionRepository } from '../../database/repositories/ai-session.repo
 import { AIMessageRepository } from '../../database/repositories/ai-message.repository';
 import { AIDecisionLogRepository } from '../../database/repositories/ai-decision-log.repository';
 import { PersonalLessonRepository } from '../../database/repositories/personal-lesson.repository';
+import { FileAssetRepository } from '../../database/repositories/file-asset.repository';
 import { ChatDto } from './ai.dto';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AIService {
     private readonly messageRepo: AIMessageRepository,
     private readonly decisionLogRepo: AIDecisionLogRepository,
     private readonly personalLessonRepo: PersonalLessonRepository,
+    private readonly fileAssetRepo: FileAssetRepository,
     @InjectQueue('ai-recognition') private readonly aiQueue: Queue
   ) {
     this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -57,13 +59,35 @@ export class AIService {
       subject: l.subject,
     }));
 
+    // 读取附件内容
+    let fileName = '';
+    let fileContent = '';
+    if (dto.file_id) {
+      try {
+        const file = await this.fileAssetRepo.findById(dto.file_id);
+        if (file) {
+          fileName = file.original_name || '';
+          const fs = require('fs');
+          const path = require('path');
+          const filePath = path.resolve('./storage', file.storage_key || '');
+          if (fs.existsSync(filePath)) {
+            fileContent = fs.readFileSync(filePath, 'utf-8').slice(0, 10000);
+          }
+        }
+      } catch (e: any) {
+        console.error('File read error:', e.message?.slice(0, 100));
+      }
+    }
+
     await this.aiQueue.add('classify-content', {
       sessionId: session.id,
       messageId: savedMsg.id,
       teacherId,
       schoolId,
-      text: dto.text,
+      text: dto.text || (!dto.text && fileName ? '请分析这个文件内容' : ''),
       fileId: dto.file_id,
+      fileName,
+      fileContent: fileContent?.slice(0, 10000) || '',
       mode: dto.mode || 'auto',
       scope: dto.scope || 'workspace',
       recentLessons: recentData,

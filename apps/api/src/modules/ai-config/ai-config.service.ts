@@ -19,9 +19,14 @@ export class AiConfigService {
   }
 
   async getConfig() {
-    const config = await this.configRepo.findOne({ where: { school_id: 1 }, relations: ['provider'] });
+    const config = await this.configRepo.findOne({
+      where: { school_id: 1 },
+      relations: ['provider'],
+    });
     if (config?.api_key_encrypted) {
-      try { config.api_key_encrypted = decrypt(config.api_key_encrypted); } catch {}
+      try {
+        config.api_key_encrypted = decrypt(config.api_key_encrypted);
+      } catch {}
     }
     return config;
   }
@@ -61,7 +66,8 @@ export class AiConfigService {
   }
 
   async getTokenStats(range: string) {
-    const qb = this.logRepo.createQueryBuilder('log')
+    const qb = this.logRepo
+      .createQueryBuilder('log')
       .select('COALESCE(SUM(log.prompt_tokens),0)', 'prompt')
       .addSelect('COALESCE(SUM(log.completion_tokens),0)', 'completion')
       .addSelect('COALESCE(SUM(log.total_tokens),0)', 'total')
@@ -69,8 +75,12 @@ export class AiConfigService {
 
     const now = new Date();
     if (range === 'today') qb.where('log.created_at::date = CURRENT_DATE');
-    else if (range === 'week') qb.where('log.created_at >= :week', { week: new Date(now.getTime() - 7*86400000) });
-    else if (range === 'month') qb.where('log.created_at >= :month', { month: new Date(now.getFullYear(), now.getMonth(), 1) });
+    else if (range === 'week')
+      qb.where('log.created_at >= :week', { week: new Date(now.getTime() - 7 * 86400000) });
+    else if (range === 'month')
+      qb.where('log.created_at >= :month', {
+        month: new Date(now.getFullYear(), now.getMonth(), 1),
+      });
 
     const row = await qb.getRawOne();
     return {
@@ -78,7 +88,7 @@ export class AiConfigService {
       completion_tokens: parseInt(row?.completion || '0'),
       total_tokens: parseInt(row?.total || '0'),
       call_count: parseInt(row?.count || '0'),
-      estimated_cost: (parseInt(row?.total || '0') * 0.000002).toFixed(4),
+      estimated_cost: (parseInt(row?.total || '0') * 0.0000014).toFixed(4),
       range,
     };
   }

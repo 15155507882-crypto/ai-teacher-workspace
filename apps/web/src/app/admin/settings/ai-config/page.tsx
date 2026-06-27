@@ -350,7 +350,7 @@ export default function AiConfigV2Page() {
                 <p className="text-sm text-slate-500 mt-1">调用次数</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-purple-600">${stats.estimated_cost || '0'}</p>
+                <p className="text-2xl font-bold text-purple-600">¥{stats.estimated_cost || '0'}</p>
                 <p className="text-sm text-slate-500 mt-1">预估费用</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-4 text-center">
@@ -379,7 +379,7 @@ export default function AiConfigV2Page() {
                       <td className="p-3 text-right text-slate-600">
                         {u.total_tokens?.toLocaleString()}
                       </td>
-                      <td className="p-3 text-right text-slate-600">${u.estimated_cost}</td>
+                      <td className="p-3 text-right text-slate-600">¥{u.estimated_cost}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -264,7 +264,7 @@ export class AiConfigV2Service {
       completion_tokens: parseInt(row?.completion || '0'),
       total_tokens: parseInt(row?.total || '0'),
       call_count: parseInt(row?.count || '0'),
-      estimated_cost: (parseInt(row?.total || '0') * 0.000002).toFixed(4),
+      estimated_cost: (parseInt(row?.total || '0') * 0.0000014).toFixed(4),
       range,
     };
   }

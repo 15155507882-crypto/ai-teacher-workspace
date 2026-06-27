@@ -460,7 +460,7 @@ async function bootstrap() {
 7. 保持友好、专业、简洁。`
           );
           const aiReply = await callWithRetry(aiAdapter, inputText);
-          nlReply = aiReply.summary || aiReply.nl_reply || '';
+          nlReply = aiReply.summary && aiReply.summary.length > 5 ? aiReply.summary : "你好！我是AI教学助手。";
           if (!nlReply || nlReply.length < 5) {
             nlReply = '你好！我是AI教学助手，有什么可以帮你的吗？';
           }

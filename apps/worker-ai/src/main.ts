@@ -516,7 +516,12 @@ async function bootstrap() {
           need_user_confirm: true,
           need_lesson_link: aiResult.predictedType === 'reflection',
           next_action: 'confirm_' + (aiResult.predictedType || 'personal_lesson'),
-          extracted_entities: {},
+          extracted_entities:
+            scene.scene === 'semester_plan'
+              ? { plan_subtype: 'teaching_plan' }
+              : scene.scene === 'semester_summary'
+                ? { plan_subtype: 'semester_summary' }
+                : {},
           reason: aiResult.fallback ? `fallback: ${aiResult.error || 'mock'}` : 'AI识别',
           nl_reply: `识别完成: ${aiResult.predictedType} - ${aiResult.title}`,
         };

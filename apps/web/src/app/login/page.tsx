@@ -6,8 +6,8 @@ import { Captcha } from '@/components/captcha';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mobile, setMobile] = useState('');
-  const [password, setPassword] = useState('');
+  const [mobile, setMobile] = useState('13812345678');
+  const [password, setPassword] = useState('123456');
   const [captchaCode, setCaptchaCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

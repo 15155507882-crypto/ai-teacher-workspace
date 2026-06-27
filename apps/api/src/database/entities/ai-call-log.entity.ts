@@ -14,6 +14,15 @@ export class AiCallLog {
   @Column({ type: 'bigint', nullable: true })
   provider_id: number | null;
 
+  @Column({ type: 'bigint', nullable: true })
+  ai_config_id: number | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  provider_name: string | null;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  provider_type: string | null;
+
   @Column({ type: 'varchar', length: 50, nullable: true })
   model: string | null;
 
@@ -25,6 +34,9 @@ export class AiCallLog {
 
   @Column({ type: 'int', default: 0 })
   total_tokens: number;
+
+  @Column({ type: 'int', nullable: true })
+  latency_ms: number | null;
 
   @Column({ type: 'varchar', length: 30, nullable: true })
   call_type: string | null;

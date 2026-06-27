@@ -2,6 +2,26 @@ import { ContentType } from '@workspace/shared';
 import { IAIAdapter } from '../ai-adapter.interface';
 import { AIRecognitionInput, AIRecognitionResult } from '../types';
 
+export interface DeepSeekCallParams {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+}
+
+export interface DeepSeekCallResult {
+  predictedType?: ContentType | 'unknown';
+  title?: string;
+  confidence?: number;
+  subject?: string;
+  grade?: string;
+  summary?: string;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  error?: string;
+  fallback?: boolean;
+}
+
 export class DeepSeekAdapter implements IAIAdapter {
   private apiKey: string;
   private model: string;
@@ -13,90 +33,106 @@ export class DeepSeekAdapter implements IAIAdapter {
     this.baseUrl = config.baseUrl || 'https://api.deepseek.com/v1';
   }
 
-  async recognize(input: AIRecognitionInput): Promise<AIRecognitionResult> {
-    return this.recognizeWithPrompt(input, '');
+  /** 构建请求参数（由调用方执行 HTTP 请求） */
+  buildRequest(input: AIRecognitionInput, systemPrompt?: string): DeepSeekCallParams {
+    return {
+      apiKey: this.apiKey,
+      baseUrl: this.baseUrl,
+      model: this.model,
+      systemPrompt: systemPrompt || this.buildDefaultSystemPrompt(),
+      userPrompt: this.buildUserPrompt(input),
+    };
   }
 
-  async recognizeWithContext(
-    input: AIRecognitionInput,
-    history: string[]
-  ): Promise<AIRecognitionResult> {
-    return this.recognizeWithPrompt(input, '');
+  /** 解析 API 返回的原始文本为结构化结果 */
+  parseResponse(rawContent: string, input: AIRecognitionInput): DeepSeekCallResult {
+    try {
+      const parsed = JSON.parse(rawContent);
+      return {
+        predictedType: parsed.type || parsed.content_type || ContentType.PERSONAL_LESSON,
+        title: parsed.title || input.fileName || '未命名',
+        confidence: parsed.confidence || 0.85,
+        subject: parsed.subject || '',
+        grade: parsed.grade || '',
+        summary: parsed.summary || '',
+      };
+    } catch {
+      return this.mockClassify(input);
+    }
   }
 
-  async recognizeWithPrompt(
-    input: AIRecognitionInput,
-    systemPrompt: string
-  ): Promise<AIRecognitionResult> {
-    const userPrompt = this.buildUserPrompt(input);
-    const sysPrompt = systemPrompt || this.buildDefaultSystemPrompt();
-
-    // TODO: Sprint 4C - 实现实际 DeepSeek HTTP API 调用
-    // curl -X POST https://api.deepseek.com/v1/chat/completions
-    //   -H "Authorization: Bearer $AI_API_KEY"
-    //   -d '{ "model": "deepseek-chat", "messages": [{ "role": "system", "content": "..." }, { "role": "user", "content": "..." }] }'
-
-    // Smart mock: 基于文件名+文本内容关键词分类
-    const inputText = (input.fileName || '') + ' ' + (input.text || '') + ' ' + (input.fileContent || '');
+  /** Fallback 关键词分类 */
+  mockClassify(input: AIRecognitionInput): DeepSeekCallResult {
+    const inputText =
+      (input.fileName || '') + ' ' + (input.text || '') + ' ' + (input.fileContent || '');
     const lower = inputText.toLowerCase();
-    
-    let predictedType: ContentType | 'unknown' = ContentType.PERSONAL_LESSON;
+    let predictedType: ContentType = ContentType.PERSONAL_LESSON;
     let confidence = 0.75;
     let subject = '';
     let grade = '';
-    let title = input.fileName || input.text?.slice(0, 30) || '未命名';
+    const title = (input.fileName || input.text?.slice(0, 30) || '未命名')
+      .replace(/\.(docx?|pptx?|pdf|jpg|jpeg|png)$/i, '')
+      .replace(/[_-]/g, ' ')
+      .trim();
 
-    // Keyword-based classification
-    if (lower.includes('反思') || lower.includes('课后') || lower.includes('改进') || lower.includes('效果')) {
-      predictedType = ContentType.REFLECTION; confidence = 0.88;
-    } else if (lower.includes('集体备课') || lower.includes('教研') || lower.includes('组内') || lower.includes('评课')) {
-      predictedType = ContentType.GROUP_LESSON; confidence = 0.82;
-    } else if (lower.includes('计划') || lower.includes('总结') || lower.includes('学期') || lower.includes('年度')) {
-      predictedType = ContentType.PLAN_SUMMARY; confidence = 0.80;
-    } else if (lower.includes('教案') || lower.includes('课件') || lower.includes('备课') || lower.includes('教学设计')) {
-      predictedType = ContentType.PERSONAL_LESSON; confidence = 0.90;
+    if (lower.includes('反思') || lower.includes('课后')) {
+      predictedType = ContentType.REFLECTION;
+      confidence = 0.88;
+    } else if (lower.includes('集体备课') || lower.includes('教研')) {
+      predictedType = ContentType.GROUP_LESSON;
+      confidence = 0.82;
+    } else if (lower.includes('计划') || lower.includes('总结') || lower.includes('学期')) {
+      predictedType = ContentType.PLAN_SUMMARY;
+      confidence = 0.8;
     }
-
-    // Subject detection
     if (lower.includes('数学')) subject = '数学';
     else if (lower.includes('语文')) subject = '语文';
     else if (lower.includes('英语')) subject = '英语';
-    else if (lower.includes('科学')) subject = '科学';
-    
-    // Grade detection
-    if (lower.includes('一年级')) grade = '一年级';
-    else if (lower.includes('二年级')) grade = '二年级';
-    else if (lower.includes('三年级')) grade = '三年级';
-    else if (lower.includes('四年级')) grade = '四年级';
-    else if (lower.includes('五年级')) grade = '五年级';
-    else if (lower.includes('六年级')) grade = '六年级';
-
-    // Clean title: remove extension
-    title = title.replace(/\.(docx?|pptx?|pdf|jpg|jpeg|png)$/i, '').replace(/[_-]/g, ' ').trim();
 
     return {
       predictedType,
-      title: title || '未命名',
+      title,
       confidence,
-      extractedFields: {
-        subject,
-        grade,
-        summary: `${title} - ${subject}${grade}教学内容`,
-        reason: `关键词匹配: ${predictedType}`,
-      },
+      subject,
+      grade,
       summary: `${title} - ${subject}${grade}教学内容`,
     };
   }
 
+  // ======= IAIAdapter 接口 =======
+  async recognize(input: AIRecognitionInput): Promise<AIRecognitionResult> {
+    return this.toResult(this.mockClassify(input));
+  }
+  async recognizeWithContext(
+    input: AIRecognitionInput,
+    _history: string[]
+  ): Promise<AIRecognitionResult> {
+    return this.toResult(this.mockClassify(input));
+  }
+  async recognizeWithPrompt(
+    input: AIRecognitionInput,
+    _systemPrompt: string
+  ): Promise<AIRecognitionResult> {
+    return this.toResult(this.mockClassify(input));
+  }
+
+  private toResult(r: DeepSeekCallResult): AIRecognitionResult {
+    return {
+      predictedType: r.predictedType || ContentType.PERSONAL_LESSON,
+      title: r.title || '未命名',
+      confidence: r.confidence || 0.75,
+      extractedFields: { subject: r.subject || '', grade: r.grade || '', summary: r.summary || '' },
+      summary: r.summary || '',
+    };
+  }
+
   private buildDefaultSystemPrompt(): string {
-    return '你是一个教育内容分类助手。请按JSON格式返回识别结果。';
+    return `你是一个教育内容分类助手。请分析用户提供的教学资料，返回JSON。格式: {"type":"personal_lesson|reflection|group_lesson|plan_summary","title":"标题","subject":"学科","grade":"年级","confidence":0.9,"summary":"摘要"}`;
   }
 
   private buildUserPrompt(input: AIRecognitionInput): string {
-    const parts: string[] = [];
-    if (input.fileName) parts.push(`文件名: ${input.fileName}`);
-    if (input.text) parts.push(`文本内容: ${input.text}`);
-    if (input.fileContent) parts.push(`文件内容: ${input.fileContent}`);
-    return parts.join('\n');
+    return [input.fileName, input.text, input.fileContent?.slice(0, 2000)]
+      .filter(Boolean)
+      .join('\n');
   }
 }

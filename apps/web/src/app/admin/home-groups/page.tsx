@@ -19,6 +19,9 @@ interface Group {
   is_home_visible: boolean;
   status: string;
   remark: string | null;
+  teacher_ids?: number[];
+  teachers?: { id: number; name: string }[];
+  teacher_count?: number;
 }
 
 export default function AdminHomeGroupsPage() {
@@ -163,32 +166,8 @@ export default function AdminHomeGroupsPage() {
   function openTeachers(g: Group) {
     setEditing(g);
     setTeacherSearch('');
-    console.log(
-      '[OPEN-TEACHERS] groupId:',
-      g.id,
-      'groupName:',
-      g.name,
-      'allTeachers:',
-      allTeachers.length
-    );
-    if (!allTeachers.length) {
-      console.log('[OPEN-TEACHERS] allTeachers empty, fetching...');
-      fetchTeachers().then(() => {
-        const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
-        console.log(
-          '[OPEN-TEACHERS] after fetch, inGroup:',
-          inGroup.map((t: any) => ({ id: t.id, name: t.name, dept: t.department_id }))
-        );
-        setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
-      });
-    } else {
-      const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
-      console.log(
-        '[OPEN-TEACHERS] inGroup:',
-        inGroup.map((t: any) => ({ id: t.id, name: t.name, dept: t.department_id }))
-      );
-      setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
-    }
+    const ids = (g as any).teacher_ids || [];
+    setSelectedTeachers(ids.map(Number));
     setTeacherOpen(true);
   }
 
@@ -518,46 +497,17 @@ export default function AdminHomeGroupsPage() {
             <button
               onClick={async () => {
                 const groupId = Number(editing!.id);
-                console.log('[SAVE-TEACHERS] groupId:', groupId, 'groupName:', editing!.name);
-                console.log(
-                  '[SAVE-TEACHERS] selectedTeachers:',
-                  selectedTeachers,
-                  'length:',
-                  selectedTeachers.length
-                );
-                console.log('[SAVE-TEACHERS] allTeachers count:', allTeachers.length);
-                // 当前已在组内的教师ID
-                const previouslyInGroup = allTeachers
-                  .filter((t: any) => Number(t.department_id) === groupId)
-                  .map((t: any) => Number(t.id));
-                console.log('[SAVE-TEACHERS] previouslyInGroup:', previouslyInGroup);
-                // 选中的：设为本组
-                for (const tid of selectedTeachers) {
-                  const payload = JSON.stringify({ department_id: groupId });
-                  console.log('[SAVE-TEACHERS] PUT teacher:', tid, 'payload:', payload);
-                  const res = await api(`/api/admin/teachers/${tid}`, {
-                    method: 'PUT',
-                    body: payload,
-                  });
-                  console.log('[SAVE-TEACHERS] PUT response:', res);
+                const res = await api(`/api/admin/home-groups/${groupId}/teachers`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ teacher_ids: selectedTeachers }),
+                });
+                if (res.code === 0) {
+                  setTeacherOpen(false);
+                  await fetchGroups();
+                  setMsg('老师绑定已保存');
+                } else {
+                  setMsg(res.message || '保存失败');
                 }
-                // 之前在本组但现在没被选中的：移出
-                for (const tid of previouslyInGroup) {
-                  if (!selectedTeachers.includes(tid)) {
-                    console.log('[SAVE-TEACHERS] REMOVE teacher:', tid);
-                    const res = await api(`/api/admin/teachers/${tid}`, {
-                      method: 'PUT',
-                      body: JSON.stringify({ department_id: 1 }),
-                    });
-                    console.log('[SAVE-TEACHERS] REMOVE response:', res);
-                  }
-                }
-                console.log('[SAVE-TEACHERS] done, refreshing...');
-                setTeacherOpen(false);
-                await fetchGroups();
-                await fetchTeachers();
-                console.log('[SAVE-TEACHERS] refreshed');
-                setMsg('已更新教师分配');
               }}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >

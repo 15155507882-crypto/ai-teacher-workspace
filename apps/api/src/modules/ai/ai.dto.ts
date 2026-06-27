@@ -12,6 +12,10 @@ export class ChatDto {
   @IsOptional()
   @IsString()
   scope?: string;
+
+  @IsOptional()
+  @IsString()
+  mode?: string;
 }
 
 export class ConfirmActionDto {

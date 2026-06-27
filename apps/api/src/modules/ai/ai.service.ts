@@ -64,6 +64,7 @@ export class AIService {
       schoolId,
       text: dto.text,
       fileId: dto.file_id,
+      mode: dto.mode || 'auto',
       scope: dto.scope || 'workspace',
       recentLessons: recentData,
     });

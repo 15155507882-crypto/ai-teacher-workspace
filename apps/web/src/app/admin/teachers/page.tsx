@@ -121,6 +121,8 @@ export default function AdminTeachersPage() {
       t.id,
       'dept_ids:',
       t.department_ids,
+      'dept_ids_dedup:',
+      t.department_ids ? [...new Set(t.department_ids.split(',').map(Number).filter(Boolean))] : [],
       'gender:',
       t.gender,
       'role:',
@@ -147,7 +149,8 @@ export default function AdminTeachersPage() {
     const payload: any = {
       name: form.name,
       department_id: form.department_id,
-      department_ids: form.department_ids.length > 0 ? form.department_ids.join(',') : null,
+      department_ids:
+        form.department_ids.length > 0 ? [...new Set(form.department_ids)].join(',') : null,
       employee_no: form.employee_no,
       gender: form.gender || null,
       role: form.role.join(',') || 'teacher',
@@ -191,7 +194,8 @@ export default function AdminTeachersPage() {
         mobile: form.mobile,
         password: form.password || '123456',
         department_id: form.department_id,
-        department_ids: form.department_ids.length > 0 ? form.department_ids.join(',') : null,
+        department_ids:
+          form.department_ids.length > 0 ? [...new Set(form.department_ids)].join(',') : null,
         employee_no: form.employee_no,
         gender: form.gender || null,
         role: form.role.join(',') || 'teacher',

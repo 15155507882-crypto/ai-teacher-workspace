@@ -100,7 +100,7 @@ export default function HomePage() {
           />
         </div>
         <div className="space-y-6">
-          {grouped.map((g) => (
+          {filtered.map((g) => (
             <div key={g.id} className="bg-white rounded-xl border overflow-hidden">
               <div className="px-5 py-3 bg-slate-50 border-b">
                 <h2 className="text-sm font-semibold text-slate-700">

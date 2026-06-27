@@ -32,7 +32,7 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [teacher, setTeacher] = useState<any>(null);
   const [mode, setMode] = useState('auto');
-  const [quota, setQuota] = useState({ used: 0, limit: 10, remaining: 10 });
+  const [quota, setQuota] = useState({ used: 0, limit: 100, remaining: 100 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const texts = ['正在阅读资料...', '正在分析内容...', '正在整理信息...', '马上就好...'];

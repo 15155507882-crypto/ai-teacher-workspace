@@ -143,7 +143,7 @@ export class AIController {
     const today = new Date().toISOString().slice(0, 10);
     const key = `ai:chat_quota:${req.user.teacherId}:${today}`;
     const used = parseInt((await redis.get(key)) || '0', 10);
-    return { used, limit: 10, remaining: Math.max(0, 10 - used), date: today };
+    return { used, limit: 100, remaining: Math.max(0, 100 - used), date: today };
   }
 
   // Admin: AI Action History

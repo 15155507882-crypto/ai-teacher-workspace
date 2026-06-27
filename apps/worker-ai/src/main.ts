@@ -416,7 +416,7 @@ async function bootstrap() {
         const chatKey = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
         const chatUsed = await redis.incr(chatKey);
         if (chatUsed === 1) await redis.expire(chatKey, 86400);
-        const chatLimit = 10;
+        const chatLimit = 100;
         if (chatUsed > chatLimit) {
           const result = {
             scene: 'normal_chat',
@@ -480,7 +480,7 @@ async function bootstrap() {
           title_candidate: '', summary: '', confidence: scene.confidence,
           need_user_confirm: false, need_lesson_link: false, next_action: 'chat_reply',
           extracted_entities: {}, reason: scene.reason, nl_reply: nlReply,
-          chatQuota: { used: chatUsed2, limit: 10, remaining: Math.max(0, 10 - chatUsed2) },
+          chatQuota: { used: chatUsed2, limit: 100, remaining: Math.max(0, 100 - chatUsed2) },
         };
         await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
         await redis.set(`ai_session:${messageId}`, String(sessionId), 'EX', 600);

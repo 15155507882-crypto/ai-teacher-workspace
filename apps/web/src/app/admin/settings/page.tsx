@@ -184,7 +184,7 @@ export default function SchoolSettingsPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 text-slate-500 font-medium w-14">序号</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-16">序号</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">学年学期名</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">时间段</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">状态</th>

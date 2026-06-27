@@ -11,7 +11,10 @@ export class DepartmentRepository {
   ) {}
 
   findBySchool(schoolId: number): Promise<Department[]> {
-    return this.repo.find({ where: { school_id: schoolId }, order: { sort_order: 'ASC' } });
+    return this.repo.find({
+      where: { school_id: schoolId, status: 'active' },
+      order: { sort_order: 'ASC' },
+    });
   }
 
   findById(id: number): Promise<Department | null> {

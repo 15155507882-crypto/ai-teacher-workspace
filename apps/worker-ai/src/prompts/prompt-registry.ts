@@ -272,133 +272,53 @@ export type AIScene =
   | 'teaching_reflection'
   | 'unknown';
 
-const SCENE_KEYWORDS: Record<AIScene, string[]> = {
-  normal_chat: [
-    '怎么写',
-    '帮我看看',
-    '优化',
-    '建议',
-    '怎么理解',
-    '换种说法',
-    '请教',
-    '解释',
-    '什么意思',
-    '举个例子',
-    '怎么设计',
-    '如何引导',
-    '怎样提高',
-    '有什么方法',
-    '帮我分析',
-    '改一下',
-    '润色',
-    '聊聊',
-  ],
-  personal_lesson: [
-    '教案',
-    '备课',
-    '教学目标',
-    '教学重点',
-    '教学难点',
-    '教学过程',
-    '课时设计',
-    '导入环节',
-    '板书设计',
-    '课堂练习',
-    '教学设计',
-  ],
-  group_lesson: [
-    '集体备课',
-    '备课组',
-    '主备',
-    '组内讨论',
-    '教研组',
-    '共同研讨',
-    '磨课',
-    '说课',
-    '评课',
-    '单元作业',
-    '集体讨论',
-  ],
-  semester_plan: [
-    '学期计划',
-    '教学计划',
-    '本学期安排',
-    '进度计划',
-    '教学进度',
-    '学期规划',
-    '新学期计划',
-  ],
-  semester_summary: ['学期总结', '教学总结', '期末总结', '阶段总结', '学期复盘', '期末分析'],
-  teaching_reflection: [
-    '教学反思',
-    '课后反思',
-    '课堂效果',
-    '学生反馈',
-    '改进措施',
-    '不足之处',
-    '经验教训',
-    '再教设计',
-    '回顾这节课',
-  ],
-  unknown: [],
-};
+export const SCENE_DETECTION_PROMPT = `你是学校备课系统的场景识别器。
+判断用户输入属于哪个场景。只返回JSON。
 
-const SCENE_CONFIDENCE_RULES: Record<AIScene, number> = {
-  personal_lesson: 0.85,
-  group_lesson: 0.85,
-  semester_plan: 0.9,
-  semester_summary: 0.9,
-  teaching_reflection: 0.8,
-  normal_chat: 0.6,
-  unknown: 0.3,
+场景定义：
+1. normal_chat：普通聊天、问候、日期、天气、咨询建议、文本优化但无保存意图
+2. personal_lesson：明确要生成/整理/保存个人备课、教案、教学设计
+3. group_lesson：明确提到集体备课、备课组、教研组共同研讨、主备
+4. semester_plan：明确要写学期计划、教学计划、本学期安排
+5. semester_summary：明确要写学期总结、期末总结、阶段总结
+6. teaching_reflection：明确要写教学反思、课后反思、课堂改进反思
+
+判断原则：
+- 无明确创建/保存意图 → normal_chat
+- "帮我看看/优化一下/怎么写/有什么建议" → normal_chat
+- 只有"生成一份/写一份/整理成/保存为"教学材料 → 业务场景
+- 不确定 → normal_chat，confidence≤0.59
+
+返回格式：{"scene":"normal_chat","confidence":0.85,"reason":"原因"}`;
+
+const FALLBACK_KEYWORDS: Record<string, string[]> = {
+  personal_lesson: ['教案', '备课', '教学设计', '教学目标', '教学重难点', '教学过程'],
+  group_lesson: ['集体备课', '备课组', '主备', '教研组', '磨课', '评课'],
+  semester_plan: ['学期计划', '教学计划', '本学期安排', '进度计划'],
+  semester_summary: ['学期总结', '教学总结', '期末总结', '阶段总结'],
+  teaching_reflection: ['教学反思', '课后反思', '课堂效果', '学生反馈', '改进措施'],
 };
 
 export function detectScene(
   text: string,
   manualMode?: string
 ): { scene: AIScene; confidence: number; ruleBased: boolean; reason: string } {
-  // 手动模式优先
   if (manualMode && manualMode !== 'auto') {
-    return {
-      scene: manualMode as AIScene,
-      confidence: 1.0,
-      ruleBased: false,
-      reason: '用户手动选择模式',
-    };
+    return { scene: manualMode as AIScene, confidence: 1.0, ruleBased: false, reason: '用户手动选择模式' };
   }
-
   const lower = text.toLowerCase();
-  const scores: Record<string, number> = {};
-
-  for (const [scene, keywords] of Object.entries(SCENE_KEYWORDS)) {
+  let bestScene = '';
+  let bestScore = 0;
+  for (const [scene, kws] of Object.entries(FALLBACK_KEYWORDS)) {
     let score = 0;
-    for (const kw of keywords) {
-      if (lower.includes(kw)) score += 10;
-    }
-    scores[scene] = score;
+    for (const kw of kws) { if (lower.includes(kw)) score += 10; }
+    if (score > bestScore) { bestScore = score; bestScene = scene; }
   }
-
-  // 找最高分词
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-  const best = sorted[0];
-  const second = sorted[1];
-
-  // 规则判定
-  if (best[1] > 0 && best[1] >= second[1] * 1.5) {
-    const scene = best[0] as AIScene;
-    return {
-      scene,
-      confidence: SCENE_CONFIDENCE_RULES[scene] || 0.8,
-      ruleBased: true,
-      reason: `关键词匹配: ${best[0]}(${best[1]}分) > ${second[0]}(${second[1]}分)`,
-    };
+  if (bestScore >= 20 && bestScene) {
+    return { scene: bestScene as AIScene, confidence: 0.65, ruleBased: true, reason: `关键词兜底: \${bestScene}` };
   }
-
-  // 无明确匹配 → 默认普通聊天
-  return {
-    scene: 'normal_chat',
-    confidence: 0.6,
-    ruleBased: true,
-    reason: '无明确业务关键词，默认为普通聊天',
-  };
+  return { scene: 'unknown', confidence: 0.3, ruleBased: true, reason: '待AI判断' };
 }
+
+
+

@@ -3,7 +3,7 @@ import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 import { createAIAdapter } from '@workspace/adapter-ai';
 import type { DeepSeekAdapter, DeepSeekCallResult } from '@workspace/adapter-ai';
-import { detectScene } from './prompts/prompt-registry';
+import { detectScene, SCENE_DETECTION_PROMPT } from './prompts/prompt-registry';
 
 // ======= 配置 =======
 const CFG = {
@@ -409,6 +409,57 @@ async function bootstrap() {
       // 4. 场景识别（新增）
       const inputText = [text, fileName].filter(Boolean).join(' ');
       const scene = detectScene(inputText, job.data.mode);
+
+      // auto 模式 + 关键词无法判断 → 调 AI 做场景识别
+      if (scene.scene === 'unknown' && config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+          const res = await fetch(`${config.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+            body: JSON.stringify({
+              model: config.model,
+              messages: [
+                { role: 'system', content: SCENE_DETECTION_PROMPT },
+                { role: 'user', content: inputText },
+              ],
+              temperature: 0.1,
+              max_tokens: 200,
+              response_format: { type: 'json_object' },
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          if (res.ok) {
+            const json: any = await res.json();
+            const aiScene = JSON.parse(json.choices?.[0]?.message?.content || '{}');
+            if (aiScene.scene && aiScene.confidence >= 0.6) {
+              scene.scene = aiScene.scene;
+              scene.confidence = aiScene.confidence;
+              scene.reason = aiScene.reason || 'AI判断';
+              scene.ruleBased = false;
+            } else {
+              scene.scene = 'normal_chat';
+              scene.confidence = 0.5;
+              scene.reason = aiScene.reason || 'AI低置信度，默认普通聊天';
+            }
+          } else {
+            scene.scene = 'normal_chat';
+            scene.confidence = 0.3;
+            scene.reason = 'AI判断失败';
+          }
+        } catch {
+          scene.scene = 'normal_chat';
+          scene.confidence = 0.3;
+          scene.reason = 'AI判断异常';
+        }
+      } else if (scene.scene === 'unknown') {
+        scene.scene = 'normal_chat';
+        scene.confidence = 0.3;
+        scene.reason = '无API Key，默认普通聊天';
+      }
+
       const isBusinessScene = scene.scene !== 'normal_chat' && scene.scene !== 'unknown';
 
       // 普通聊天额度检查

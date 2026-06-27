@@ -188,7 +188,7 @@ export default function SchoolSettingsPage() {
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">学年学期名</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">时间段</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">状态</th>
-                <th className="text-left px-4 py-3 text-slate-500 font-medium w-20">当前生效</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">当前生效</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">操作</th>
               </tr>
             </thead>

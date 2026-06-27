@@ -93,10 +93,18 @@ export function AppShell({
               <div className="pt-5 pb-2 px-1 text-tiny text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
                 管理
               </div>
-              <NavBtn icon="🏫" label="学校信息" onClick={() => router.push('/admin/school')} />
+              <NavBtn
+                icon="🏫"
+                label="学校信息"
+                onClick={() => router.push('/admin/settings/school')}
+              />
               <NavBtn icon="👥" label="教师管理" onClick={() => router.push('/admin/teachers')} />
               <NavBtn icon="📋" label="教研组" onClick={() => router.push('/admin/departments')} />
-              <NavBtn icon="📊" label="AI日志" onClick={() => router.push('/admin/ai-logs')} />
+              <NavBtn
+                icon="📊"
+                label="AI日志"
+                onClick={() => router.push('/admin/settings/ai-logs')}
+              />
             </>
           )}
         </nav>

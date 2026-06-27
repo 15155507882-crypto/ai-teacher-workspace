@@ -5,7 +5,7 @@ import { AdminPageHeader, AdminDialog } from '@/components/admin-ui';
 
 interface SemesterEntry {
   name: string;
-  year: string;
+  year?: string;
   start: string;
   end: string;
 }
@@ -19,15 +19,17 @@ interface SchoolSettings {
 
 async function api(url: string, options?: RequestInit) {
   const token = localStorage.getItem('accessToken') || '';
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (options?.method && options.method !== 'GET') {
+    headers['Content-Type'] = 'application/json';
+  }
   const res = await fetch(url, {
     ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers: { ...headers, ...(options?.headers as Record<string, string>) },
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+  return data;
 }
 
 function getStatus(sem: SemesterEntry, currentYear?: string, currentSemester?: string) {
@@ -57,46 +59,44 @@ function StatusTag({ status }: { status: string }) {
 export default function SchoolSettingsPage() {
   const [settings, setSettings] = useState<SchoolSettings>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [form, setForm] = useState<SemesterEntry>({
-    name: '',
-    year: '',
-    start: '',
-    end: '',
-  });
+  const [form, setForm] = useState<SemesterEntry>({ name: '', year: '', start: '', end: '' });
 
   useEffect(() => {
     api('/api/admin/school/settings')
       .then((j) => {
         const data = j.data !== undefined ? j.data : j;
-        if (j.code !== undefined && j.code !== 0) {
-          setMsg(j.message || '加载失败');
-        } else {
-          setSettings(data || {});
+        // 兼容旧数据：semesters 可能没有 year 字段
+        if (data.semesters) {
+          data.semesters = data.semesters.map((s: SemesterEntry) => ({
+            ...s,
+            year: s.year || '',
+          }));
         }
+        setSettings(data || {});
       })
-      .catch(() => setMsg('加载设置失败'))
+      .catch((e) => setMsg('加载失败: ' + (e.message || '未知错误')))
       .finally(() => setLoading(false));
   }, []);
 
-  async function save(newSettings?: SchoolSettings) {
-    const s = newSettings || settings;
-    setSaving(true);
+  async function saveSettings(newSettings: SchoolSettings) {
     setMsg('');
-    const j = await api('/api/admin/school/settings', {
-      method: 'PUT',
-      body: JSON.stringify(s),
-    });
-    if (j.code === undefined || j.code === 0) {
-      setSettings(s);
-      setMsg('✅ 已保存');
-    } else {
-      setMsg(j.message || '保存失败');
+    try {
+      const j = await api('/api/admin/school/settings', {
+        method: 'PUT',
+        body: JSON.stringify(newSettings),
+      });
+      if (j.code === undefined || j.code === 0) {
+        setSettings(newSettings);
+        setMsg('✅ 已保存');
+      } else {
+        setMsg(j.message || '保存失败');
+      }
+    } catch (e: any) {
+      setMsg('保存失败: ' + (e.message || '未知错误'));
     }
-    setSaving(false);
   }
 
   const semesters = settings.semesters || [];
@@ -125,30 +125,28 @@ export default function SchoolSettingsPage() {
     } else {
       newSemesters.push(form);
     }
-    // 自动添加学年到列表
     const newYears = [...years];
     if (!newYears.includes(form.year)) {
       newYears.push(form.year);
     }
-    const newSettings: SchoolSettings = {
-      ...settings,
-      academic_years: newYears,
-      semesters: newSemesters,
-    };
-    save(newSettings);
+    saveSettings({ ...settings, academic_years: newYears, semesters: newSemesters });
     setDialogOpen(false);
   }
 
   async function handleDelete(index: number) {
     if (!confirm('确定删除该条目？')) return;
     const newSemesters = semesters.filter((_, i) => i !== index);
-    const newSettings = { ...settings, semesters: newSemesters };
-    save(newSettings);
+    saveSettings({ ...settings, semesters: newSemesters });
   }
 
-  async function setCurrent(year: string, semester: string) {
-    const newSettings = { ...settings, current_year: year, current_semester: semester };
-    save(newSettings);
+  async function toggleCurrent(year: string, semester: string) {
+    // 如果已是当前则取消，否则设为当前
+    const isCurrent = settings.current_year === year && settings.current_semester === semester;
+    saveSettings({
+      ...settings,
+      current_year: isCurrent ? '' : year,
+      current_semester: isCurrent ? '' : semester,
+    });
   }
 
   if (loading)
@@ -181,92 +179,77 @@ export default function SchoolSettingsPage() {
           </div>
         )}
 
-        {/* 当前生效 */}
-        <div className="bg-white rounded-xl border p-4 mb-5 flex items-center gap-6 flex-wrap">
-          <span className="text-sm font-medium text-slate-700 shrink-0">当前生效：</span>
-          <div className="flex items-center gap-2">
-            <select
-              value={settings.current_year || ''}
-              onChange={(e) => setCurrent(e.target.value, settings.current_semester || '')}
-              className="rounded-lg border px-3 py-1.5 text-sm"
-            >
-              <option value="">选择学年</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-            <select
-              value={settings.current_semester || ''}
-              onChange={(e) => setCurrent(settings.current_year || '', e.target.value)}
-              className="rounded-lg border px-3 py-1.5 text-sm"
-            >
-              <option value="">选择学期</option>
-              {semesters
-                .filter((s) => s.year === settings.current_year)
-                .map((s) => (
-                  <option key={s.name + s.year} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <span className="text-xs text-slate-400">选择后自动保存</span>
-        </div>
-
-        {/* 学年学期表格 */}
+        {/* 表格 */}
         <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 text-slate-500 font-medium w-16">序号</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-14">序号</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">学年学期名</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">时间段</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">状态</th>
+                <th className="text-left px-4 py-3 text-slate-500 font-medium w-20">当前生效</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-24">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {semesters.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                     暂无数据，点击右上角「新增」添加
                   </td>
                 </tr>
               )}
-              {semesters.map((sem, i) => (
-                <tr key={i} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 text-slate-500">{i + 1}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">
-                    {sem.year}学年 {sem.name}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {sem.start} ~ {sem.end}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusTag
-                      status={getStatus(sem, settings.current_year, settings.current_semester)}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
+              {semesters.map((sem, i) => {
+                const isCurrent =
+                  sem.year === settings.current_year && sem.name === settings.current_semester;
+                return (
+                  <tr key={i} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 text-slate-500">{i + 1}</td>
+                    <td className="px-4 py-3 font-medium text-slate-800">
+                      {sem.year || '未设学年'} {sem.name}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {sem.start} ~ {sem.end}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusTag
+                        status={getStatus(sem, settings.current_year, settings.current_semester)}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
                       <button
-                        onClick={() => openEdit(i)}
-                        className="text-xs text-blue-600 hover:underline"
+                        onClick={() => toggleCurrent(sem.year || '', sem.name)}
+                        className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors ${
+                          isCurrent ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
                       >
-                        编辑
+                        <span
+                          className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                            isCurrent ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
                       </button>
-                      <button
-                        onClick={() => handleDelete(i)}
-                        className="text-xs text-red-500 hover:underline"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(i)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDelete(i)}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -284,7 +267,7 @@ export default function SchoolSettingsPage() {
               学年 <span className="text-red-400">*</span>
             </label>
             <input
-              value={form.year}
+              value={form.year || ''}
               onChange={(e) => setForm({ ...form, year: e.target.value })}
               placeholder="如 2025-2026"
               className="w-full rounded-lg border px-3 py-2 text-sm"

@@ -24,6 +24,7 @@ export class SemesterDto {
   @IsString() @IsNotEmpty() name: string;
   @IsString() @IsNotEmpty() start: string;
   @IsString() @IsNotEmpty() end: string;
+  @IsOptional() @IsString() year?: string;
 }
 
 export class UpdateSchoolSettingsDto {

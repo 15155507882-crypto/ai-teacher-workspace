@@ -117,7 +117,7 @@ export default function TeacherSpacePage() {
         }).then((r) => r.json()),
       ]);
       if (tRes.code === 0) {
-        const f = tRes.data.items?.find((x: any) => x.id === parseInt(id));
+        const f = tRes.data.items?.find((x: any) => Number(x.id) === parseInt(id));
         setTeacher(f || null);
         if (f)
           setSettingsForm({
@@ -186,7 +186,7 @@ export default function TeacherSpacePage() {
               )}
               <div>
                 <h1 className="text-xl font-bold text-slate-800">
-                  {currentUser && teacher && currentUser.id === teacher.id
+                  {currentUser && teacher && Number(currentUser.id) === Number(teacher.id)
                     ? '我的资料空间'
                     : `${teacher?.name || '未知老师'}的资料空间`}
                 </h1>

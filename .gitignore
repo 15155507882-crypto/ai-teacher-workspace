@@ -19,3 +19,4 @@ storage/trash/*
 .DS_Store
 coverage/
 .turbo/
+*.tsbuildinfo

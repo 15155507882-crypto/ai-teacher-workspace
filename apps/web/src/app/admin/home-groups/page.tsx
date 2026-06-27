@@ -211,7 +211,7 @@ export default function AdminHomeGroupsPage() {
           title="备课组"
           action={
             <div className="flex gap-2">
-              <label className="rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700 cursor-pointer">
+              <label className="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 cursor-pointer">
                 📤 导入
                 <input
                   type="file"
@@ -255,8 +255,8 @@ export default function AdminHomeGroupsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
+            <table className="w-full text-base">
+              <thead className="bg-slate-50 text-sm text-slate-500 whitespace-nowrap">
                 <tr>
                   <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">名称</th>
@@ -279,41 +279,41 @@ export default function AdminHomeGroupsPage() {
                     <td className="p-3 text-slate-500">{g.sort_order}</td>
                     <td className="p-3">
                       {g.is_home_visible ? (
-                        <span className="text-green-600 text-xs">可见</span>
+                        <span className="text-green-600 text-sm">可见</span>
                       ) : (
-                        <span className="text-slate-400 text-xs">隐藏</span>
+                        <span className="text-slate-400 text-sm">隐藏</span>
                       )}
                     </td>
                     <td className="p-3">
                       {g.status === 'active' ? (
-                        <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-green-50 text-green-700">
+                        <span className="inline-flex rounded-md px-2 py-0.5 text-sm font-medium bg-green-50 text-green-700">
                           启用
                         </span>
                       ) : (
-                        <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium bg-orange-50 text-orange-700">
+                        <span className="inline-flex rounded-md px-2 py-0.5 text-sm font-medium bg-orange-50 text-orange-700">
                           停用
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-xs text-slate-400 max-w-[120px] truncate">
+                    <td className="p-3 text-sm text-slate-400 max-w-[120px] truncate">
                       {g.remark || '—'}
                     </td>
                     <td className="p-3 text-right space-x-1">
                       <button
                         onClick={() => openTeachers(g)}
-                        className="text-xs text-blue-500 hover:underline"
+                        className="text-sm text-blue-500 hover:underline"
                       >
                         老师
                       </button>
                       <button
                         onClick={() => openEdit(g)}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="text-sm text-blue-600 hover:underline"
                       >
                         编辑
                       </button>
                       <button
                         onClick={() => toggleStatus(g)}
-                        className="text-xs text-orange-500 hover:underline"
+                        className="text-sm text-orange-500 hover:underline"
                       >
                         {g.status === 'active' ? '停用' : '启用'}
                       </button>
@@ -322,7 +322,7 @@ export default function AdminHomeGroupsPage() {
                           setEditing(g);
                           setDeleteOpen(true);
                         }}
-                        className="text-xs text-red-400 hover:underline"
+                        className="text-sm text-red-400 hover:underline"
                       >
                         删除
                       </button>
@@ -470,7 +470,7 @@ export default function AdminHomeGroupsPage() {
                     }}
                   />
                   <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-slate-400">{t.mobile}</span>
+                  <span className="text-sm text-slate-400">{t.mobile}</span>
                 </label>
               ))}
           </div>

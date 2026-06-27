@@ -182,12 +182,12 @@ export default function AdminSchoolPage() {
                       setLogo(null);
                       setLogoFile(null);
                     }}
-                    className="block text-xs text-red-500 hover:underline"
+                    className="block text-sm text-red-500 hover:underline"
                   >
                     移除
                   </button>
                 )}
-                <p className="text-xs text-slate-400">
+                <p className="text-sm text-slate-400">
                   JPG/PNG，最大 1MB，上传后自动压缩至 100KB 以内
                 </p>
               </div>

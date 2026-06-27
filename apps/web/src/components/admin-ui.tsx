@@ -90,7 +90,7 @@ export function AdminStatusTag({ status }: { status: string }) {
   };
   const cfg = map[status] || { label: status, cls: 'bg-gray-50 text-gray-600' };
   return (
-    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${cfg.cls}`}>
+    <span className={`inline-flex rounded-md px-2 py-0.5 text-sm font-medium ${cfg.cls}`}>
       {cfg.label}
     </span>
   );

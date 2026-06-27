@@ -17,7 +17,7 @@ const buttonVariants = cva(
         destructive: 'bg-[var(--color-danger)] text-white hover:opacity-90',
       },
       size: {
-        sm: 'h-8 px-3 text-xs rounded-[8px]',
+        sm: 'h-8 px-3 text-sm rounded-[8px]',
         default: 'h-10 px-4 text-sm',
         lg: 'h-11 px-6 text-sm',
       },

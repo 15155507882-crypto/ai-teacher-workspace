@@ -50,7 +50,7 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
 function StatusTag({ status }: { status: string }) {
   const cfg = STATUS_MAP[status] || STATUS_MAP.normal;
   return (
-    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${cfg.cls}`}>
+    <span className={`inline-flex rounded-md px-2 py-0.5 text-sm font-medium ${cfg.cls}`}>
       {cfg.label}
     </span>
   );
@@ -181,8 +181,8 @@ export default function SchoolSettingsPage() {
 
         {/* 表格 */}
         <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b">
+          <table className="w-full text-base">
+            <thead className="bg-slate-50 border-b text-sm text-slate-500 whitespace-nowrap">
               <tr>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium w-16">序号</th>
                 <th className="text-left px-4 py-3 text-slate-500 font-medium">学年学期名</th>
@@ -235,13 +235,13 @@ export default function SchoolSettingsPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => openEdit(i)}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-sm text-blue-600 hover:underline"
                         >
                           编辑
                         </button>
                         <button
                           onClick={() => handleDelete(i)}
-                          className="text-xs text-red-500 hover:underline"
+                          className="text-sm text-red-500 hover:underline"
                         >
                           删除
                         </button>

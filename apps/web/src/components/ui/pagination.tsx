@@ -17,7 +17,7 @@ export function Pagination({ page, pageSize, total, onChange }: PaginationProps)
 
   return (
     <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
-      <span className="text-xs text-[var(--color-text-muted)]">
+      <span className="text-sm text-[var(--color-text-muted)]">
         共 {total} 条，第 {page}/{totalPages} 页
       </span>
       <div className="flex gap-1">

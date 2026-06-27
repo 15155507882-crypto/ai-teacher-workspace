@@ -417,7 +417,7 @@ export default function AdminTeachersPage() {
             <option value="teacher">教师</option>
             <option value="admin">管理员</option>
           </select>
-          <span className="text-xs text-slate-400 self-center ml-auto">{filtered.length} 人</span>
+          <span className="text-sm text-slate-400 self-center ml-auto">{filtered.length} 人</span>
         </AdminFilterBar>
 
         {loading ? (
@@ -428,8 +428,8 @@ export default function AdminTeachersPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
+            <table className="w-full text-base">
+              <thead className="bg-slate-50 text-sm text-slate-500 whitespace-nowrap">
                 <tr>
                   <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">姓名</th>
@@ -470,7 +470,7 @@ export default function AdminTeachersPage() {
                       </td>
                       <td className="p-3 font-medium text-slate-800">{t.name}</td>
                       <td className="p-3 text-slate-500">{t.mobile}</td>
-                      <td className="p-3 text-slate-500 text-xs">
+                      <td className="p-3 text-slate-500 text-sm">
                         {(t as any).gender === 'male'
                           ? '男'
                           : (t as any).gender === 'female'
@@ -478,7 +478,7 @@ export default function AdminTeachersPage() {
                             : '—'}
                       </td>
                       <td className="p-3">
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-slate-50 text-slate-600">
+                        <span className="text-sm px-2 py-0.5 rounded-md bg-slate-50 text-slate-600">
                           {roles.join(' / ') || '—'}
                         </span>
                       </td>
@@ -487,13 +487,13 @@ export default function AdminTeachersPage() {
                       <td className="p-3">
                         <AdminStatusTag status={t.status} />
                       </td>
-                      <td className="p-3 text-xs text-slate-400">
+                      <td className="p-3 text-sm text-slate-400">
                         {t.last_login_at ? new Date(t.last_login_at).toLocaleString('zh-CN') : '—'}
                       </td>
                       <td className="p-3 text-right space-x-1">
                         <button
                           onClick={() => openEdit(t)}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-sm text-blue-600 hover:underline"
                         >
                           编辑
                         </button>
@@ -503,7 +503,7 @@ export default function AdminTeachersPage() {
                             setPwdForm({ password: '', confirm: '' });
                             setResetPwdOpen(true);
                           }}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-sm text-blue-600 hover:underline"
                         >
                           密码
                         </button>
@@ -513,7 +513,7 @@ export default function AdminTeachersPage() {
                               setTarget(t);
                               setResignOpen(true);
                             }}
-                            className="text-xs text-orange-500 hover:underline"
+                            className="text-sm text-orange-500 hover:underline"
                           >
                             离职
                           </button>
@@ -521,7 +521,7 @@ export default function AdminTeachersPage() {
                         {t.status === 'resigned' && (
                           <button
                             onClick={() => handleRestore(t.id)}
-                            className="text-xs text-green-600 hover:underline"
+                            className="text-sm text-green-600 hover:underline"
                           >
                             恢复
                           </button>
@@ -606,7 +606,7 @@ export default function AdminTeachersPage() {
                   {departments.map((d) => (
                     <label
                       key={d.id}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs cursor-pointer ${
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
                         form.department_ids.includes(d.id)
                           ? 'border-blue-400 bg-blue-50 text-blue-700'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -641,7 +641,7 @@ export default function AdminTeachersPage() {
                   ].map((r) => (
                     <label
                       key={r.value}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs cursor-pointer ${
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
                         form.role.includes(r.value)
                           ? 'border-blue-400 bg-blue-50 text-blue-700'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -718,7 +718,7 @@ export default function AdminTeachersPage() {
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               />
             </div>
-            <p className="text-xs text-slate-400">重置后需使用新密码登录</p>
+            <p className="text-sm text-slate-400">重置后需使用新密码登录</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setResetPwdOpen(false)}

@@ -50,8 +50,8 @@ export default function AdminAILogsPage() {
           </AppCard>
         ) : (
           <AppCard className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--color-bg-muted)] text-[var(--color-text-muted)] text-tiny">
+            <table className="w-full text-base">
+              <thead className="bg-[var(--color-bg-muted)] text-[var(--color-text-muted)] text-sm whitespace-nowrap">
                 <tr>
                   <th className="p-3 text-left">ID</th>
                   <th className="p-3 text-left">类型</th>
@@ -67,7 +67,7 @@ export default function AdminAILogsPage() {
                     key={a.id}
                     className="border-t border-[var(--color-border)] hover:bg-[var(--color-bg-app)]"
                   >
-                    <td className="p-3 text-tiny text-[var(--color-text-muted)]">{a.id}</td>
+                    <td className="p-3 text-sm text-[var(--color-text-muted)]">{a.id}</td>
                     <td className="p-3">
                       <AppTag color="blue">{a.action_type}</AppTag>
                     </td>
@@ -87,12 +87,12 @@ export default function AdminAILogsPage() {
                             ? '已撤销'
                             : '失败'}
                       </AppTag>
-                      {a.reverted_at && <span className="text-tiny text-orange-500 ml-1">↩</span>}
+                      {a.reverted_at && <span className="text-sm text-orange-500 ml-1">↩</span>}
                     </td>
-                    <td className="p-3 text-tiny text-[var(--color-text-muted)]">
+                    <td className="p-3 text-sm text-[var(--color-text-muted)]">
                       {a.duration_ms}ms
                     </td>
-                    <td className="p-3 text-tiny text-[var(--color-text-muted)]">
+                    <td className="p-3 text-sm text-[var(--color-text-muted)]">
                       {new Date(a.created_at).toLocaleString('zh-CN')}
                     </td>
                     <td className="p-3 text-right">
@@ -123,43 +123,43 @@ export default function AdminAILogsPage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)]">Action ID</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">Action ID</p>
                   <p className="text-body font-medium">{selected.id}</p>
                 </div>
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)]">类型</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">类型</p>
                   <AppTag color="blue">{selected.action_type}</AppTag>
                 </div>
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)]">状态</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">状态</p>
                   <AppTag color={selected.status === 'completed' ? 'green' : 'orange'}>
                     {selected.status}
                   </AppTag>
                 </div>
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)]">耗时</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">耗时</p>
                   <p className="text-body">{selected.duration_ms}ms</p>
                 </div>
                 {selected.error_message && (
                   <div>
-                    <p className="text-tiny text-[var(--color-text-muted)]">错误</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">错误</p>
                     <p className="text-body text-red-600">{selected.error_message}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)] mb-1">Input Snapshot</p>
-                  <pre className="text-xs bg-[var(--color-bg-muted)] rounded-lg p-3 overflow-x-auto text-[var(--color-text-normal)]">
+                  <p className="text-sm text-[var(--color-text-muted)] mb-1">Input Snapshot</p>
+                  <pre className="text-sm bg-[var(--color-bg-muted)] rounded-lg p-3 overflow-x-auto text-[var(--color-text-normal)]">
                     {JSON.stringify(selected.input_snapshot, null, 2)}
                   </pre>
                 </div>
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)] mb-1">Output Snapshot</p>
-                  <pre className="text-xs bg-[var(--color-bg-muted)] rounded-lg p-3 overflow-x-auto text-[var(--color-text-normal)]">
+                  <p className="text-sm text-[var(--color-text-muted)] mb-1">Output Snapshot</p>
+                  <pre className="text-sm bg-[var(--color-bg-muted)] rounded-lg p-3 overflow-x-auto text-[var(--color-text-normal)]">
                     {JSON.stringify(selected.output_snapshot, null, 2)}
                   </pre>
                 </div>
                 <div>
-                  <p className="text-tiny text-[var(--color-text-muted)]">时间</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">时间</p>
                   <p className="text-body">
                     {new Date(selected.created_at).toLocaleString('zh-CN')}
                   </p>

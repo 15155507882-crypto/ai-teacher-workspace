@@ -47,7 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <aside className="w-60 shrink-0 bg-slate-900 text-slate-300 flex flex-col">
         <div className="p-5 border-b border-slate-700">
           <h1 className="text-sm font-bold text-white">{school?.short_name || '后台管理'}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">管理控制台</p>
+          <p className="text-sm text-slate-500 mt-0.5">管理控制台</p>
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
           {menuItems.map((item) => (
@@ -65,17 +65,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="p-4 border-t border-slate-700 space-y-2">
-          <span className="text-xs text-slate-400 truncate block">{teacher.name}</span>
+          <span className="text-sm text-slate-400 truncate block">{teacher.name}</span>
           <div className="flex gap-2">
             <button
               onClick={() => router.push('/home')}
-              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition flex-1 text-center"
+              className="text-sm px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition flex-1 text-center"
             >
               🏠 回到主页
             </button>
             <button
               onClick={logout}
-              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-red-600 hover:text-white transition flex-1 text-center"
+              className="text-sm px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-red-600 hover:text-white transition flex-1 text-center"
             >
               退出登录
             </button>

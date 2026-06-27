@@ -193,8 +193,8 @@ export default function AdminDeptPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <table className="w-full text-base">
+              <thead className="bg-slate-50 text-slate-500 text-sm whitespace-nowrap">
                 <tr>
                   <th className="p-3 text-left">排序</th>
                   <th className="p-3 text-left">名称</th>
@@ -225,14 +225,14 @@ export default function AdminDeptPage() {
                       <td className="p-3 text-right space-x-2">
                         <button
                           onClick={() => openEdit(d)}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-sm text-blue-600 hover:underline"
                         >
                           编辑
                         </button>
                         {d.status === 'active' && (
                           <button
                             onClick={() => handleDisable(d)}
-                            className="text-xs text-red-500 hover:underline"
+                            className="text-sm text-red-500 hover:underline"
                           >
                             停用
                           </button>
@@ -242,13 +242,13 @@ export default function AdminDeptPage() {
                             setTarget(d);
                             setDeleteOpen(true);
                           }}
-                          className="text-xs text-red-400 hover:underline"
+                          className="text-sm text-red-400 hover:underline"
                         >
                           删除
                         </button>
                         <button
                           onClick={() => openTeachers(d)}
-                          className="text-xs text-blue-500 hover:underline"
+                          className="text-sm text-blue-500 hover:underline"
                         >
                           教师
                         </button>
@@ -383,7 +383,7 @@ export default function AdminDeptPage() {
                     }}
                   />
                   <span className="text-sm">{t.name}</span>
-                  <span className="text-xs text-slate-400">{t.mobile}</span>
+                  <span className="text-sm text-slate-400">{t.mobile}</span>
                 </label>
               ))}
           </div>

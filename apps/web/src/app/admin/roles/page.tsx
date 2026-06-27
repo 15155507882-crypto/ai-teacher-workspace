@@ -116,8 +116,8 @@ export default function AdminRolesPage() {
         {msg && <div className="mb-3 text-sm p-3 rounded-lg bg-blue-50 text-blue-700">{msg}</div>}
 
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+          <table className="w-full text-base">
+            <thead className="bg-slate-50 text-slate-500 text-sm whitespace-nowrap">
               <tr>
                 <th className="p-3 text-left">名称</th>
                 <th className="p-3 text-left">编码</th>
@@ -131,11 +131,11 @@ export default function AdminRolesPage() {
               {roles.map((r) => (
                 <tr key={r.code} className="border-t border-slate-100 hover:bg-slate-50">
                   <td className="p-3 font-medium text-slate-800">{r.name}</td>
-                  <td className="p-3 text-slate-500 font-mono text-xs">{r.code}</td>
-                  <td className="p-3 text-slate-500 text-xs">{r.desc}</td>
+                  <td className="p-3 text-slate-500 font-mono text-sm">{r.code}</td>
+                  <td className="p-3 text-slate-500 text-sm">{r.desc}</td>
                   <td className="p-3">
                     {r.builtin ? (
-                      <span className="text-xs text-amber-600 font-medium">系统内置</span>
+                      <span className="text-sm text-amber-600 font-medium">系统内置</span>
                     ) : (
                       '—'
                     )}
@@ -146,19 +146,19 @@ export default function AdminRolesPage() {
                   <td className="p-3 text-right space-x-1">
                     <button
                       onClick={() => openEdit(r)}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-sm text-blue-600 hover:underline"
                     >
                       编辑
                     </button>
                     <button
                       onClick={() => openPerms(r)}
-                      className="text-xs text-purple-600 hover:underline"
+                      className="text-sm text-purple-600 hover:underline"
                     >
                       权限
                     </button>
                     <button
                       onClick={() => openDelete(r)}
-                      className="text-xs text-red-500 hover:underline"
+                      className="text-sm text-red-500 hover:underline"
                     >
                       删除
                     </button>
@@ -176,7 +176,7 @@ export default function AdminRolesPage() {
           title={editing ? '编辑角色' : '新增角色'}
           width="max-w-md"
         >
-          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-xs mb-4">
+          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-sm mb-4">
             ⚠️ 角色管理接口待接入，当前为 Mock 数据
           </div>
           <div className="space-y-4">
@@ -242,7 +242,7 @@ export default function AdminRolesPage() {
           title={`权限配置 — ${editing?.name || ''}`}
           width="max-w-2xl"
         >
-          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-xs mb-4">
+          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-sm mb-4">
             ⚠️ 权限配置接口待接入
           </div>
           <div className="grid grid-cols-2 gap-4">

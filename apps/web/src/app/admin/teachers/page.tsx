@@ -269,7 +269,7 @@ export default function AdminTeachersPage() {
             <div className="flex gap-2">
               <a
                 href={`data:text/csv;charset=utf-8,${encodeURIComponent(
-                  `姓名,手机号,密码,编号,性别,组织,角色\n${
+                  `姓名,手机号,密码,性别,组织,角色\n${
                     departments.length > 0
                       ? departments
                           .slice(0, 3)
@@ -417,7 +417,7 @@ export default function AdminTeachersPage() {
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索姓名/手机号/编号..."
+            placeholder="搜索姓名/手机号..."
             className="w-56 rounded-lg border px-3 py-2 text-sm"
           />
           <select
@@ -459,7 +459,6 @@ export default function AdminTeachersPage() {
                   <th className="p-3 text-left">性别</th>
                   <th className="p-3 text-left">角色</th>
                   <th className="p-3 text-left">组织</th>
-                  <th className="p-3 text-left">编号</th>
                   <th className="p-3 text-left">状态</th>
                   <th className="p-3 text-left">最近登录</th>
                   <th className="p-3 text-right">操作</th>
@@ -511,7 +510,6 @@ export default function AdminTeachersPage() {
                         </span>
                       </td>
                       <td className="p-3 text-slate-500 text-sm">{deptNames.join(' / ') || '—'}</td>
-                      <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
                       <td className="p-3">
                         <AdminStatusTag status={t.status} />
                       </td>
@@ -606,14 +604,6 @@ export default function AdminTeachersPage() {
                   />
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">编号</label>
-                <input
-                  value={form.employee_no}
-                  onChange={(e) => setForm({ ...form, employee_no: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">性别</label>
                 <select

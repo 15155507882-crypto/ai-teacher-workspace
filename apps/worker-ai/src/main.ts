@@ -438,25 +438,41 @@ async function bootstrap() {
         }
       }
 
-      // 普通聊天 → 简单回复，不调用业务 AI
+      // 普通聊天 → 调用 AI 做自然语言回复
       if (scene.scene === 'normal_chat') {
         const chatKey2 = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
         const chatUsed2 = parseInt((await redis.get(chatKey2)) || '0');
+        const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        // 调用真实 AI
+        let nlReply = '';
+        try {
+          const chatParams = aiAdapter.buildRequest(
+            { text: inputText },
+            `你是学校备课系统中的 AI 教学助手。当前日期时间：${now}。
+
+回复原则：
+1. 用户问什么就直接回答什么。不要套用模板。
+2. 日期、时间问题直接给准确答案。
+3. 教学咨询给出具体建议。文本优化给改写版本。
+4. 不要默认引导用户保存。不要说"整理成可保存的备课内容"。
+5. 不要每次都建议切换到业务模式。
+6. 只有用户明确说"保存、整理成备课、生成教案、形成教学反思"时才建议切换。
+7. 保持友好、专业、简洁。`
+          );
+          const aiReply = await callWithRetry(aiAdapter, inputText);
+          nlReply = aiReply.summary || aiReply.nl_reply || '';
+          if (!nlReply || nlReply.length < 5) {
+            nlReply = '你好！我是AI教学助手，有什么可以帮你的吗？';
+          }
+        } catch {
+          const greet = inputText.includes('？') || inputText.includes('吗') ? '这是一个好问题，让我想想...' : '你好！我是AI教学助手，有什么可以帮你的吗？';
+          nlReply = greet;
+        }
         const result = {
-          scene: 'normal_chat',
-          isBusinessScene: false,
-          type: 'normal_chat',
-          title_candidate: '',
-          summary: '',
-          confidence: scene.confidence,
-          need_user_confirm: false,
-          need_lesson_link: false,
-          next_action: 'chat_reply',
-          extracted_entities: {},
-          reason: scene.reason,
-          nl_reply: inputText
-            ? `好的，我来帮你分析一下：「${inputText.slice(0, 30)}${inputText.length > 30 ? '...' : ''}」。${inputText.includes('怎么') ? '你可以试试从教学目标、教学重点、教学过程几个方面入手。' : '需要我帮你进一步整理成可保存的备课内容吗？随手点上方模式选"个人备课"即可。'}`
-            : '你好！可以输入文字或上传文件，我会帮你识别内容类型并整理成可保存的备课资料。',
+          scene: 'normal_chat', isBusinessScene: false, type: 'normal_chat',
+          title_candidate: '', summary: '', confidence: scene.confidence,
+          need_user_confirm: false, need_lesson_link: false, next_action: 'chat_reply',
+          extracted_entities: {}, reason: scene.reason, nl_reply: nlReply,
           chatQuota: { used: chatUsed2, limit: 10, remaining: Math.max(0, 10 - chatUsed2) },
         };
         await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);

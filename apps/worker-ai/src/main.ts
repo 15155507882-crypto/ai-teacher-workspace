@@ -282,7 +282,7 @@ async function bootstrap() {
       const isDuplicate = await limiter.checkDedup(dedupKey, CFG.dedupWindowSec);
       if (isDuplicate) {
         const result = {
-          type: 'duplicate',
+          type: 'duplicate', isBusinessScene: false,
           title_candidate: '',
           summary: '',
           confidence: 0,
@@ -310,7 +310,7 @@ async function bootstrap() {
           userId,
         });
         const result = {
-          type: 'rate_limited',
+          type: 'rate_limited', isBusinessScene: false,
           title_candidate: '',
           summary: '',
           confidence: 0,
@@ -336,7 +336,7 @@ async function bootstrap() {
           userId,
         });
         const result = {
-          type: 'rate_limited',
+          type: 'rate_limited', isBusinessScene: false,
           title_candidate: '',
           summary: '',
           confidence: 0,
@@ -364,7 +364,7 @@ async function bootstrap() {
           userId,
         });
         const result = {
-          type: 'rate_limited',
+          type: 'rate_limited', isBusinessScene: false,
           title_candidate: '',
           summary: '',
           confidence: 0,
@@ -390,7 +390,7 @@ async function bootstrap() {
           userId,
         });
         const result = {
-          type: 'rate_limited',
+          type: 'rate_limited', isBusinessScene: false,
           title_candidate: '',
           summary: '',
           confidence: 0,
@@ -470,7 +470,7 @@ async function bootstrap() {
           const result = {
             scene: 'normal_chat',
             isBusinessScene: false,
-            type: 'quota_exceeded',
+            type: 'quota_exceeded', isBusinessScene: false,
             title_candidate: '',
             summary: '',
             confidence: 0,

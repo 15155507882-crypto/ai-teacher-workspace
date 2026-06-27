@@ -286,7 +286,7 @@ export default function WorkspacePage() {
                         <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
                           {msg.text}
                         </p>
-                        {msg.result && msg.result.isBusinessScene !== false && (
+                        {msg.result && msg.result.isBusinessScene !== false && ['personal_lesson','reflection','group_lesson','plan_summary'].includes(msg.result.type) && (
                           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             <div className="flex flex-wrap gap-2 text-xs">
                               {[

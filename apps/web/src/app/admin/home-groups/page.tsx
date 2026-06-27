@@ -60,10 +60,13 @@ export default function AdminHomeGroupsPage() {
 
   useEffect(() => {
     fetchGroups();
-    api('/api/admin/teachers?status=active&size=200').then((j) => {
-      if (j.code === 0) setAllTeachers(j.data.items || []);
-    });
+    fetchTeachers();
   }, []);
+
+  async function fetchTeachers() {
+    const j = await api('/api/admin/teachers?status=active&size=200');
+    if (j.code === 0) setAllTeachers(j.data.items || []);
+  }
 
   async function fetchGroups() {
     setLoading(true);
@@ -505,6 +508,7 @@ export default function AdminHomeGroupsPage() {
                 }
                 setTeacherOpen(false);
                 fetchGroups();
+                fetchTeachers();
                 setMsg('已更新教师分配');
               }}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"

@@ -152,9 +152,8 @@ export default function AdminHomeGroupsPage() {
   function openTeachers(g: Group) {
     setEditing(g);
     setTeacherSearch('');
-    setSelectedTeachers(
-      allTeachers.filter((t: any) => t.department_id === g.id).map((t: any) => t.id)
-    );
+    const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
+    setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
     setTeacherOpen(true);
   }
 
@@ -483,11 +482,26 @@ export default function AdminHomeGroupsPage() {
             </button>
             <button
               onClick={async () => {
+                const groupId = Number(editing!.id);
+                // 当前已在组内的教师ID
+                const previouslyInGroup = allTeachers
+                  .filter((t: any) => Number(t.department_id) === groupId)
+                  .map((t: any) => Number(t.id));
+                // 选中的：设为本组
                 for (const tid of selectedTeachers) {
                   await api(`/api/admin/teachers/${tid}`, {
                     method: 'PUT',
-                    body: JSON.stringify({ department_id: editing!.id }),
+                    body: JSON.stringify({ department_id: groupId }),
                   });
+                }
+                // 之前在本组但现在没被选中的：移出（设 department_id=1 默认组）
+                for (const tid of previouslyInGroup) {
+                  if (!selectedTeachers.includes(tid)) {
+                    await api(`/api/admin/teachers/${tid}`, {
+                      method: 'PUT',
+                      body: JSON.stringify({ department_id: 1 }),
+                    });
+                  }
                 }
                 setTeacherOpen(false);
                 fetchGroups();

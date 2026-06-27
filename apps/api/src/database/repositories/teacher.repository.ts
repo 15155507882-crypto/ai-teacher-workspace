@@ -120,4 +120,14 @@ export class TeacherRepository {
   async save(entity: Teacher): Promise<Teacher> {
     return this.repo.save(entity);
   }
+
+  async updateDepartmentBatch(teacherIds: number[], departmentId: number) {
+    if (teacherIds.length === 0) return;
+    await this.repo
+      .createQueryBuilder()
+      .update(Teacher)
+      .set({ department_id: departmentId })
+      .where('id IN (:...ids)', { ids: teacherIds })
+      .execute();
+  }
 }

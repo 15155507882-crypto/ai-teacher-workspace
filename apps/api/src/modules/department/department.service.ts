@@ -45,15 +45,18 @@ export class DepartmentService {
     return this.departmentRepo.save(department);
   }
 
-  /** 停用前检查是否有在职教师 */
+  /** 停用：将该组织教师移到上级组织，然后停用 */
   async disable(id: number) {
     const department = await this.departmentRepo.findById(id);
     if (!department) throw new NotFoundException('组织不存在');
 
     const teachers = await this.teacherRepo.findByDepartment(id);
-    const activeTeachers = teachers.filter((t) => t.status === 'active');
-    if (activeTeachers.length > 0) {
-      throw new ConflictException(`该组织下还有 ${activeTeachers.length} 名在职教师，无法停用`);
+    const targetDeptId =
+      department.parent_id && department.parent_id !== 0 ? department.parent_id : 1;
+
+    if (teachers.length > 0) {
+      const ids = teachers.map((t) => t.id);
+      await this.teacherRepo.updateDepartmentBatch(ids, targetDeptId);
     }
 
     department.status = 'disabled';

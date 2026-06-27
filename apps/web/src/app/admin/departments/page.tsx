@@ -66,7 +66,12 @@ export default function AdminDeptPage() {
   }
   function openEdit(d: Dept) {
     setEditing(d);
-    setForm({ name: d.name, parent_id: d.parent_id, sort_order: d.sort_order, status: d.status });
+    setForm({
+      name: d.name,
+      parent_id: Number(d.parent_id) || 0,
+      sort_order: Number(d.sort_order) || 0,
+      status: d.status,
+    });
     setDialogOpen(true);
   }
 
@@ -74,9 +79,15 @@ export default function AdminDeptPage() {
     setSaving(true);
     const url = editing ? `/api/admin/departments/${editing.id}` : '/api/admin/departments';
     const method = editing ? 'PUT' : 'POST';
-    const body = editing ? form : { school_id: 1, ...form };
+    const body = {
+      name: form.name,
+      parent_id: Number(form.parent_id) || 0,
+      sort_order: Number(form.sort_order) || 0,
+      status: form.status,
+    };
+    const payload = editing ? body : { school_id: 1, ...body };
 
-    const j = await api(url, { method, body: JSON.stringify(body) });
+    const j = await api(url, { method, body: JSON.stringify(payload) });
     if (j.code === 0) {
       setDialogOpen(false);
       fetchDepts();
@@ -90,7 +101,13 @@ export default function AdminDeptPage() {
     setSaving(true);
     const j = await api('/api/admin/departments', {
       method: 'POST',
-      body: JSON.stringify({ school_id: 1, ...form }),
+      body: JSON.stringify({
+        school_id: 1,
+        name: form.name,
+        parent_id: Number(form.parent_id) || 0,
+        sort_order: Number(form.sort_order) || 0,
+        status: form.status,
+      }),
     });
     if (j.code === 0) {
       fetchDepts();
@@ -109,7 +126,12 @@ export default function AdminDeptPage() {
     setMsg('');
     const j = await api(`/api/admin/departments/${d.id}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...d, status: 'disabled' }),
+      body: JSON.stringify({
+        name: d.name,
+        parent_id: Number(d.parent_id) || 0,
+        sort_order: Number(d.sort_order) || 0,
+        status: 'disabled',
+      }),
     });
     if (j.code === 0) {
       fetchDepts();

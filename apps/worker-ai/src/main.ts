@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 import { createAIAdapter } from '@workspace/adapter-ai';
 import type { DeepSeekAdapter, DeepSeekCallResult } from '@workspace/adapter-ai';
+import { detectScene } from './prompts/prompt-registry';
 
 // ======= 配置 =======
 const CFG = {
@@ -405,7 +406,65 @@ async function bootstrap() {
         return result;
       }
 
-      // 4. 并发控制
+      // 4. 场景识别（新增）
+      const inputText = [text, fileName].filter(Boolean).join(' ');
+      const scene = detectScene(inputText, job.data.mode);
+      const isBusinessScene = scene.scene !== 'normal_chat' && scene.scene !== 'unknown';
+
+      // 普通聊天额度检查
+      if (scene.scene === 'normal_chat') {
+        const chatKey = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
+        const chatUsed = await redis.incr(chatKey);
+        if (chatUsed === 1) await redis.expire(chatKey, 86400);
+        const chatLimit = 10;
+        if (chatUsed > chatLimit) {
+          const result = {
+            scene: 'normal_chat',
+            isBusinessScene: false,
+            type: 'quota_exceeded',
+            title_candidate: '',
+            summary: '',
+            confidence: 0,
+            need_user_confirm: false,
+            need_lesson_link: false,
+            next_action: 'skip',
+            extracted_entities: {},
+            reason: 'chat_quota_exceeded',
+            nl_reply: `今日普通 AI 对话次数已用完（${chatLimit}/${chatLimit}）。你仍可以继续使用个人备课、集体备课、学期计划、学期总结、教学反思等教学工作场景。`,
+            chatQuota: { used: chatUsed, limit: chatLimit, remaining: 0 },
+          };
+          await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
+          return result;
+        }
+      }
+
+      // 普通聊天 → 简单回复，不调用业务 AI
+      if (scene.scene === 'normal_chat') {
+        const chatKey2 = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
+        const chatUsed2 = parseInt((await redis.get(chatKey2)) || '0');
+        const result = {
+          scene: 'normal_chat',
+          isBusinessScene: false,
+          type: 'normal_chat',
+          title_candidate: '',
+          summary: '',
+          confidence: scene.confidence,
+          need_user_confirm: false,
+          need_lesson_link: false,
+          next_action: 'chat_reply',
+          extracted_entities: {},
+          reason: scene.reason,
+          nl_reply: inputText
+            ? `好的，我来帮你分析一下：「${inputText.slice(0, 30)}${inputText.length > 30 ? '...' : ''}」。${inputText.includes('怎么') ? '你可以试试从教学目标、教学重点、教学过程几个方面入手。' : '需要我帮你进一步整理成可保存的备课内容吗？随手点上方模式选"个人备课"即可。'}`
+            : '你好！可以输入文字或上传文件，我会帮你识别内容类型并整理成可保存的备课资料。',
+          chatQuota: { used: chatUsed2, limit: 10, remaining: Math.max(0, 10 - chatUsed2) },
+        };
+        await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
+        await redis.set(`ai_session:${messageId}`, String(sessionId), 'EX', 600);
+        return result;
+      }
+
+      // 4b. 业务场景：执行原有 AI 识别
       const acquired = await guard.acquire();
       if (!acquired) {
         logCallToApi(config, {

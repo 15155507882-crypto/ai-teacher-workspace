@@ -470,7 +470,7 @@ async function bootstrap() {
           const result = {
             scene: 'normal_chat',
             isBusinessScene: false,
-            type: 'quota_exceeded', isBusinessScene: false,
+            type: 'quota_exceeded',
             title_candidate: '',
             summary: '',
             confidence: 0,

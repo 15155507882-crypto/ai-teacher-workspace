@@ -45,4 +45,19 @@ export class DepartmentController {
   async disable(@Param('id') id: string) {
     return this.departmentService.disable(parseInt(id, 10));
   }
+
+  @Post(':id/enable')
+  async enable(@Param('id') id: string) {
+    return this.departmentService.enable(parseInt(id, 10));
+  }
+
+  @Get('options')
+  async options(@Query('school_id') schoolId: string) {
+    return this.departmentService.findOptions(parseInt(schoolId) || 1);
+  }
+
+  @Post(':id/disable')
+  async disable(@Param('id') id: string) {
+    return this.departmentService.disable(parseInt(id, 10));
+  }
 }

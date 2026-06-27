@@ -60,6 +60,22 @@ export class DepartmentService {
     return this.departmentRepo.save(department);
   }
 
+  /** 启用 */
+  async enable(id: number) {
+    const department = await this.departmentRepo.findById(id);
+    if (!department) throw new NotFoundException('组织不存在');
+    department.status = 'active';
+    return this.departmentRepo.save(department);
+  }
+
+  /** 下拉选项（只返回启用的） */
+  async findOptions(schoolId: number) {
+    const all = await this.departmentRepo.findBySchool(schoolId);
+    return all
+      .filter((d) => d.status === 'active')
+      .map((d) => ({ id: Number(d.id), name: d.name }));
+  }
+
   private buildTree(departments: any[]) {
     const map = new Map<number, any>();
     const roots: any[] = [];

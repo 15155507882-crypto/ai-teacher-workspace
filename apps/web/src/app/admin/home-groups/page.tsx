@@ -25,12 +25,12 @@ interface Group {
 }
 
 export default function AdminHomeGroupsPage() {
-  console.log('[HOME-GROUPS-V2-RENDER]', new Date().toISOString());
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [teacherOpen, setTeacherOpen] = useState(false);
+  const [viewTeachersOpen, setViewTeachersOpen] = useState(false);
   const [editing, setEditing] = useState<Group | null>(null);
   const [form, setForm] = useState({
     name: '',
@@ -169,12 +169,6 @@ export default function AdminHomeGroupsPage() {
   }
 
   function openTeachers(g: Group) {
-    console.log('[OPEN-TEACHERS]', {
-      groupId: g.id,
-      groupName: g.name,
-      groupTeacherIds: (g as any).teacher_ids,
-      groupTeachers: (g as any).teachers,
-    });
     setEditing(g);
     setTeacherSearch('');
     const ids = (g as any).teacher_ids || [];
@@ -323,12 +317,25 @@ export default function AdminHomeGroupsPage() {
                     <td className="p-3 text-sm text-slate-400 max-w-[120px] truncate">
                       {g.remark || '—'}
                     </td>
-                    <td className="p-3 text-sm text-slate-400 max-w-[160px] truncate">
-                      {g.teachers?.length
-                        ? g.teachers.map((t) => t.name).join('、')
-                        : g.teacher_count
-                          ? `${g.teacher_count} 位老师`
-                          : '—'}
+                    <td className="p-3 text-sm max-w-[180px]">
+                      {g.teachers?.length ? (
+                        <button
+                          onClick={() => {
+                            setEditing(g);
+                            setViewTeachersOpen(true);
+                          }}
+                          className="text-blue-600 hover:underline text-left"
+                        >
+                          {g.teachers.length <= 3
+                            ? g.teachers.map((t) => t.name).join('、')
+                            : `${g.teachers
+                                .slice(0, 2)
+                                .map((t) => t.name)
+                                .join('、')} 等 ${g.teachers.length} 人`}
+                        </button>
+                      ) : (
+                        <span className="text-slate-400">暂无老师</span>
+                      )}
                     </td>
                     <td className="p-3 text-right space-x-1">
                       <button
@@ -556,6 +563,25 @@ export default function AdminHomeGroupsPage() {
           title={`删除「${editing?.name}」？`}
           description="删除后不可恢复"
         />
+        {/* 查看老师名单弹窗（只读） */}
+        <AdminDialog
+          open={viewTeachersOpen}
+          onClose={() => setViewTeachersOpen(false)}
+          title={`${editing?.name || ''} - 老师名单`}
+          width="max-w-sm"
+        >
+          {editing?.teachers?.length ? (
+            <div className="space-y-1">
+              {editing.teachers.map((t) => (
+                <div key={t.id} className="px-3 py-1.5 bg-slate-50 rounded text-sm text-slate-700">
+                  {t.name}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-400 text-sm">暂未绑定老师</div>
+          )}
+        </AdminDialog>
       </div>
     </AdminShell>
   );

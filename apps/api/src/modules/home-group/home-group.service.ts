@@ -57,7 +57,6 @@ export class HomeGroupService {
 
   /** 设置备课组老师绑定 */
   async setTeachers(groupId: number, teacherIds: number[]) {
-    console.log('[SET-TEACHERS-INPUT]', { groupId, teacherIds, len: teacherIds?.length });
     const group = await this.repo.findOne({ where: { id: groupId } });
     if (!group) throw new NotFoundException('备课组不存在');
 

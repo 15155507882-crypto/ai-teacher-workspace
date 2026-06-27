@@ -53,10 +53,12 @@ export class TeacherService {
     const teacher = this.teacherRepo.create({
       school_id: dto.school_id,
       department_id: dto.department_id,
+      department_ids: dto.department_ids || null,
       mobile: dto.mobile,
       password_hash: passwordHash,
       name: dto.name,
       employee_no: dto.employee_no || null,
+      gender: dto.gender || null,
       role: dto.role || 'teacher',
       status: 'active',
       sort: dto.sort || 0,
@@ -69,8 +71,10 @@ export class TeacherService {
     const teacher = await this.teacherRepo.findById(id);
     if (!teacher) throw new NotFoundException('教师不存在');
     if (dto.department_id !== undefined) teacher.department_id = dto.department_id;
+    if (dto.department_ids !== undefined) teacher.department_ids = dto.department_ids || null;
     if (dto.name !== undefined) teacher.name = dto.name;
     if (dto.employee_no !== undefined) teacher.employee_no = dto.employee_no;
+    if (dto.gender !== undefined) teacher.gender = dto.gender || null;
     if (dto.role !== undefined) teacher.role = dto.role;
     if (dto.sort !== undefined) teacher.sort = dto.sort;
     if (dto.is_home_visible !== undefined) teacher.is_home_visible = dto.is_home_visible;
@@ -158,6 +162,7 @@ export class TeacherService {
         const teacher = this.teacherRepo.create({
           school_id: row.school_id || 1,
           department_id: Number(departmentId) || 1,
+          department_ids: row.department_ids || null,
           mobile: row.mobile,
           password_hash: passwordHash,
           name: row.name,

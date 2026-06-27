@@ -22,6 +22,10 @@ export class Teacher {
   @Column({ type: 'bigint' })
   department_id: number;
 
+  /** 多组织ID，逗号分隔，如 "1,3,5" */
+  @Column({ type: 'varchar', length: 500, nullable: true, default: null })
+  department_ids: string | null;
+
   @Column({ type: 'varchar', length: 20, unique: true })
   mobile: string;
 
@@ -49,7 +53,7 @@ export class Teacher {
   @Column({ type: 'boolean', default: true })
   is_home_visible: boolean;
 
-  @Column({ type: 'varchar', length: 20, default: 'teacher' })
+  @Column({ type: 'varchar', length: 200, default: 'teacher' })
   role: string;
 
   @Column({ type: 'varchar', length: 20, default: 'active' })

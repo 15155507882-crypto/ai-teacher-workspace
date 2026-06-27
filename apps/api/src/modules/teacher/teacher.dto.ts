@@ -15,6 +15,11 @@ export class CreateTeacherDto {
   @IsInt()
   department_id: number;
 
+  /** 多组织ID，逗号分隔 */
+  @IsOptional()
+  @IsString()
+  department_ids?: string;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
@@ -41,9 +46,9 @@ export class CreateTeacherDto {
   @IsIn(['male', 'female', 'other'])
   gender?: string;
 
+  /** 支持多角色，逗号分隔，如 "teacher,head_teacher" */
   @IsOptional()
   @IsString()
-  @IsIn(['teacher', 'admin'])
   role?: string;
 
   @IsOptional()
@@ -57,6 +62,11 @@ export class UpdateTeacherDto {
   @IsOptional()
   @IsInt()
   department_id?: number;
+
+  /** 多组织ID，逗号分隔 */
+  @IsOptional()
+  @IsString()
+  department_ids?: string;
 
   @IsOptional()
   @IsString()
@@ -73,9 +83,9 @@ export class UpdateTeacherDto {
   @IsIn(['male', 'female', 'other'])
   gender?: string;
 
+  /** 支持多角色，逗号分隔 */
   @IsOptional()
   @IsString()
-  @IsIn(['teacher', 'admin'])
   role?: string;
 
   @IsOptional()

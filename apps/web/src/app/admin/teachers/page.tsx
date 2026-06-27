@@ -17,6 +17,7 @@ interface Teacher {
   mobile: string;
   employee_no: string | null;
   department_id: number;
+  department_ids?: string | null;
   department_name?: string;
   role: string;
   status: string;
@@ -46,8 +47,9 @@ export default function AdminTeachersPage() {
     mobile: '',
     employee_no: '',
     department_id: 1,
+    department_ids: [] as number[],
     gender: '',
-    role: 'teacher',
+    role: [] as string[],
     password: '',
   });
   const [pwdForm, setPwdForm] = useState({ password: '', confirm: '' });
@@ -106,8 +108,9 @@ export default function AdminTeachersPage() {
       mobile: '',
       employee_no: '',
       department_id: 1,
+      department_ids: [],
       gender: '',
-      role: 'teacher',
+      role: ['teacher'],
       password: '',
     });
     setDialogOpen(true);
@@ -118,9 +121,12 @@ export default function AdminTeachersPage() {
       name: t.name,
       mobile: t.mobile,
       employee_no: t.employee_no || '',
-      department_id: t.department_id,
+      department_id: Number(t.department_id) || 1,
+      department_ids: t.department_ids
+        ? t.department_ids.split(',').map(Number).filter(Boolean)
+        : [],
       gender: (t as any).gender || '',
-      role: t.role,
+      role: t.role ? t.role.split(',').filter(Boolean) : ['teacher'],
       password: '',
     });
     setDialogOpen(true);
@@ -128,20 +134,27 @@ export default function AdminTeachersPage() {
 
   async function save() {
     setSaving(true);
+    const payload: any = {
+      name: form.name,
+      department_id: form.department_id,
+      department_ids: form.department_ids.length > 0 ? form.department_ids.join(',') : null,
+      employee_no: form.employee_no,
+      gender: form.gender || null,
+      role: form.role.join(',') || 'teacher',
+    };
     const j = editing
       ? await api(`/api/admin/teachers/${editing.id}`, {
           method: 'PUT',
-          body: JSON.stringify({
-            name: form.name,
-            department_id: form.department_id,
-            employee_no: form.employee_no,
-            gender: form.gender || null,
-            role: form.role,
-          }),
+          body: JSON.stringify(payload),
         })
       : await api('/api/admin/teachers', {
           method: 'POST',
-          body: JSON.stringify({ school_id: 1, ...form }),
+          body: JSON.stringify({
+            school_id: 1,
+            ...payload,
+            mobile: form.mobile,
+            password: form.password || '123456',
+          }),
         });
     if (j.code === 0) {
       setDialogOpen(false);
@@ -156,7 +169,17 @@ export default function AdminTeachersPage() {
     setSaving(true);
     const j = await api('/api/admin/teachers', {
       method: 'POST',
-      body: JSON.stringify({ school_id: 1, ...form }),
+      body: JSON.stringify({
+        school_id: 1,
+        name: form.name,
+        mobile: form.mobile,
+        password: form.password || '123456',
+        department_id: form.department_id,
+        department_ids: form.department_ids.length > 0 ? form.department_ids.join(',') : null,
+        employee_no: form.employee_no,
+        gender: form.gender || null,
+        role: form.role.join(',') || 'teacher',
+      }),
     });
     if (j.code === 0) {
       fetchTeachers();
@@ -167,6 +190,7 @@ export default function AdminTeachersPage() {
         mobile: '',
         employee_no: '',
         department_id: form.department_id,
+        department_ids: form.department_ids,
         gender: '',
         role: form.role,
         password: '',
@@ -421,7 +445,24 @@ export default function AdminTeachersPage() {
               </thead>
               <tbody>
                 {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => {
-                  const roleLabel = t.role === 'admin' ? '管理员' : '教师';
+                  const deptMap = new Map(departments.map((d) => [d.id, d.name]));
+                  const roleMap: Record<string, string> = { teacher: '教师', admin: '管理员' };
+                  const roles = (t.role || '')
+                    .split(',')
+                    .map((r) => roleMap[r.trim()] || r.trim())
+                    .filter(Boolean);
+                  // 合并 department_name 和 department_ids 显示
+                  const deptNames: string[] = [];
+                  if (t.department_name) deptNames.push(t.department_name);
+                  if (t.department_ids) {
+                    t.department_ids.split(',').forEach((idStr) => {
+                      const did = Number(idStr.trim());
+                      if (did && did !== t.department_id) {
+                        const name = deptMap.get(did);
+                        if (name && !deptNames.includes(name)) deptNames.push(name);
+                      }
+                    });
+                  }
                   return (
                     <tr key={t.id} className="border-t hover:bg-slate-50">
                       <td className="p-3 text-sm text-slate-400">
@@ -438,10 +479,10 @@ export default function AdminTeachersPage() {
                       </td>
                       <td className="p-3">
                         <span className="text-xs px-2 py-0.5 rounded-md bg-slate-50 text-slate-600">
-                          {roleLabel}
+                          {roles.join(' / ') || '—'}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-500 text-sm">{t.department_name || '—'}</td>
+                      <td className="p-3 text-slate-500 text-sm">{deptNames.join(' / ') || '—'}</td>
                       <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
                       <td className="p-3">
                         <AdminStatusTag status={t.status} />
@@ -557,32 +598,72 @@ export default function AdminTeachersPage() {
                   <option value="female">女</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">组织</label>
-                <select
-                  value={form.department_id}
-                  onChange={(e) =>
-                    setForm({ ...form, department_id: parseInt(e.target.value) || 1 })
-                  }
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                >
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  组织（可多选）
+                </label>
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                   {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
+                    <label
+                      key={d.id}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs cursor-pointer ${
+                        form.department_ids.includes(d.id)
+                          ? 'border-blue-400 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={form.department_ids.includes(d.id)}
+                        onChange={() => {
+                          setForm({
+                            ...form,
+                            department_ids: form.department_ids.includes(d.id)
+                              ? form.department_ids.filter((id) => id !== d.id)
+                              : [...form.department_ids, d.id],
+                          });
+                        }}
+                      />
                       {d.name}
-                    </option>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">角色</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                >
-                  <option value="teacher">教师</option>
-                  <option value="admin">管理员</option>
-                </select>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  角色（可多选）
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'teacher', label: '教师' },
+                    { value: 'admin', label: '管理员' },
+                  ].map((r) => (
+                    <label
+                      key={r.value}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs cursor-pointer ${
+                        form.role.includes(r.value)
+                          ? 'border-blue-400 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={form.role.includes(r.value)}
+                        onChange={() => {
+                          setForm({
+                            ...form,
+                            role: form.role.includes(r.value)
+                              ? form.role.filter((v) => v !== r.value)
+                              : [...form.role, r.value],
+                          });
+                        }}
+                      />
+                      {r.label}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">

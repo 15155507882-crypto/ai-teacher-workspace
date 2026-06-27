@@ -4,7 +4,7 @@ import { AppCard } from '@/components/ui/base';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
-function compressImage(file: File, maxWidth = 400, maxSizeKB = 100): Promise<Blob> {
+function compressImage(file: File, maxWidth = 400, maxSizeKB = 100): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -26,7 +26,13 @@ function compressImage(file: File, maxWidth = 400, maxSizeKB = 100): Promise<Blo
           canvas.toBlob(
             (blob) => {
               if (!blob) return reject(new Error('压缩失败'));
-              if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) return resolve(blob);
+              if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) {
+                // 转回 base64 data URL
+                const fr = new FileReader();
+                fr.onload = () => resolve(fr.result as string);
+                fr.readAsDataURL(blob);
+                return;
+              }
               quality -= 0.1;
               tryCompress();
             },
@@ -59,7 +65,10 @@ export default function AdminSchoolPage() {
         if (j.data) {
           setName(j.data.name);
           setShortName(j.data.short_name);
-          if (j.data.logo_file_id) {
+          // 优先使用 logo_data（base64存库），否则回退到文件预览
+          if (j.data.logo_data) {
+            setLogo(j.data.logo_data);
+          } else if (j.data.logo_file_id) {
             setLogo(`/api/files/${j.data.logo_file_id}/preview`);
           }
         }
@@ -70,8 +79,8 @@ export default function AdminSchoolPage() {
     setLoading(true);
     const token = localStorage.getItem('accessToken');
 
-    // Upload logo first if there's a new one (compress to under 100KB)
-    let logoFileId = null;
+    // 压缩新图片为 base64
+    let logoData: string | null | undefined = undefined;
     if (logoFile) {
       if (logoFile.size > 1024 * 1024) {
         setMsg('Logo 图片不能超过 1MB');
@@ -79,21 +88,20 @@ export default function AdminSchoolPage() {
         return;
       }
       try {
-        const compressed = await compressImage(logoFile);
-        const formData = new FormData();
-        formData.append('file', compressed, 'logo.jpg');
-        const uploadRes = await fetch('/api/ai/upload', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        const uploadJson = await uploadRes.json();
-        if (uploadJson.code === 0) logoFileId = uploadJson.data.file_id;
+        logoData = await compressImage(logoFile);
       } catch {
         setMsg('图片压缩失败');
         setLoading(false);
         return;
       }
+    } else if (logo === null) {
+      // 用户点击了"移除"
+      logoData = null;
+    }
+
+    const body: any = { name, short_name: shortName };
+    if (logoData !== undefined) {
+      body.logo_data = logoData;
     }
 
     const res = await fetch('/api/admin/school', {
@@ -102,7 +110,7 @@ export default function AdminSchoolPage() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, short_name: shortName, logo_file_id: logoFileId }),
+      body: JSON.stringify(body),
     });
     const json = await res.json();
     setMsg(json.code === 0 ? '保存成功' : json.message);

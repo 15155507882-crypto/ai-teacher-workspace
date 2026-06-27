@@ -25,11 +25,15 @@ export class SchoolService {
         name: dto.name,
         short_name: dto.short_name,
         logo_file_id: dto.logo_file_id || null,
+        logo_data: dto.logo_data || null,
       });
     } else {
       school.name = dto.name;
       school.short_name = dto.short_name;
       school.logo_file_id = dto.logo_file_id ?? school.logo_file_id;
+      if (dto.logo_data !== undefined) {
+        school.logo_data = dto.logo_data;
+      }
     }
 
     return this.schoolRepo.save(school);

@@ -22,6 +22,10 @@ export class School {
   @Column({ type: 'bigint', nullable: true })
   logo_file_id: number | null;
 
+  /** Logo base64 数据，直接存库，避免部署后文件丢失 */
+  @Column({ type: 'text', nullable: true })
+  logo_data: string | null;
+
   @Column({ type: 'json', nullable: true })
   settings: {
     academic_years?: string[];

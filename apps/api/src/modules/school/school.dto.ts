@@ -14,6 +14,10 @@ export class UpdateSchoolDto {
 
   @IsOptional()
   logo_file_id?: number | null;
+
+  @IsOptional()
+  @IsString()
+  logo_data?: string | null;
 }
 
 export class SemesterDto {

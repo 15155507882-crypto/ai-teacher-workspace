@@ -25,6 +25,7 @@ interface Group {
 }
 
 export default function AdminHomeGroupsPage() {
+  console.log('[HOME-GROUPS-V2-RENDER]', new Date().toISOString());
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -168,6 +169,12 @@ export default function AdminHomeGroupsPage() {
   }
 
   function openTeachers(g: Group) {
+    console.log('[OPEN-TEACHERS]', {
+      groupId: g.id,
+      groupName: g.name,
+      groupTeacherIds: (g as any).teacher_ids,
+      groupTeachers: (g as any).teachers,
+    });
     setEditing(g);
     setTeacherSearch('');
     const ids = (g as any).teacher_ids || [];
@@ -282,6 +289,7 @@ export default function AdminHomeGroupsPage() {
                   <th className="p-3 text-left">首页</th>
                   <th className="p-3 text-left">状态</th>
                   <th className="p-3 text-left">备注</th>
+                  <th className="p-3 text-left">绑定老师</th>
                   <th className="p-3 text-right">操作</th>
                 </tr>
               </thead>
@@ -314,6 +322,13 @@ export default function AdminHomeGroupsPage() {
                     </td>
                     <td className="p-3 text-sm text-slate-400 max-w-[120px] truncate">
                       {g.remark || '—'}
+                    </td>
+                    <td className="p-3 text-sm text-slate-400 max-w-[160px] truncate">
+                      {g.teachers?.length
+                        ? g.teachers.map((t) => t.name).join('、')
+                        : g.teacher_count
+                          ? `${g.teacher_count} 位老师`
+                          : '—'}
                     </td>
                     <td className="p-3 text-right space-x-1">
                       <button
@@ -501,13 +516,27 @@ export default function AdminHomeGroupsPage() {
             <button
               onClick={async () => {
                 const groupId = Number(editing!.id);
+                console.log('[SAVE-TEACHERS-CLICK]', {
+                  groupId,
+                  selectedTeachers,
+                  len: selectedTeachers.length,
+                });
+                console.log('[SAVE-TEACHERS-PAYLOAD]', {
+                  url: `/api/admin/home-groups/${groupId}/teachers`,
+                  body: { teacher_ids: selectedTeachers },
+                });
                 const res = await api(`/api/admin/home-groups/${groupId}/teachers`, {
                   method: 'PUT',
                   body: JSON.stringify({ teacher_ids: selectedTeachers }),
                 });
+                console.log('[SAVE-TEACHERS-RESPONSE]', res);
                 if (res.code === 0) {
                   setTeacherOpen(false);
-                  await fetchGroups();
+                  const groups = await fetchGroups();
+                  console.log(
+                    '[FETCH-GROUPS-AFTER-SAVE]',
+                    groups?.map((g: any) => ({ id: g.id, name: g.name, tids: g.teacher_ids }))
+                  );
                   setMsg('老师绑定已保存');
                 } else {
                   setMsg(res.message || '保存失败');

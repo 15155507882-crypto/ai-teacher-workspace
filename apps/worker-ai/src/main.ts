@@ -438,29 +438,36 @@ async function bootstrap() {
         }
       }
 
-      // 普通聊天 → 调用 AI 做自然语言回复
+      // 普通聊天 → 直接调 AI（非 JSON format）
       if (scene.scene === 'normal_chat') {
         const chatKey2 = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
         const chatUsed2 = parseInt((await redis.get(chatKey2)) || '0');
         const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-        // 调用真实 AI
         let nlReply = '';
         try {
-          const chatParams = aiAdapter.buildRequest(
-            { text: inputText },
-            `你是学校备课系统中的 AI 教学助手。当前日期时间：${now}。
-
-回复原则：
-1. 用户问什么就直接回答什么。不要套用模板。
-2. 日期、时间问题直接给准确答案。
-3. 教学咨询给出具体建议。文本优化给改写版本。
-4. 不要默认引导用户保存。不要说"整理成可保存的备课内容"。
-5. 不要每次都建议切换到业务模式。
-6. 只有用户明确说"保存、整理成备课、生成教案、形成教学反思"时才建议切换。
-7. 保持友好、专业、简洁。`
-          );
-          const aiReply = await callWithRetry(aiAdapter, inputText);
-          nlReply = aiReply.summary && aiReply.summary.length > 5 ? aiReply.summary : "你好！我是AI教学助手。";
+          if (config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), CFG.httpTimeout);
+            const res = await fetch(`${config.baseUrl}/chat/completions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+              body: JSON.stringify({
+                model: config.model,
+                messages: [
+                  { role: 'system', content: `你是学校备课系统中的 AI 教学助手。当前日期：${now}。回复原则：1.问什么答什么，不要套模板。2.日期/时间直接给出。3.教学问题给建议，文本优化给改写版。4.不说"整理成可保存的备课内容"。5.只有用户明确要保存时才建议切换业务模式。6.友好、专业、简洁。` },
+                  { role: 'user', content: inputText },
+                ],
+                temperature: 0.7,
+                max_tokens: 800,
+              }),
+              signal: controller.signal,
+            });
+            clearTimeout(timeout);
+            if (res.ok) {
+              const json = await res.json();
+              nlReply = json.choices?.[0]?.message?.content || '';
+            }
+          }
           if (!nlReply || nlReply.length < 5) {
             nlReply = '你好！我是AI教学助手，有什么可以帮你的吗？';
           }

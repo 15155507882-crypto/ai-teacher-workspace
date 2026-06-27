@@ -20,7 +20,7 @@ export function Timeline({
         <div key={item.id || i} className="flex gap-3">
           <div className="flex flex-col items-center">
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600 font-medium shrink-0">
-              {item.teacher_name?.[0] || '?'}
+              {item.teacher_name?.[0] || '👤'}
             </div>
             {i < items.length - 1 && <div className="w-0.5 flex-1 bg-slate-200 mt-1" />}
           </div>

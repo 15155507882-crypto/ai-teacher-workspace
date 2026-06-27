@@ -179,13 +179,17 @@ export default function TeacherSpacePage() {
                 />
               ) : (
                 <DefaultAvatar
-                  name={teacher?.name || '?'}
+                  name={teacher?.name || '教'}
                   gender={(teacher as any)?.gender}
                   size={56}
                 />
               )}
               <div>
-                <h1 className="text-xl font-bold text-slate-800">{teacher?.name}老师的资料空间</h1>
+                <h1 className="text-xl font-bold text-slate-800">
+                  {currentUser && teacher && currentUser.id === teacher.id
+                    ? '我的资料空间'
+                    : `${teacher?.name || '未知老师'}的资料空间`}
+                </h1>
               </div>
             </div>
             <div className="relative group">

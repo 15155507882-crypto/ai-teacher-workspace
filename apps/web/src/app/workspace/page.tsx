@@ -49,6 +49,7 @@ export default function WorkspacePage() {
   const [mode, setMode] = useState('auto');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showPicker, setShowPicker] = useState(false);
+  const [manualAdd, setManualAdd] = useState<{ type: string; open: boolean; title: string } | null>(null);
   const [thinking, setThinking] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(0);
   const [works, setWorks] = useState<WorkItem[]>([]);
@@ -239,6 +240,30 @@ export default function WorkspacePage() {
       }
       return m;
     }));
+  };
+
+  const saveManual = async () => {
+    if (!manualAdd || !manualAdd.title.trim()) return;
+    try {
+      const r = await fetch('/api/ai/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+        body: JSON.stringify({
+          messageId: 0,
+          type: manualAdd.type,
+          title: manualAdd.title.trim(),
+        }),
+      });
+      const j = await r.json();
+      if (j.code === 0) {
+        setManualAdd(null);
+        loadWorks();
+      } else {
+        alert(j.message || '保存失败');
+      }
+    } catch {
+      alert('保存失败');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -472,6 +497,27 @@ export default function WorkspacePage() {
         {/* RIGHT: Work results 30% */}
         <div className="flex-[3] flex flex-col bg-white overflow-y-auto">
           <div className="p-4 border-b border-slate-100 space-y-3">
+            <div className="flex gap-1 flex-wrap">
+              <span className="text-xs text-slate-400 py-1 mr-1">手动录入：</span>
+              {[
+                { k: 'personal_lesson', label: '📖 个人备课' },
+                { k: 'group_lesson', label: '👥 集体备课' },
+                { k: 'reflection', label: '📝 教学反思' },
+                { k: 'plan_summary', label: '📋 计划总结' },
+              ].map((item) => (
+                <button
+                  key={item.k}
+                  onClick={() => {
+                    const title = prompt(`新增${item.label}，请输入标题：`);
+                    if (!title) return;
+                    setManualAdd({ type: item.k, open: true, title });
+                  }}
+                  className="px-2 py-1 rounded text-xs bg-blue-50 text-blue-600 hover:bg-blue-100"
+                >
+                  + {item.label.slice(2)}
+                </button>
+              ))}
+            </div>
             <Input
               value={workSearch}
               onChange={(e) => setWorkSearch(e.target.value)}
@@ -521,6 +567,26 @@ export default function WorkspacePage() {
             )}
           </div>
         </div>
+        {/* 手动录入弹窗 */}
+        {manualAdd?.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                手动录入 — {{ personal_lesson: '个人备课', group_lesson: '集体备课', reflection: '教学反思', plan_summary: '计划总结' }[manualAdd.type]}
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-slate-600 mb-1">标题</label>
+                  <input value={manualAdd.title} onChange={e => setManualAdd({...manualAdd, title: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button onClick={() => setManualAdd(null)} className="px-4 py-2 text-sm border rounded-lg">取消</button>
+                <button onClick={saveManual} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

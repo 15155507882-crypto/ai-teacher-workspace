@@ -59,13 +59,21 @@ export default function AdminHomeGroupsPage() {
   }
 
   useEffect(() => {
-    fetchGroups();
-    fetchTeachers();
+    (async () => {
+      setLoading(true);
+      await fetchGroups();
+      await fetchTeachers();
+      setLoading(false);
+    })();
   }, []);
 
   async function fetchTeachers() {
-    const j = await api('/api/admin/teachers?status=active&size=200');
-    if (j.code === 0) setAllTeachers(j.data.items || []);
+    try {
+      const j = await api('/api/admin/teachers?status=active&size=200');
+      if (j.code === 0 && j.data?.items) setAllTeachers(j.data.items);
+    } catch (e) {
+      console.error('fetchTeachers error', e);
+    }
   }
 
   async function fetchGroups() {
@@ -155,8 +163,15 @@ export default function AdminHomeGroupsPage() {
   function openTeachers(g: Group) {
     setEditing(g);
     setTeacherSearch('');
-    const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
-    setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
+    if (!allTeachers.length) {
+      fetchTeachers().then(() => {
+        const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
+        setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
+      });
+    } else {
+      const inGroup = allTeachers.filter((t: any) => Number(t.department_id) === Number(g.id));
+      setSelectedTeachers(inGroup.map((t: any) => Number(t.id)));
+    }
     setTeacherOpen(true);
   }
 

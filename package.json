@@ -1,6 +1,6 @@
 {
   "name": "ai-teacher-workspace",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "private": true,
   "description": "AI Teacher Workspace — AI 驱动的教师备课工作空间",
   "scripts": {

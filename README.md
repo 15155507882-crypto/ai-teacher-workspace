@@ -1,4 +1,4 @@
-# AI 教师工作空间 (AI Teacher Workspace) V1.0
+# AI 教师工作空间 (AI Teacher Workspace) V2.7
 
 学校备课资料共享与 AI 自动归档工作空间。
 

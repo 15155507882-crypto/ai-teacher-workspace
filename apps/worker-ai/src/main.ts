@@ -464,7 +464,7 @@ async function bootstrap() {
             });
             clearTimeout(timeout);
             if (res.ok) {
-              const json = await res.json();
+              const json: any = await res.json();
               nlReply = json.choices?.[0]?.message?.content || '';
             }
           }

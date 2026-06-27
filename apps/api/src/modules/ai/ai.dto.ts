@@ -6,8 +6,7 @@ export class ChatDto {
   text?: string;
 
   @IsOptional()
-  @IsInt()
-  file_id?: number;
+  file_id?: number | string;
 
   @IsOptional()
   @IsString()

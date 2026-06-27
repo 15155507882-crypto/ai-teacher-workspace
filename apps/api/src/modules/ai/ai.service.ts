@@ -64,7 +64,8 @@ export class AIService {
     let fileContent = '';
     if (dto.file_id) {
       try {
-        const file = await this.fileAssetRepo.findById(dto.file_id);
+        const fid = typeof dto.file_id === 'string' ? parseInt(dto.file_id, 10) : dto.file_id;
+        const file = await this.fileAssetRepo.findById(fid);
         if (file) {
           fileName = file.original_name || '';
           const fs = require('fs');

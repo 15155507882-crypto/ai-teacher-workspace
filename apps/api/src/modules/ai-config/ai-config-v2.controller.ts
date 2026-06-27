@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   Res,
   HttpCode,
@@ -60,6 +61,16 @@ export class AiConfigV2Controller {
   @Post(':id/disable')
   disable(@Param('id') id: string) {
     return this.svc.disable(+id);
+  }
+
+  @Get('stats')
+  getStats(@Query('range') range: string) {
+    return this.svc.getTokenStats(range || 'month');
+  }
+
+  @Get('stats/users')
+  getStatsByUser(@Query('range') range: string) {
+    return this.svc.getTokenStatsByUser(range || 'month');
   }
 
   // ======= Internal endpoint for Worker =======

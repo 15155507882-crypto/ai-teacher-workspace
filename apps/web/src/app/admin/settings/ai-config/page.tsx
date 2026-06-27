@@ -49,6 +49,9 @@ export default function AiConfigV2Page() {
     is_active: false,
     remark: '',
   });
+  const [stats, setStats] = useState<any>(null);
+  const [userStats, setUserStats] = useState<any[]>([]);
+  const [statsRange, setStatsRange] = useState('month');
 
   async function api(url: string, opts?: RequestInit) {
     const token = localStorage.getItem('accessToken') || '';
@@ -71,6 +74,18 @@ export default function AiConfigV2Page() {
     loadList();
     setLoading(false);
   }, []);
+  useEffect(() => {
+    loadStats(statsRange);
+  }, [statsRange]);
+
+  function loadStats(range: string) {
+    api(`/api/admin/ai-configs/stats?range=${range}`).then((j) => {
+      if (j.code === 0) setStats(j.data);
+    });
+    api(`/api/admin/ai-configs/stats/users?range=${range}`).then((j) => {
+      if (j.code === 0) setUserStats(j.data || []);
+    });
+  }
 
   function openNew() {
     setEditing(null);
@@ -305,6 +320,74 @@ export default function AiConfigV2Page() {
             </div>
           ))}
         </div>
+
+        {/* Token 统计 */}
+        <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-slate-800">调用统计</h2>
+            <div className="flex gap-1">
+              {['today', 'week', 'month', 'all'].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setStatsRange(r)}
+                  className={`px-3 py-1.5 text-sm rounded-lg ${statsRange === r ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                >
+                  {r === 'today' ? '今日' : r === 'week' ? '本周' : r === 'month' ? '本月' : '累计'}
+                </button>
+              ))}
+            </div>
+          </div>
+          {stats && (
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-slate-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {stats.total_tokens?.toLocaleString() || 0}
+                </p>
+                <p className="text-sm text-slate-500 mt-1">Total Tokens</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-600">{stats.call_count || 0}</p>
+                <p className="text-sm text-slate-500 mt-1">调用次数</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-purple-600">${stats.estimated_cost || '0'}</p>
+                <p className="text-sm text-slate-500 mt-1">预估费用</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-orange-600">{userStats.length || 0}</p>
+                <p className="text-sm text-slate-500 mt-1">使用人数</p>
+              </div>
+            </div>
+          )}
+          {userStats.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">按用户统计</h3>
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="p-3 text-left">用户</th>
+                    <th className="p-3 text-right">调用次数</th>
+                    <th className="p-3 text-right">Tokens</th>
+                    <th className="p-3 text-right">预估费用</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {userStats.map((u: any, i: number) => (
+                    <tr key={i}>
+                      <td className="p-3 text-slate-700">{u.user_name}</td>
+                      <td className="p-3 text-right text-slate-600">{u.call_count}</td>
+                      <td className="p-3 text-right text-slate-600">
+                        {u.total_tokens?.toLocaleString()}
+                      </td>
+                      <td className="p-3 text-right text-slate-600">${u.estimated_cost}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         <AdminDialog
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}

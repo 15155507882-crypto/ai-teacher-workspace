@@ -242,6 +242,76 @@ export class AiConfigV2Service {
     } as AiCallLog);
   }
 
+  /** Token 统计（总量） */
+  async getTokenStats(range: string) {
+    const qb = this.logRepo
+      .createQueryBuilder('log')
+      .select('COALESCE(SUM(log.prompt_tokens),0)', 'prompt')
+      .addSelect('COALESCE(SUM(log.completion_tokens),0)', 'completion')
+      .addSelect('COALESCE(SUM(log.total_tokens),0)', 'total')
+      .addSelect('COUNT(*)', 'count');
+    const now = new Date();
+    if (range === 'today') qb.where('log.created_at::date = CURRENT_DATE');
+    else if (range === 'week')
+      qb.where('log.created_at >= :week', { week: new Date(now.getTime() - 7 * 86400000) });
+    else if (range === 'month')
+      qb.where('log.created_at >= :month', {
+        month: new Date(now.getFullYear(), now.getMonth(), 1),
+      });
+    const row = await qb.getRawOne();
+    return {
+      prompt_tokens: parseInt(row?.prompt || '0'),
+      completion_tokens: parseInt(row?.completion || '0'),
+      total_tokens: parseInt(row?.total || '0'),
+      call_count: parseInt(row?.count || '0'),
+      estimated_cost: (parseInt(row?.total || '0') * 0.000002).toFixed(4),
+      range,
+    };
+  }
+
+  /** 按用户统计用量 */
+  async getTokenStatsByUser(range: string) {
+    const qb = this.logRepo
+      .createQueryBuilder('log')
+      .select('log.user_id', 'user_id')
+      .addSelect('COALESCE(SUM(log.total_tokens),0)', 'total_tokens')
+      .addSelect('COUNT(*)', 'call_count')
+      .groupBy('log.user_id')
+      .orderBy('total_tokens', 'DESC');
+    const now = new Date();
+    if (range === 'today') qb.where('log.created_at::date = CURRENT_DATE');
+    else if (range === 'week')
+      qb.where('log.created_at >= :week', { week: new Date(now.getTime() - 7 * 86400000) });
+    else if (range === 'month')
+      qb.where('log.created_at >= :month', {
+        month: new Date(now.getFullYear(), now.getMonth(), 1),
+      });
+    const rows = await qb.getRawMany();
+    // 关联教师姓名
+    const { Teacher } = require('../../database/entities/teacher.entity');
+    const teacherRepo = this.dataSource.getRepository(Teacher);
+    const enriched = await Promise.all(
+      rows.map(async (r: any) => {
+        let name = '';
+        if (r.user_id) {
+          try {
+            const t = await teacherRepo.findOne({ where: { id: r.user_id } });
+            name = t?.name || '';
+          } catch {}
+        }
+        const total = parseInt(r.total_tokens || '0');
+        return {
+          user_id: r.user_id,
+          user_name: name || `用户${r.user_id}`,
+          total_tokens: total,
+          call_count: parseInt(r.call_count || '0'),
+          estimated_cost: (total * 0.000002).toFixed(4),
+        };
+      })
+    );
+    return enriched;
+  }
+
   // ========= Private =========
 
   private maskConfig(c: AiConfig) {

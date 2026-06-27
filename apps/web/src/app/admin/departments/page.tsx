@@ -141,13 +141,6 @@ export default function AdminDeptPage() {
 
   async function handleDelete() {
     if (!target) return;
-    const tRes = await api(`/api/home/teachers?school_id=1&department_id=${target.id}`);
-    const activeCount = tRes.data?.items?.filter((t: any) => t.status === 'active').length || 0;
-    if (activeCount > 0) {
-      setMsg(`该组织下有 ${activeCount} 名在职教师，无法删除。请先调整教师组织。`);
-      setDeleteOpen(false);
-      return;
-    }
     const j = await api(`/api/admin/departments/${target.id}/disable`, { method: 'POST' });
     if (j.code === 0) {
       setDeleteOpen(false);

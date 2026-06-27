@@ -79,12 +79,14 @@ class RateLimiter {
 // ======= API 通信 =======
 async function fetchConfigFromApi(): Promise<WorkerConfig | null> {
   const host = process.env.API_INTERNAL_URL || 'http://localhost:3000';
-  try {
-    const res = await fetch(`${host}/api/admin/ai-configs/active/internal`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    const json: any = await res.json();
-    if (json.code === 0 && json.data?.api_key) {
+  // 重试3次，间隔3秒
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(`${host}/api/admin/ai-configs/active/internal`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      const json: any = await res.json();
+      if (json.code === 0 && json.data?.api_key) {
       return {
         apiKey: json.data.api_key,
         model: json.data.default_model || 'deepseek-chat',
@@ -94,7 +96,13 @@ async function fetchConfigFromApi(): Promise<WorkerConfig | null> {
         providerType: json.data.provider_type,
       };
     }
-  } catch {}
+  } catch {
+        // retry
+      }
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  console.log('[Worker-AI] fetchConfig failed after retries');
   return null;
 }
 

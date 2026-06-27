@@ -169,10 +169,17 @@ export default function AdminHomeGroupsPage() {
   }
 
   function openTeachers(g: Group) {
+    const ids = (g.teacher_ids || g.teachers?.map((t) => Number(t.id)) || []).map(Number);
+    console.log('[OPEN-TEACHERS-INIT]', {
+      groupId: g.id,
+      groupName: g.name,
+      teacher_ids: g.teacher_ids,
+      teachers: g.teachers,
+      normalizedIds: ids,
+    });
     setEditing(g);
     setTeacherSearch('');
-    const ids = (g as any).teacher_ids || (g as any).teachers?.map((t: any) => Number(t.id)) || [];
-    setSelectedTeachers(ids.map(Number));
+    setSelectedTeachers(ids);
     setTeacherOpen(true);
   }
 
@@ -503,6 +510,12 @@ export default function AdminHomeGroupsPage() {
                     type="checkbox"
                     checked={selectedTeachers.includes(Number(t.id))}
                     onChange={() => {
+                      const tid = Number(t.id);
+                      console.log('[CHECKBOX-RENDER]', {
+                        teacherId: tid,
+                        selectedTeachers,
+                        checked: selectedTeachers.includes(tid),
+                      });
                       setSelectedTeachers((prev) =>
                         prev.includes(Number(t.id))
                           ? prev.filter((id) => id !== Number(t.id))

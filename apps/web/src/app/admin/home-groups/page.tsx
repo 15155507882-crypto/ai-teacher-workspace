@@ -50,15 +50,19 @@ export default function AdminHomeGroupsPage() {
 
   const token = () => localStorage.getItem('accessToken') || '';
   async function api(url: string, opts?: RequestInit) {
-    const res = await fetch(url, {
-      ...opts,
-      headers: {
-        Authorization: `Bearer ${token()}`,
-        'Content-Type': 'application/json',
-        ...opts?.headers,
-      },
-    });
-    return res.json();
+    try {
+      const res = await fetch(url, {
+        ...opts,
+        headers: {
+          Authorization: `Bearer ${token()}`,
+          'Content-Type': 'application/json',
+          ...opts?.headers,
+        },
+      });
+      return res.json();
+    } catch (e: any) {
+      return { code: -1, message: '服务连接失败，请检查后端服务是否启动' };
+    }
   }
 
   useEffect(() => {

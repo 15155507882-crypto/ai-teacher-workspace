@@ -19,50 +19,61 @@ interface Teacher {
 }
 
 export default function HomePage() {
-  const [depts, setDepts] = useState<Dept[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [depts, setDepts] = useState<any[]>([]);
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const t = localStorage.getItem('accessToken');
     if (!t) return;
-    Promise.all([
-      fetch('/api/home/groups', { headers: { Authorization: `Bearer ${t}` } }).then((r) => r.json()),
-      fetch('/api/home/teachers?school_id=1', { headers: { Authorization: `Bearer ${t}` } }).then(
+    (async () => {
+      const d = await fetch('/api/home/groups', { headers: { Authorization: `Bearer ${t}` } }).then(
         (r) => r.json()
-      ),
-    ])
-      .then(async ([d, tchr]) => {
-        if (d.code === 0) setDepts(d.data);
-        if (tchr.code === 0) {
-          const list = tchr.data.items || [];
-          // Fetch stats for each teacher
-          const enriched = await Promise.all(
-            list.map(async (t: any) => {
-              try {
-                const sRes = await fetch(`/api/teachers/${t.id}/content-stats`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-                }).then((r) => r.json());
-                if (sRes.code === 0) {
-                  t.personalLessonCount = sRes.data.personal_lesson;
-                  t.reflectionCount = sRes.data.reflection;
-                }
-              } catch {}
-              return t;
-            })
-          );
-          setTeachers(enriched);
+      );
+      const tchr = await fetch('/api/home/teachers?school_id=1', {
+        headers: { Authorization: `Bearer ${t}` },
+      }).then((r) => r.json());
+      // 教师统计 map
+      const statsMap = new Map<number, any>();
+      if (tchr.code === 0) {
+        const list = tchr.data.items || [];
+        for (const t of list) {
+          try {
+            const sRes = await fetch(`/api/teachers/${t.id}/content-stats`, {
+              headers: { Authorization: `Bearer ${t}` },
+            }).then((r) => r.json());
+            if (sRes.code === 0) {
+              statsMap.set(Number(t.id), {
+                personalLessonCount: sRes.data.personal_lesson,
+                reflectionCount: sRes.data.reflection,
+              });
+            }
+          } catch {}
         }
-      })
-      .finally(() => setLoading(false));
+      }
+      // 合并统计到组内老师
+      if (d.code === 0) {
+        setDepts(
+          d.data.map((g: any) => ({
+            ...g,
+            teachers: (g.teachers || []).map((t: any) => ({
+              ...t,
+              ...statsMap.get(Number(t.id)),
+            })),
+          }))
+        );
+      }
+      setLoading(false);
+    })();
   }, []);
 
-  const filtered = keyword
-    ? teachers.filter((t) => t.name.includes(keyword) || t.employee_no?.includes(keyword))
-    : teachers;
-  const grouped = depts
-    .map((d) => ({ ...d, teachers: filtered.filter((t) => t.department_id === d.id) }))
+  const filtered = depts
+    .map((d) => ({
+      ...d,
+      teachers: keyword
+        ? (d.teachers || []).filter((t: any) => t.name.includes(keyword))
+        : d.teachers || [],
+    }))
     .filter((g) => g.teachers.length > 0);
 
   if (loading)

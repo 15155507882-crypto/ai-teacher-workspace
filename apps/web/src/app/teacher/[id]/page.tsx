@@ -432,9 +432,29 @@ export default function TeacherSpacePage() {
                   取消
                 </button>
                 <button
-                  onClick={() => {
-                    setShowSettings(false);
-                    alert('修改成功(接口待接入)');
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/teacher/profile', {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${tk()}`,
+                        },
+                        body: JSON.stringify({
+                          name: settingsForm.name,
+                          mobile: settingsForm.mobile,
+                        }),
+                      });
+                      const j = await res.json();
+                      if (j.code === 0) {
+                        setShowSettings(false);
+                        fetchData();
+                      } else {
+                        alert(j.message || '保存失败');
+                      }
+                    } catch {
+                      alert('保存失败');
+                    }
                   }}
                   className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white"
                 >

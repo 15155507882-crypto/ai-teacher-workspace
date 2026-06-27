@@ -97,6 +97,7 @@ export class TeacherRepository {
         employee_no: t.employee_no,
         gender: t.gender,
         avatar: t.avatar,
+        avatar_file_id: t.avatar_file_id,
         role: t.role,
         status: t.status,
         sort: t.sort,

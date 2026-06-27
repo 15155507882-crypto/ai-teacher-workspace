@@ -31,9 +31,20 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
   const [thinkingText, setThinkingText] = useState('');
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [teacher, setTeacher] = useState<any>(null);
+  const [mode, setMode] = useState('auto');
+  const [quota, setQuota] = useState({ used: 0, limit: 10, remaining: 10 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const texts = ['正在阅读资料...', '正在分析内容...', '正在整理信息...', '马上就好...'];
+
+  useEffect(() => {
+    fetch('/api/ai/chat-quota', { headers: { Authorization: `Bearer ${ctx.token}` } })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.code === 0) setQuota(j.data);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const t = localStorage.getItem('teacher');
@@ -75,7 +86,7 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
       const r = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ctx.token}` },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, mode }),
       });
       const j = await r.json();
       if (j.code === 0) pollResult(j.data.messageId);
@@ -345,10 +356,28 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
             placeholder="输入文字或上传文件..."
             className="flex-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-3 text-body focus:border-[var(--color-primary-500)] focus:bg-[var(--color-bg-surface)] focus:outline-none transition"
           />
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
+            className="rounded-xl border bg-[var(--color-bg-muted)] px-3 py-3 text-sm text-[var(--color-text-muted)] focus:outline-none"
+          >
+            <option value="auto">自动识别</option>
+            <option value="normal_chat">普通聊天</option>
+            <option value="personal_lesson">个人备课</option>
+            <option value="group_lesson">集体备课</option>
+            <option value="semester_plan">学期计划</option>
+            <option value="semester_summary">学期总结</option>
+            <option value="teaching_reflection">教学反思</option>
+          </select>
           <AppButton size="lg" onClick={send} disabled={!input.trim()}>
             发送
           </AppButton>
         </div>
+        {mode === 'normal_chat' && (
+          <p className="text-xs text-[var(--color-text-muted)] mt-2 text-center">
+            今日普通聊天剩余 {quota.remaining}/{quota.limit} 次
+          </p>
+        )}
       </div>
     </main>
   );

@@ -137,6 +137,15 @@ export class AIController {
     return this.aiService.getMessages(parseInt(sessionId, 10));
   }
 
+  @Get('ai/chat-quota')
+  async getChatQuota(@Req() req: any) {
+    const redis = this.aiService.getRedis();
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `ai:chat_quota:${req.user.teacherId}:${today}`;
+    const used = parseInt((await redis.get(key)) || '0', 10);
+    return { used, limit: 10, remaining: Math.max(0, 10 - used), date: today };
+  }
+
   // Admin: AI Action History
   @Get('admin/ai-actions')
   @Roles(Role.ADMIN)

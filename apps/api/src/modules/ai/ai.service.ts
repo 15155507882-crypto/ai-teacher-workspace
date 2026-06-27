@@ -22,6 +22,10 @@ export class AIService {
     this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   }
 
+  getRedis(): Redis {
+    return this.redis;
+  }
+
   async chat(teacherId: number, schoolId: number, dto: ChatDto) {
     let session = await this.sessionRepo.findActiveByTeacher(teacherId);
     if (!session) {

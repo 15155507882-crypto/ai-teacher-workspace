@@ -116,6 +116,16 @@ export default function AdminTeachersPage() {
     setDialogOpen(true);
   }
   function openEdit(t: Teacher) {
+    console.log(
+      '[OPENEDIT] teacher:',
+      t.id,
+      'dept_ids:',
+      t.department_ids,
+      'gender:',
+      t.gender,
+      'role:',
+      t.role
+    );
     setEditing(t);
     setForm({
       name: t.name,
@@ -123,10 +133,10 @@ export default function AdminTeachersPage() {
       employee_no: t.employee_no || '',
       department_id: Number(t.department_id) || 1,
       department_ids: t.department_ids
-        ? t.department_ids.split(',').map(Number).filter(Boolean)
+        ? [...new Set(t.department_ids.split(',').map(Number).filter(Boolean))]
         : [],
       gender: (t as any).gender || '',
-      role: t.role ? t.role.split(',').filter(Boolean) : ['teacher'],
+      role: t.role ? [...new Set(t.role.split(',').filter(Boolean))] : ['teacher'],
       password: '',
     });
     setDialogOpen(true);
@@ -142,6 +152,8 @@ export default function AdminTeachersPage() {
       gender: form.gender || null,
       role: form.role.join(',') || 'teacher',
     };
+    console.log('[SAVE] editing:', !!editing, 'payload:', JSON.stringify(payload));
+    console.log('[SAVE] form.department_ids:', form.department_ids, 'form.role:', form.role);
     const j = editing
       ? await api(`/api/admin/teachers/${editing.id}`, {
           method: 'PUT',
@@ -157,10 +169,14 @@ export default function AdminTeachersPage() {
           }),
         });
     if (j.code === 0) {
+      console.log('[SAVE] success, refreshing');
       setDialogOpen(false);
       fetchTeachers();
       setMsg(editing ? '更新成功' : '创建成功');
-    } else setMsg(j.message || '保存失败');
+    } else {
+      console.log('[SAVE] failed:', j);
+      setMsg(j.message || '保存失败');
+    }
     setSaving(false);
   }
 
@@ -617,15 +633,16 @@ export default function AdminTeachersPage() {
                         className="sr-only"
                         checked={form.department_ids.includes(d.id)}
                         onChange={() => {
-                          const isChecked = form.department_ids.includes(d.id);
-                          const newIds = isChecked
-                            ? form.department_ids.filter((id) => id !== d.id)
-                            : [...form.department_ids, d.id];
-                          setForm({
-                            ...form,
-                            department_ids: newIds,
-                            // 第一个选中的组织作为主部门
-                            department_id: newIds.length > 0 ? newIds[0] : 1,
+                          setForm((prev) => {
+                            const isChecked = prev.department_ids.includes(d.id);
+                            const newIds = isChecked
+                              ? prev.department_ids.filter((id) => id !== d.id)
+                              : [...prev.department_ids, d.id];
+                            return {
+                              ...prev,
+                              department_ids: newIds,
+                              department_id: newIds.length > 0 ? newIds[0] : 1,
+                            };
                           });
                         }}
                       />
@@ -656,12 +673,12 @@ export default function AdminTeachersPage() {
                         className="sr-only"
                         checked={form.role.includes(r.value)}
                         onChange={() => {
-                          setForm({
-                            ...form,
-                            role: form.role.includes(r.value)
-                              ? form.role.filter((v) => v !== r.value)
-                              : [...form.role, r.value],
-                          });
+                          setForm((prev) => ({
+                            ...prev,
+                            role: prev.role.includes(r.value)
+                              ? prev.role.filter((v) => v !== r.value)
+                              : [...prev.role, r.value],
+                          }));
                         }}
                       />
                       {r.label}

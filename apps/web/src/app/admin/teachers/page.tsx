@@ -17,9 +17,11 @@ interface Teacher {
   mobile: string;
   employee_no: string | null;
   department_id: number;
+  department_name?: string;
   role: string;
   status: string;
   last_login_at: string | null;
+  gender?: string;
 }
 
 export default function AdminTeachersPage() {
@@ -65,9 +67,6 @@ export default function AdminTeachersPage() {
 
   useEffect(() => {
     fetchTeachers();
-    api('/api/admin/departments/options?school_id=1').then((j) => {
-      if (j.code === 0) setDepartments(j.data);
-    });
   }, []);
   useEffect(() => {
     let list = teachers;
@@ -83,8 +82,20 @@ export default function AdminTeachersPage() {
 
   async function fetchTeachers() {
     setLoading(true);
-    const j = await api('/api/admin/teachers?size=200');
-    if (j.code === 0) setTeachers(j.data.items || []);
+    const [tRes, dRes] = await Promise.all([
+      api('/api/admin/teachers?size=200'),
+      api('/api/admin/departments/options?school_id=1'),
+    ]);
+    if (dRes.code === 0) setDepartments(dRes.data);
+    if (tRes.code === 0) {
+      const deptMap = new Map((dRes.data || []).map((d: any) => [d.id, d.name]));
+      setTeachers(
+        (tRes.data.items || []).map((t: Teacher) => ({
+          ...t,
+          department_name: deptMap.get(Number(t.department_id)) || '',
+        }))
+      );
+    }
     setLoading(false);
   }
 
@@ -398,80 +409,89 @@ export default function AdminTeachersPage() {
                 <tr>
                   <th className="p-3 text-left w-14">序号</th>
                   <th className="p-3 text-left">姓名</th>
-                  <th className="p-3 text-left">性别</th>
                   <th className="p-3 text-left">手机号</th>
-                  <th className="p-3 text-left">编号</th>
+                  <th className="p-3 text-left">性别</th>
                   <th className="p-3 text-left">角色</th>
+                  <th className="p-3 text-left">组织</th>
+                  <th className="p-3 text-left">编号</th>
                   <th className="p-3 text-left">状态</th>
                   <th className="p-3 text-left">最近登录</th>
                   <th className="p-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => (
-                  <tr key={t.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-sm text-slate-400">{(page - 1) * pageSize + i + 1}</td>
-                    <td className="p-3 font-medium text-slate-800">{t.name}</td>
-                    <td className="p-3 text-slate-400 text-xs">
-                      {(t as any).gender === 'male'
-                        ? '男'
-                        : (t as any).gender === 'female'
-                          ? '女'
-                          : '—'}
-                    </td>
-                    <td className="p-3 text-slate-500">{t.mobile}</td>
-                    <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
-                    <td className="p-3">
-                      <AdminStatusTag status={t.role} />
-                    </td>
-                    <td className="p-3">
-                      <AdminStatusTag status={t.status} />
-                    </td>
-                    <td className="p-3 text-xs text-slate-400">
-                      {t.last_login_at ? new Date(t.last_login_at).toLocaleString('zh-CN') : '—'}
-                    </td>
-                    <td className="p-3 text-right space-x-1">
-                      <button
-                        onClick={() => openEdit(t)}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        编辑
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTarget(t);
-                          setPwdForm({ password: '', confirm: '' });
-                          setResetPwdOpen(true);
-                        }}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        密码
-                      </button>
-                      {t.status === 'active' && (
+                {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => {
+                  const roleLabel = t.role === 'admin' ? '管理员' : '教师';
+                  return (
+                    <tr key={t.id} className="border-t hover:bg-slate-50">
+                      <td className="p-3 text-sm text-slate-400">
+                        {(page - 1) * pageSize + i + 1}
+                      </td>
+                      <td className="p-3 font-medium text-slate-800">{t.name}</td>
+                      <td className="p-3 text-slate-500">{t.mobile}</td>
+                      <td className="p-3 text-slate-500 text-xs">
+                        {(t as any).gender === 'male'
+                          ? '男'
+                          : (t as any).gender === 'female'
+                            ? '女'
+                            : '—'}
+                      </td>
+                      <td className="p-3">
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-slate-50 text-slate-600">
+                          {roleLabel}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-500 text-sm">{t.department_name || '—'}</td>
+                      <td className="p-3 text-slate-400">{t.employee_no || '—'}</td>
+                      <td className="p-3">
+                        <AdminStatusTag status={t.status} />
+                      </td>
+                      <td className="p-3 text-xs text-slate-400">
+                        {t.last_login_at ? new Date(t.last_login_at).toLocaleString('zh-CN') : '—'}
+                      </td>
+                      <td className="p-3 text-right space-x-1">
+                        <button
+                          onClick={() => openEdit(t)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          编辑
+                        </button>
                         <button
                           onClick={() => {
                             setTarget(t);
-                            setResignOpen(true);
+                            setPwdForm({ password: '', confirm: '' });
+                            setResetPwdOpen(true);
                           }}
-                          className="text-xs text-orange-500 hover:underline"
+                          className="text-xs text-blue-600 hover:underline"
                         >
-                          离职
+                          密码
                         </button>
-                      )}
-                      {t.status === 'resigned' && (
-                        <button
-                          onClick={() => handleRestore(t.id)}
-                          className="text-xs text-green-600 hover:underline"
-                        >
-                          恢复
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        {t.status === 'active' && (
+                          <button
+                            onClick={() => {
+                              setTarget(t);
+                              setResignOpen(true);
+                            }}
+                            className="text-xs text-orange-500 hover:underline"
+                          >
+                            离职
+                          </button>
+                        )}
+                        {t.status === 'resigned' && (
+                          <button
+                            onClick={() => handleRestore(t.id)}
+                            className="text-xs text-green-600 hover:underline"
+                          >
+                            恢复
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400">
+                    <td colSpan={10} className="p-8 text-center text-slate-400">
                       暂无数据
                     </td>
                   </tr>

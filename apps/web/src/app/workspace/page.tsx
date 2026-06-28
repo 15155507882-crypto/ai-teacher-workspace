@@ -68,7 +68,7 @@ export default function WorkspacePage() {
     '马上就好...',
   ];
 
-  const tk = () => localStorage.getItem('accessToken') || '';
+  const tk = () => (typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '');
 
   useEffect(() => {
     const t = localStorage.getItem('teacher');

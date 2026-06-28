@@ -30,6 +30,7 @@ export interface ActionParams {
   grade?: string;
   linkedContentId?: number;
   extractedEntities?: Record<string, any>;
+  fileIds?: number[];
   /** 版本处理: 'overwrite' | 'new_version' | undefined (需选择) */
   versionAction?: string;
   /** 要覆盖的目标 content id */
@@ -200,6 +201,7 @@ export class ActionEngineService {
                 topic: params.extractedEntities?.topic || params.title,
                 subject: params.subject || null,
                 grade: params.grade || null,
+                body_text: params.extractedEntities?.body_text || null,
               })
             );
             break;
@@ -215,15 +217,21 @@ export class ActionEngineService {
             break;
         }
 
-        // Files
-        const originalMsg = await manager.findOne(AIMessage, { where: { id: params.messageId } });
-        if (originalMsg?.file_id) {
+        // Files - support multiple attachments
+        const allFileIds: number[] = [];
+        if (params.fileIds?.length) {
+          allFileIds.push(...params.fileIds);
+        } else {
+          const originalMsg = await manager.findOne(AIMessage, { where: { id: params.messageId } });
+          if (originalMsg?.file_id) allFileIds.push(originalMsg.file_id);
+        }
+        for (let i = 0; i < allFileIds.length; i++) {
           await manager.save(
             manager.create(LessonAttachment, {
               content_id: savedContent.id,
-              file_id: originalMsg.file_id,
-              attachment_role: 'main',
-              sort_order: 0,
+              file_id: allFileIds[i],
+              attachment_role: i === 0 ? 'main' : 'supplement',
+              sort_order: i,
             })
           );
         }

@@ -8,6 +8,7 @@ export { LessonAttachment } from './lesson-attachment.entity';
 export { Reflection } from './reflection.entity';
 export { GroupLesson } from './group-lesson.entity';
 export { GroupLessonComment } from './group-lesson-comment.entity';
+export { PersonalLessonComment } from './personal-lesson-comment.entity';
 export { PlanSummary } from './plan-summary.entity';
 export { FileAsset } from './file-asset.entity';
 export { PreviewFile } from './preview-file.entity';

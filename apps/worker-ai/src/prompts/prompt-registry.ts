@@ -8,18 +8,29 @@ export const PROMPT_REGISTRY: Record<string, PromptTemplate> = {
   personal_lesson: {
     name: 'personal_lesson',
     systemPrompt: `你是AI教师工作助手的备课识别专家。
-请按JSON格式输出（仅JSON，不要额外文字）：
+请分析提供的教学资料文本，按JSON格式输出（仅JSON，不要额外文字）：
 {
   "type": "personal_lesson",
-  "title_candidate": "建议标题",
-  "subject": "学科",
-  "grade": "年级",
-  "summary": "200字内摘要",
+  "title": "从文档内容中提取的主标题（如《两位数加两位数》个人备课），不要用文件名",
+  "subject": "学科（数学/语文/英语/物理/化学/生物/历史/地理/政治）",
+  "grade": "年级（如：三年级、七年级）",
+  "summary": "200字以内的整体摘要",
   "confidence": 0.0,
-  "extracted_entities": { "chapter": "", "lesson_no": "" },
-  "reason": "判断原因"
+  "extracted_entities": {
+    "chapter": "章节",
+    "lesson_no": "课时编号",
+    "doc_date": "文档日期（YYYY-MM-DD格式，若无法识别则为空）",
+    "objectives": "教学目标内容",
+    "key_points": "教学重点内容",
+    "difficult_points": "教学难点内容",
+    "process": "教学过程简述",
+    "exercises": "课堂练习内容",
+    "board_design": "板书设计内容"
+  },
+  "reason": "判断为个人备课的依据"
 }
-如果不是个人备课，type设为"unknown"。`,
+如果不是个人备课，type设为"unknown"。
+重要：标题必须从文档正文内容中提取，禁止使用文件名作为标题。`,
     keywords: ['教案', '课件', '教学设计', '教学目标', '重难点', '板书', '导学案', '备课', '课时'],
   },
 
@@ -339,21 +350,72 @@ export function detectScene(
   manualMode?: string
 ): { scene: AIScene; confidence: number; ruleBased: boolean; reason: string } {
   if (manualMode && manualMode !== 'auto') {
-    return { scene: manualMode as AIScene, confidence: 1.0, ruleBased: false, reason: '用户手动选择模式' };
+    return {
+      scene: manualMode as AIScene,
+      confidence: 1.0,
+      ruleBased: false,
+      reason: '用户手动选择模式',
+    };
   }
   const lower = text.toLowerCase();
   let bestScene = '';
   let bestScore = 0;
   for (const [scene, kws] of Object.entries(FALLBACK_KEYWORDS)) {
     let score = 0;
-    for (const kw of kws) { if (lower.includes(kw)) score += 10; }
-    if (score > bestScore) { bestScore = score; bestScene = scene; }
+    for (const kw of kws) {
+      if (lower.includes(kw)) score += 10;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestScene = scene;
+    }
   }
   if (bestScore >= 20 && bestScene) {
-    return { scene: bestScene as AIScene, confidence: 0.65, ruleBased: true, reason: `关键词兜底: \${bestScene}` };
+    return {
+      scene: bestScene as AIScene,
+      confidence: 0.65,
+      ruleBased: true,
+      reason: `关键词兜底: \${bestScene}`,
+    };
   }
   return { scene: 'unknown', confidence: 0.3, ruleBased: true, reason: '待AI判断' };
 }
 
+/** 统一上传分类 Prompt —— 让 AI 自主判断文件类型，避免单一类型 Prompt 偏向 */
+export const UNIFIED_UPLOAD_PROMPT = `你是教学资料分类专家。分析文档内容，判断属于以下哪种类型。只返回JSON。
 
+类型定义：
+1. personal_lesson（个人备课）：教师个人的教案、教学设计、课时计划。特征是包含教学目标、重难点、教学过程、课堂练习、板书等。
+2. group_lesson（集体备课）：教研组/备课组集体研讨记录。特征是提到多人参与、集体讨论、主备人、评课磨课等。
+3. plan_summary（计划总结）：学期/学年工作计划或工作总结。特征是总结性语言、完成情况、改进措施、下学期计划等。
+4. reflection（教学反思）：教师课后反思。特征是课堂效果分析、学生表现、改进建议、再教设计等。
 
+判断原则：
+- 出现"总结""完成情况""改进措施""下学期"等词 → plan_summary
+- 出现"教学目标""重难点""教学过程""板书" → personal_lesson
+- 出现"主备人""集体研讨""教研组讨论" → group_lesson
+- 出现"课后反思""课堂效果""改进""再教" → reflection
+- 不确定 → type设为unknown，confidence≤0.5
+
+返回格式：
+{
+  "type": "personal_lesson|group_lesson|plan_summary|reflection|unknown",
+  "title": "文档主标题（从正文提取，不要包含'个人备课''集体备课'等类型词）",
+  "subject": "学科",
+  "grade": "年级",
+  "summary": "200字摘要",
+  "confidence": 0.0,
+  "extracted_entities": {
+    "topic": "研讨主题（集体备课用）",
+    "participants": "参与人员（集体备课用）",
+    "consensus": "达成共识（集体备课用）",
+    "objectives": "教学目标（个人备课用）",
+    "key_points": "教学重点",
+    "process": "教学过程",
+    "exercises": "课堂练习",
+    "goals": "工作目标（计划总结用）",
+    "completion": "完成情况",
+    "improvements": "改进计划"
+  },
+  "reason": "分类依据"
+}`;

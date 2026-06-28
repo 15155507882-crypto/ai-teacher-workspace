@@ -37,6 +37,7 @@
     ]
   },
   "dependencies": {
-    "adm-zip": "^0.5.17"
+    "adm-zip": "^0.5.17",
+    "pdf-parse": "1.1.1"
   }
 }

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Drawer } from '@/components/ui/drawer';
-import { Timeline } from '@/components/ui/timeline';
+import { LessonDetailPanel } from '@/components/lesson-detail-panel';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { Pagination } from '@/components/ui/pagination';
 
@@ -13,7 +13,27 @@ export default function PlansPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [semester, setSemester] = useState('2026-2027学年上学期');
+  const getCurrentTerm = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const ay = month >= 8 ? `${year}-${year + 1}学年` : `${year - 1}-${year}学年`;
+    const sem = month >= 2 && month <= 7 ? '下学期' : '上学期';
+    return ay + sem;
+  };
+  const semesterOptions = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const currentAy = m >= 8 ? `${year}-${year + 1}学年` : `${year - 1}-${year}学年`;
+    const currentSem = m >= 2 && m <= 7 ? '下学期' : '上学期';
+    const prevTerm = currentAy + (currentSem === '下学期' ? '上学期' : '下学期');
+    const nextAy =
+      currentSem === '下学期' ? `${year}-${year + 1}学年` : `${year + 1}-${year + 2}学年`;
+    const nextTerm = nextAy + (currentSem === '下学期' ? '上学期' : '下学期');
+    return [currentAy + currentSem, prevTerm, nextTerm];
+  })();
+  const [semester, setSemester] = useState(semesterOptions[0]);
   const [detail, setDetail] = useState<any>(null);
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -51,7 +71,10 @@ export default function PlansPage() {
 
   const filtered = items.filter((i) => {
     if (search && !(i.title?.includes(search) || i.teacher_name?.includes(search))) return false;
-    if (semester && i.academic_year !== semester) return false;
+    if (semester) {
+      const itemTerm = (i.academic_year || '') + (i.semester || '');
+      if (itemTerm !== semester) return false;
+    }
     return true;
   });
 
@@ -87,7 +110,9 @@ export default function PlansPage() {
             className="rounded-lg border px-3 py-2 text-base"
           >
             <option value="">全部学期</option>
-            <option>2026-2027学年上学期</option>
+            {semesterOptions.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
             <option>2025-2026学年下学期</option>
           </select>
           <Input
@@ -174,27 +199,12 @@ export default function PlansPage() {
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
         <Drawer open={!!detail} onClose={() => setDetail(null)} title="计划与总结详情">
           {detail && (
-            <div className="space-y-5">
-              <div className="flex gap-2">
-                <Badge variant="purple">计划总结</Badge>
-                <span className="text-sm text-slate-500">{detail.academic_year}</span>
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-slate-800">{detail.title}</h3>
-              </div>
-              {detail.summary && (
-                <div>
-                  <h4 className="text-sm font-medium text-slate-600 mb-1">摘要</h4>
-                  <p className="text-sm text-slate-600">{detail.summary}</p>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  下载
-                </Button>
-              </div>
-              <Timeline items={[]} emptyText="暂无留言" />
-            </div>
+            <LessonDetailPanel
+              contentId={detail.id}
+              token={tk()}
+              teacher={currentUser}
+              onClose={() => setDetail(null)}
+            />
           )}
         </Drawer>
       </div>

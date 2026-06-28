@@ -11,6 +11,9 @@ import {
 import { Teacher } from './teacher.entity';
 import { Department } from './department.entity';
 import { PersonalLesson } from './personal-lesson.entity';
+import { Reflection } from './reflection.entity';
+import { GroupLesson } from './group-lesson.entity';
+import { PlanSummary } from './plan-summary.entity';
 import { LessonAttachment } from './lesson-attachment.entity';
 import { PreviewFile } from './preview-file.entity';
 import { AIRecognitionRecord } from './ai-recognition-record.entity';
@@ -78,6 +81,15 @@ export class Content {
 
   @OneToMany(() => PersonalLesson, (pl) => pl.content)
   personalLesson: PersonalLesson[];
+
+  @OneToMany(() => Reflection, (r) => r.content)
+  reflection: Reflection[];
+
+  @OneToMany(() => GroupLesson, (gl) => gl.content)
+  groupLesson: GroupLesson[];
+
+  @OneToMany(() => PlanSummary, (ps) => ps.content)
+  planSummary: PlanSummary[];
 
   @OneToMany(() => LessonAttachment, (la) => la.content)
   attachments: LessonAttachment[];

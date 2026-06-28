@@ -12,9 +12,18 @@ export class GroupLessonCommentRepository {
 
   findByGroupLesson(groupLessonId: number): Promise<GroupLessonComment[]> {
     return this.repo.find({
-      where: { group_lesson_id: groupLessonId },
+      where: { group_lesson_id: groupLessonId, deleted_at: null as any },
+      relations: ['teacher', 'file'],
       order: { created_at: 'ASC' },
     });
+  }
+
+  findById(id: number): Promise<GroupLessonComment | null> {
+    return this.repo.findOne({ where: { id }, relations: ['teacher'] });
+  }
+
+  async softDelete(id: number): Promise<void> {
+    await this.repo.update(id, { deleted_at: new Date() } as any);
   }
 
   findByTeacher(teacherId: number): Promise<GroupLessonComment[]> {

@@ -17,7 +17,9 @@ export interface DeepSeekCallResult {
   subject?: string;
   grade?: string;
   summary?: string;
+  extractedFields?: Record<string, any>;
   usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  latencyMs?: number;
   error?: string;
   fallback?: boolean;
 }
@@ -48,13 +50,23 @@ export class DeepSeekAdapter implements IAIAdapter {
   parseResponse(rawContent: string, input: AIRecognitionInput): DeepSeekCallResult {
     try {
       const parsed = JSON.parse(rawContent);
+      // 兼容新旧字段名：title 或 title_candidate
+      const title = parsed.title || parsed.title_candidate || input.fileName || '未命名';
+      const extractedEntities = parsed.extracted_entities || {};
       return {
         predictedType: parsed.type || parsed.content_type || ContentType.PERSONAL_LESSON,
-        title: parsed.title || input.fileName || '未命名',
+        title,
         confidence: parsed.confidence || 0.85,
-        subject: parsed.subject || '',
-        grade: parsed.grade || '',
-        summary: parsed.summary || '',
+        subject: parsed.subject || extractedEntities.subject || '',
+        grade: parsed.grade || extractedEntities.grade || '',
+        summary: parsed.summary || extractedEntities.summary || '',
+        // 传递结构化字段供 Metadata Builder 使用
+        extractedFields: {
+          ...extractedEntities,
+          subject: parsed.subject || extractedEntities.subject || '',
+          grade: parsed.grade || extractedEntities.grade || '',
+          summary: parsed.summary || extractedEntities.summary || '',
+        },
       };
     } catch {
       return this.mockClassify(input);
@@ -96,6 +108,7 @@ export class DeepSeekAdapter implements IAIAdapter {
       subject,
       grade,
       summary: `${title} - ${subject}${grade}教学内容`,
+      extractedFields: { subject, grade, summary: `${title} - ${subject}${grade}教学内容` },
     };
   }
 

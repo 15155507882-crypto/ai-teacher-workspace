@@ -39,6 +39,9 @@ export class GroupLesson {
   @Column({ type: 'date', nullable: true })
   activity_date: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  body_text: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

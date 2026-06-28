@@ -81,6 +81,7 @@ export class AIController {
         grade: dto.grade,
         linkedContentId: dto.linkedContentId,
         extractedEntities: dto.extractedEntities,
+        fileIds: dto.fileIds,
       },
       {
         teacherId: req.user.teacherId,

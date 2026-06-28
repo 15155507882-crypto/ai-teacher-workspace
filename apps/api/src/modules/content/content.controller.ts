@@ -1,11 +1,29 @@
-import { Controller, Get, Delete, Param, Query, Req, Body, UseGuards, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Query,
+  Req,
+  Body,
+  UseGuards,
+  Res,
+  Post,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ContentService } from './content.service';
 import { SchoolRepository } from '../../database/repositories/school.repository';
+import { GroupLessonCommentRepository } from '../../database/repositories/group-lesson-comment.repository';
+import { PersonalLessonCommentRepository } from '../../database/repositories/personal-lesson-comment.repository';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileAsset } from '../../database/entities/file-asset.entity';
+import { GroupLessonComment } from '../../database/entities/group-lesson-comment.entity';
+import { GroupLesson } from '../../database/entities/group-lesson.entity';
+import { PersonalLesson } from '../../database/entities/personal-lesson.entity';
+import { Content } from '../../database/entities/content.entity';
+import { Reflection } from '../../database/entities/reflection.entity';
 import { createStorageAdapter } from '@workspace/adapter-storage';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,7 +38,13 @@ export class ContentController {
   constructor(
     private readonly contentService: ContentService,
     private readonly schoolRepo: SchoolRepository,
-    @InjectRepository(FileAsset) private readonly fileRepo: Repository<FileAsset>
+    private readonly commentRepo: GroupLessonCommentRepository,
+    private readonly plCommentRepo: PersonalLessonCommentRepository,
+    @InjectRepository(FileAsset) private readonly fileRepo: Repository<FileAsset>,
+    @InjectRepository(GroupLesson) private readonly glRepo: Repository<GroupLesson>,
+    @InjectRepository(PersonalLesson) private readonly plRepo: Repository<PersonalLesson>,
+    @InjectRepository(Content) private readonly contentRepo: Repository<Content>,
+    @InjectRepository(Reflection) private readonly reflectionRepo: Repository<Reflection>
   ) {}
 
   @Get('teachers/:teacherId/contents')
@@ -100,5 +124,171 @@ export class ContentController {
       }
     } catch {}
     res.status(404).json({ code: 40400, message: '文件不存在' });
+  }
+
+  // ====== 集体备课评论 ======
+  @Get('group-lessons/:contentId/comments')
+  @UseGuards(JwtAuthGuard)
+  async listComments(@Param('contentId') contentId: string) {
+    const cid = parseInt(contentId, 10);
+    const gl = await this.glRepo.findOne({ where: { content_id: cid } });
+    if (!gl) return { items: [] };
+    const comments = await this.commentRepo.findByGroupLesson(gl.id);
+    return {
+      items: comments.map((c) => ({
+        id: c.id,
+        teacher_id: c.teacher_id,
+        teacher_name: c.teacher?.name || '未知',
+        comment_text: c.comment_text,
+        file_id: c.file_id,
+        file_name: c.file?.original_name || null,
+        created_at: c.created_at,
+      })),
+    };
+  }
+
+  @Post('group-lessons/:contentId/comments')
+  @UseGuards(JwtAuthGuard)
+  async addComment(
+    @Param('contentId') contentId: string,
+    @Req() req: any,
+    @Body() body: { comment_text?: string; file_id?: number }
+  ) {
+    const cid = parseInt(contentId, 10);
+    let gl = await this.glRepo.findOne({ where: { content_id: cid } });
+    if (!gl) {
+      gl = this.glRepo.create({
+        content_id: cid,
+        creator_id: req.user.teacherId,
+        department_id: req.user.departmentId || 0,
+        topic: '',
+      });
+      gl = await this.glRepo.save(gl);
+    }
+    if (!body.comment_text?.trim() && !body.file_id) {
+      return { code: 40000, message: '评论内容或附件不能为空' };
+    }
+    const comment = this.commentRepo.create({
+      group_lesson_id: gl.id,
+      teacher_id: req.user.teacherId,
+      comment_text: body.comment_text?.trim() || null,
+      file_id: body.file_id || null,
+    });
+    const saved = await this.commentRepo.save(comment);
+    return { id: saved.id, created_at: saved.created_at };
+  }
+
+  @Delete('group-lessons/comments/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteComment(@Param('id') id: string, @Req() req: any) {
+    const comment = await this.commentRepo.findById(parseInt(id, 10));
+    if (!comment || comment.deleted_at) return { code: 40400, message: '评论不存在' };
+    const isAdmin = req.user.role === 'admin';
+    const isAuthor = comment.teacher_id === req.user.teacherId;
+    const daysSinceCreated = (Date.now() - new Date(comment.created_at).getTime()) / 86400000;
+    if (!isAdmin && !(isAuthor && daysSinceCreated <= 3)) {
+      return { code: 40300, message: '仅作者可在3天内删除，或联系管理员' };
+    }
+    await this.commentRepo.softDelete(comment.id);
+    return { message: '删除成功' };
+  }
+
+  // ====== 个人备课评论（教学反思留言）======
+  @Get('personal-lessons/:contentId/comments')
+  @UseGuards(JwtAuthGuard)
+  async listPlComments(@Param('contentId') contentId: string) {
+    const cid = parseInt(contentId, 10);
+    const pl = await this.plRepo.findOne({ where: { content_id: cid } });
+    if (!pl) return { items: [] };
+    const comments = await this.plCommentRepo.findByPersonalLesson(pl.id);
+    return {
+      items: comments.map((c) => ({
+        id: c.id,
+        teacher_id: c.teacher_id,
+        teacher_name: c.teacher?.name || '未知',
+        comment_text: c.comment_text,
+        file_id: c.file_id,
+        file_name: c.file?.original_name || null,
+        created_at: c.created_at,
+      })),
+    };
+  }
+
+  @Post('personal-lessons/:contentId/comments')
+  @UseGuards(JwtAuthGuard)
+  async addPlComment(
+    @Param('contentId') contentId: string,
+    @Req() req: any,
+    @Body() body: { comment_text?: string; file_id?: number }
+  ) {
+    const cid = parseInt(contentId, 10);
+    let pl = await this.plRepo.findOne({ where: { content_id: cid } });
+    if (!pl) {
+      pl = this.plRepo.create({ content_id: cid, teacher_id: req.user.teacherId });
+      pl = await this.plRepo.save(pl);
+    }
+    if (!body.comment_text?.trim() && !body.file_id) {
+      return { code: 40000, message: '评论内容或附件不能为空' };
+    }
+    const comment = this.plCommentRepo.create({
+      personal_lesson_id: pl.id,
+      teacher_id: req.user.teacherId,
+      comment_text: body.comment_text?.trim() || null,
+      file_id: body.file_id || null,
+    });
+    const saved = await this.plCommentRepo.save(comment);
+
+    // 自动创建教学反思记录（关联到该备课）
+    const content = await this.contentRepo.findOne({ where: { id: cid } });
+    if (content) {
+      const existingReflection = await this.reflectionRepo.findOne({
+        where: { lesson_content_id: cid, teacher_id: req.user.teacherId },
+      });
+      if (!existingReflection) {
+        const reflection = this.reflectionRepo.create({
+          content_id: 0, // will be set by save
+          lesson_content_id: cid,
+          teacher_id: req.user.teacherId,
+          reflection_text: body.comment_text?.trim() || '教学反思互动',
+          reflection_date: new Date().toISOString().slice(0, 10),
+        });
+        // We need to create a content record for the reflection
+        const contentRepo2 = this.contentRepo;
+        const newContent = contentRepo2.create({
+          school_id: content.school_id,
+          teacher_id: req.user.teacherId,
+          department_id: content.department_id,
+          content_type: 'reflection',
+          title: `${content.title} - 教学反思`,
+          academic_year: content.academic_year,
+          semester: content.semester,
+          source: 'comment',
+          visibility: 'school',
+          status: 'confirmed',
+          version: 1,
+          is_latest: true,
+        });
+        const savedContent = await contentRepo2.save(newContent);
+        reflection.content_id = savedContent.id;
+        await this.reflectionRepo.save(reflection);
+      }
+    }
+
+    return { id: saved.id, created_at: saved.created_at };
+  }
+
+  @Delete('personal-lessons/comments/:id')
+  @UseGuards(JwtAuthGuard)
+  async deletePlComment(@Param('id') id: string, @Req() req: any) {
+    const comment = await this.plCommentRepo.findById(parseInt(id, 10));
+    if (!comment || comment.deleted_at) return { code: 40400, message: '评论不存在' };
+    const isAdmin = req.user.role === 'admin';
+    const isAuthor = comment.teacher_id === req.user.teacherId;
+    const daysSinceCreated = (Date.now() - new Date(comment.created_at).getTime()) / 86400000;
+    if (!isAdmin && !(isAuthor && daysSinceCreated <= 3)) {
+      return { code: 40300, message: '仅作者可在3天内删除，或联系管理员' };
+    }
+    await this.plCommentRepo.softDelete(comment.id);
+    return { message: '删除成功' };
   }
 }

@@ -38,8 +38,10 @@ export class ContentService {
   async getContentStats(teacherId: number, academicYear?: string, semester?: string) {
     const all = await this.contentRepo.findByTeacher(teacherId);
     let active = all.filter((c) => !c.deleted_at);
-    // Filter by current semester if provided
-    if (academicYear) active = active.filter((c) => c.academic_year === academicYear);
+    // 标准化学年格式（去掉空格）再比较
+    const normYear = (s: string) => s?.replace(/\s+/g, '');
+    if (academicYear)
+      active = active.filter((c) => normYear(c.academic_year) === normYear(academicYear));
     if (semester) active = active.filter((c) => c.semester === semester);
     const counts: Record<string, number> = {
       personal_lesson: 0,

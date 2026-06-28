@@ -8,6 +8,7 @@ export { LessonAttachmentRepository } from './lesson-attachment.repository';
 export { ReflectionRepository } from './reflection.repository';
 export { GroupLessonRepository } from './group-lesson.repository';
 export { GroupLessonCommentRepository } from './group-lesson-comment.repository';
+export { PersonalLessonCommentRepository } from './personal-lesson-comment.repository';
 export { PlanSummaryRepository } from './plan-summary.repository';
 export { FileAssetRepository } from './file-asset.repository';
 export { PreviewFileRepository } from './preview-file.repository';

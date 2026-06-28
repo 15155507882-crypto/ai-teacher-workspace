@@ -11,7 +11,17 @@ export class ContentRepository {
   ) {}
 
   findById(id: number): Promise<Content | null> {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({
+      where: { id },
+      relations: [
+        'attachments',
+        'attachments.file',
+        'personalLesson',
+        'reflection',
+        'groupLesson',
+        'planSummary',
+      ],
+    });
   }
 
   findByTeacher(teacherId: number, contentType?: string): Promise<Content[]> {

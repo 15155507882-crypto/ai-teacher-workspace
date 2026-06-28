@@ -9,6 +9,9 @@ export class ChatDto {
   file_id?: number | string;
 
   @IsOptional()
+  file_ids?: number[];
+
+  @IsOptional()
   @IsString()
   scope?: string;
 
@@ -43,4 +46,7 @@ export class ConfirmActionDto {
 
   @IsOptional()
   extractedEntities?: Record<string, any>;
+
+  @IsOptional()
+  fileIds?: number[];
 }

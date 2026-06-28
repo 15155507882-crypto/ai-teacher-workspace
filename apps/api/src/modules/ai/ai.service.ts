@@ -68,12 +68,21 @@ export class AIService {
         const file = await this.fileAssetRepo.findById(fid);
         if (file) {
           fileName = file.original_name || '';
-          console.log('[FILE-ASSET-LOAD]', { file_id: fid, original_name: fileName, mime_type: file.mime_type, storage_key: file.storage_key });
+          console.log('[FILE-ASSET-LOAD]', {
+            file_id: fid,
+            original_name: fileName,
+            mime_type: file.mime_type,
+            storage_key: file.storage_key,
+          });
           const fs = require('fs');
           const path = require('path');
           const filePath = path.resolve('./storage', file.storage_key || '');
           const exists = fs.existsSync(filePath);
-          console.log('[FILE-PATH-CHECK]', { filePath, exists, size: exists ? fs.statSync(filePath).size : 0 });
+          console.log('[FILE-PATH-CHECK]', {
+            filePath,
+            exists,
+            size: exists ? fs.statSync(filePath).size : 0,
+          });
 
           if (exists) {
             if (fileName.endsWith('.txt')) {
@@ -86,11 +95,37 @@ export class AIService {
                 const docXml = zip.readAsText('word/document.xml');
                 // 简单提取 <w:t> 标签内容
                 const texts = docXml.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
-                fileContent = texts.map((t: string) => t.replace(/<\/?w:t[^>]*>/g, '')).join('').slice(0, 10000);
-                console.log('[DOCX-EXTRACT-RESULT]', { textLength: fileContent.length, textPreview: fileContent.slice(0, 100) });
+                fileContent = texts
+                  .map((t: string) => t.replace(/<\/?w:t[^>]*>/g, ''))
+                  .join('')
+                  .slice(0, 10000);
+                console.log('[DOCX-EXTRACT-RESULT]', {
+                  textLength: fileContent.length,
+                  textPreview: fileContent.slice(0, 100),
+                });
               } catch (e: any) {
                 console.error('[DOCX-EXTRACT-FAILED]', e.message?.slice(0, 200));
                 fileContent = `[docx解析失败: ${e.message?.slice(0, 100)}]`;
+              }
+            } else if (fileName.endsWith('.pdf')) {
+              // PDF: 用 pdf-parse 提取文本
+              try {
+                const pdfParse = require('pdf-parse');
+                const dataBuffer = fs.readFileSync(filePath);
+                const pdfData = await pdfParse(dataBuffer);
+                fileContent = (pdfData.text || '').replace(/\s+/g, ' ').trim().slice(0, 10000);
+                console.log('[PDF-EXTRACT-RESULT]', {
+                  textLength: fileContent.length,
+                  textPreview: fileContent.slice(0, 100),
+                });
+              } catch (e: any) {
+                console.error('[PDF-EXTRACT-FAILED]', e.message?.slice(0, 200));
+                // PDF 提取失败，尝试作为纯文本读取（某些PDF包含可读文本流）
+                try {
+                  const raw = fs.readFileSync(filePath, 'utf-8');
+                  const textMatch = raw.match(/\/Text\s*\[([^\]]*)\]/g);
+                  if (textMatch) fileContent = textMatch.join(' ').slice(0, 10000);
+                } catch {}
               }
             }
           }
@@ -99,7 +134,19 @@ export class AIService {
         console.error('[FILE-READ-ERROR]', e.message?.slice(0, 200));
       }
     }
-    console.log('[AI-JOB-ENQUEUE]', { text: (dto.text||'').slice(0,50), file_id: dto.file_id, fileName, fileContentLen: fileContent.length });
+    // Collect all file IDs for multi-file support
+    const allFileIds = dto.file_ids?.length
+      ? dto.file_ids.map(Number)
+      : dto.file_id
+        ? [Number(dto.file_id)]
+        : [];
+    console.log('[AI-JOB-ENQUEUE]', {
+      text: (dto.text || '').slice(0, 50),
+      file_id: dto.file_id,
+      fileIds: allFileIds,
+      fileName,
+      fileContentLen: fileContent.length,
+    });
 
     await this.aiQueue.add('classify-content', {
       sessionId: session.id,
@@ -107,7 +154,8 @@ export class AIService {
       teacherId,
       schoolId,
       text: dto.text || (!dto.text && fileName ? '请分析这个文件内容' : ''),
-      fileId: dto.file_id,
+      fileId: dto.file_id ? Number(dto.file_id) : allFileIds[0],
+      fileIds: allFileIds,
       fileName,
       fileContent: fileContent?.slice(0, 10000) || '',
       mode: dto.mode || 'auto',

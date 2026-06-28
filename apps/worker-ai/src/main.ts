@@ -476,16 +476,29 @@ async function bootstrap() {
           }
         } catch {}
         if (!nl||nl.length<5) { nl = hasKey?'AI模型暂不可用，请稍后重试。':'AI模型未配置，请管理员配置。'; }
-        const rs = { intent, isBusinessScene:false, type:'chat', title_candidate:'', summary:'', confidence:0.9, need_user_confirm:false, need_lesson_link:false, next_action:'none', extracted_entities:{}, reason:'Intent:'+intent, nl_reply:nl, chatQuota:{used:cu2,limit:100,remaining:Math.max(0,100-cu2)} };
+        // 检测聊天中是否包含可沉淀的教学反思内容
+        const isReflection = /课堂|上课|学生|教学|反思|效果|改进|不足/.test(inputText) && inputText.length > 30;
+        const suggestSave = isReflection ? 'reflection' : null;
+        if (suggestSave) { nl += '\n\n💡 我注意到您描述了一段课堂教学内容。是否需要保存为【教学反思】？'; }
+        const rs = { intent, isBusinessScene:false, type: suggestSave?'suggest_reflection':'chat', suggestType: suggestSave, title_candidate:'', summary:'', confidence:0.9, need_user_confirm:!!suggestSave, need_lesson_link:false, next_action:suggestSave?'suggest_save':'none', extracted_entities:{}, reason:'Intent:'+intent, nl_reply:nl, chatQuota:{used:cu2,limit:100,remaining:Math.max(0,100-cu2)}, actions: suggestSave?['保存教学反思','继续聊天']:[] };
         await redis.set('ai_result:'+messageId, JSON.stringify(rs), 'EX', 600);
         await redis.set('ai_session:'+messageId, String(sessionId), 'EX', 600);
         return rs;
       }
 
-      // UPLOAD → 提示已分析
+      // UPLOAD → 后台分析 → 建议保存
       if (intent === 'UPLOAD') {
-        const rs = { intent, isBusinessScene:false, type:'upload_analyzed', title_candidate:fileName||'', summary:'', confidence:0.8, need_user_confirm:false, need_lesson_link:false, next_action:'none', extracted_entities:{}, reason:'文件已分析', nl_reply: fileName?'已分析「'+fileName+'」。你需要做什么：生成教案、优化、还是其他？':'文件已分析。你需要做什么？' };
+        // 快速检测文件内容类型（文件名+内容关键词）
+        const lower = (inputText || '').toLowerCase();
+        let suggestType = 'personal_lesson';
+        let suggestLabel = '个人备课';
+        if (lower.includes('反思')) { suggestType = 'reflection'; suggestLabel = '教学反思'; }
+        else if (lower.includes('集体') || lower.includes('教研')) { suggestType = 'group_lesson'; suggestLabel = '集体备课'; }
+        else if (lower.includes('总结') || lower.includes('计划') || lower.includes('学期')) { suggestType = 'plan_summary'; suggestLabel = '计划总结'; }
+        else if (lower.includes('教案') || lower.includes('备课') || lower.includes('教学')) { suggestType = 'personal_lesson'; suggestLabel = '个人备课'; }
+        const rs = { intent, isBusinessScene:false, type:'suggest_save', suggestType, suggestLabel, title_candidate:fileName||'', summary:'', confidence:0.85, need_user_confirm:true, need_lesson_link:false, next_action:'suggest_save', extracted_entities:{}, reason:'文件分析完成', nl_reply: `已完成文件分析。识别结果：${suggestLabel}（85%）。是否保存到资料库？`, actions:['保存资料','继续聊天'] };
         await redis.set('ai_result:'+messageId, JSON.stringify(rs), 'EX', 600);
+        await redis.set('ai_session:'+messageId, String(sessionId), 'EX', 600);
         return rs;
       }
 

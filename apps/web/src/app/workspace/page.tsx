@@ -61,11 +61,9 @@ export default function WorkspacePage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const steps = [
-    '正在上传文件...',
-    '正在解析文件内容...',
-    '正在识别教学资料类型...',
-    '正在提取结构化信息...',
-    '识别完成',
+    '正在分析...',
+    '正在处理...',
+    '马上就好...',
   ];
 
   const tk = () => localStorage.getItem('accessToken') || '';
@@ -181,9 +179,8 @@ export default function WorkspacePage() {
     let count = 0;
     const poll = setInterval(async () => {
       count++;
-      if (count === 2) setThinkingStep(2);
-      else if (count === 4) setThinkingStep(3);
-      else if (count === 6) setThinkingStep(4);
+      if (count === 2) setThinkingStep(1);
+      else if (count === 5) setThinkingStep(2);
       try {
         const r = await fetch(`/api/ai/recognition/${msgId}`, {
           headers: { Authorization: `Bearer ${tk()}` },

@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { ConversationSidebar } from '@/components/conversation-sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,7 @@ export default function WorkspacePage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [manualAdd, setManualAdd] = useState<{ type: string; open: boolean; title: string } | null>(null);
+  const [convId, setConvId] = useState<number | null>(null);
   const [thinking, setThinking] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(0);
   const [works, setWorks] = useState<WorkItem[]>([]);
@@ -77,6 +79,9 @@ export default function WorkspacePage() {
     setTeacher(JSON.parse(t));
     loadHistory();
     loadWorks();
+    // Load today's conversation
+    fetch('/api/ai/conversations/today', { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } })
+      .then(r => r.json()).then(j => { if (j.data) setConvId(j.data.id); }).catch(()=>{});
   }, []);
 
   useEffect(() => {
@@ -300,7 +305,16 @@ export default function WorkspacePage() {
   });
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
+      <ConversationSidebar
+        token={tk()}
+        activeId={convId}
+        onSelect={(id) => {
+          setConvId(id);
+          // TODO: restore workspace state for selected conversation
+        }}
+      />
+      <main className="flex-1 flex flex-col overflow-hidden">
       <TopNav />
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT: Chat 70% */}
@@ -600,6 +614,7 @@ export default function WorkspacePage() {
           </div>
         )}
       </div>
+      </main>
     </div>
   );
 }

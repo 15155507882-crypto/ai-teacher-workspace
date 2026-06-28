@@ -366,30 +366,63 @@ export default function WorkspacePage() {
                           </div>
                         )}
                         {msg.result && msg.result.isBusinessScene !== false && ['personal_lesson','reflection','group_lesson','plan_summary'].includes(msg.result.type) && (
-                          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                            <div className="flex flex-wrap gap-2 text-xs">
-                              {[
-                                {
-                                  k: 'type',
-                                  v: TYPE_LABEL[normalizeType(msg.result.type)] || msg.result.type,
-                                  l: '分类',
-                                },
-                                { k: 'title_candidate', v: msg.result.title_candidate, l: '标题' },
-                                { k: 'subject', v: msg.result.subject, l: '学科' },
-                                { k: 'grade', v: msg.result.grade, l: '年级' },
-                              ].map(
-                                (f) =>
-                                  f.v && (
-                                    <span
-                                      key={f.k}
-                                      className="bg-blue-50 text-blue-700 rounded-lg px-2.5 py-1"
-                                    >
-                                      {f.l}: {f.v}
-                                    </span>
-                                  )
-                              )}
+                          <div className="mt-3 pt-3 border-t space-y-2.5">
+                            <p className="text-xs font-semibold text-slate-500">📋 资料预览</p>
+                            <div className="text-xs text-slate-600">
+                              资料类型：<span className="font-medium">{TYPE_LABEL[normalizeType(msg.result.type)]}</span>
+                              {msg.result.confidence ? <span className="text-slate-400">（{Math.round(msg.result.confidence*100)}%）</span> : null}
                             </div>
-                            <div className="flex gap-2 flex-wrap items-center">
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="shrink-0 text-slate-400">标题：</span>
+                              <input
+                                value={msg.result.metadata_title || msg.result.title_candidate || ''}
+                                onChange={e => setMessages(prev => prev.map(m => m.id===msg.id ? {...m, result:{...m.result, metadata_title:e.target.value, title_candidate:e.target.value}} : m))}
+                                className="flex-1 border rounded px-2 py-1 text-xs"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              <div className="flex items-center gap-1">
+                                <span className="shrink-0 text-slate-400">📅</span>
+                                <input type="date" value={msg.result.content_date || ''} onChange={e => setMessages(prev => prev.map(m => m.id===msg.id?{...m,result:{...m.result,content_date:e.target.value}}:m))} className="border rounded px-1 py-0.5 text-xs w-full" />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="shrink-0 text-slate-400">📖</span>
+                                <input value={msg.result.subject||''} onChange={e => setMessages(prev => prev.map(m => m.id===msg.id?{...m,result:{...m.result,subject:e.target.value}}:m))} className="border rounded px-1 py-0.5 text-xs w-full" placeholder="学科" />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="shrink-0 text-slate-400">📚</span>
+                                <input value={msg.result.grade||''} onChange={e => setMessages(prev => prev.map(m => m.id===msg.id?{...m,result:{...m.result,grade:e.target.value}}:m))} className="border rounded px-1 py-0.5 text-xs w-full" placeholder="年级" />
+                              </div>
+                              <div className="flex items-center gap-1"><span className="text-slate-400">📄</span><span className="text-slate-500">{msg.result.source||'聊天'}</span></div>
+                            </div>
+                            {msg.result.modules?.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-slate-400">概要：</p>
+                                {msg.result.modules.map((mod: any, i: number) => (
+                                  <div key={i} className="flex items-center gap-1 text-xs">
+                                    <span className="shrink-0 text-slate-600">{mod.label}：</span>
+                                    <input value={mod.content||''} onChange={e => {
+                                      const newMods = [...msg.result.modules]; newMods[i] = {...newMods[i], content: e.target.value};
+                                      setMessages(prev => prev.map(m => m.id===msg.id?{...m,result:{...m.result,modules:newMods}}:m));
+                                    }} className="flex-1 border rounded px-1 py-0.5 text-xs" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {msg.result.recognition_reasons?.length > 0 && (
+                              <div className="text-xs space-y-0.5">
+                                <p className="text-slate-400">识别依据：</p>
+                                {msg.result.recognition_reasons.map((r: string, i: number) => (
+                                  <p key={i} className="text-green-600 ml-1">✓ {r}</p>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex gap-2 items-center pt-1">
+                              <select value={normalizeType(msg.result.type)} onChange={e => modifyType(msg.id, normalizeType(e.target.value))}
+                                className="text-xs border rounded px-2 py-1.5">
+                                <option value="personal_lesson">个人备课</option><option value="reflection">教学反思</option>
+                                <option value="group_lesson">集体备课</option><option value="plan_summary">计划总结</option>
+                              </select>
                               {msg.saved ? (
                                 <span className="text-sm text-green-600">✅ 已保存</span>
                               ) : (
@@ -397,16 +430,6 @@ export default function WorkspacePage() {
                                   {(msg as any).saving ? '保存中...' : '确认保存'}
                                 </Button>
                               )}
-                              <select
-                                value={normalizeType(msg.result.type)}
-                                onChange={e => modifyType(msg.id, normalizeType(e.target.value))}
-                                className="text-xs rounded border bg-white px-2 py-1.5 text-slate-600"
-                              >
-                                <option value="personal_lesson">个人备课</option>
-                                <option value="reflection">教学反思</option>
-                                <option value="group_lesson">集体备课</option>
-                                <option value="plan_summary">计划总结</option>
-                              </select>
                             </div>
                           </div>
                         )}

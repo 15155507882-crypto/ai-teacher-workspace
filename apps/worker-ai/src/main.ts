@@ -277,6 +277,42 @@ async function bootstrap() {
     async (job) => {
       const { text, fileContent, fileName, messageId, sessionId, teacherId } = job.data;
       const userId = teacherId || 0;
+
+      // V2.1: 读取 Workspace 上下文（多轮对话 + 文件引用）
+      const wsKey = `ai:workspace:${sessionId}`;
+      const wsRaw = await redis.get(wsKey);
+      const workspace = wsRaw ? JSON.parse(wsRaw) : {};
+      const pendingTask = workspace.pendingTask || null;
+      const workspaceFile = workspace.currentFile || null;
+
+      // 如果有上传文件，更新 workspace
+      if (job.data.fileId && fileName) {
+        workspace.currentFile = { fileId: Number(job.data.fileId), fileName };
+        workspace.pendingTask = null; // 新文件重置pending task
+        await redis.set(wsKey, JSON.stringify(workspace), 'EX', 86400);
+      }
+
+      // 如果前一次是 UPLOAD intent 且当前消息简短，视为对上传后提问的回答
+      if (workspace.lastIntent === 'UPLOAD' && workspace.currentFile && text && text.length < 30) {
+        // 简短回答 → 视为对"需要做什么"的回答，映射为 CREATE
+        const taskMap: Record<string, string> = {
+          '备课': 'Create Lesson', '个人备课': 'Create Lesson', '教案': 'Create Lesson',
+          '反思': 'Create Reflection', '教学反思': 'Create Reflection',
+          '总结': 'Create Summary', '计划': 'Create Plan',
+          '优化': 'Optimize', '修改': 'Optimize',
+        };
+        let mappedTask = 'Create Lesson'; // 默认
+        for (const [kw, tk] of Object.entries(taskMap)) {
+          if (text.includes(kw)) { mappedTask = tk; break; }
+        }
+        workspace.pendingTask = mappedTask;
+        workspace.lastIntent = 'CREATE';
+        await redis.set(wsKey, JSON.stringify(workspace), 'EX', 86400);
+        // 强制进入 CREATE 流程
+        job.data.mode = 'auto';
+        console.log('[WORKSPACE] multi-turn: UPLOAD→CREATE, task:', mappedTask, 'file:', workspaceFile?.fileName);
+      }
+
       const inputText = [text, fileName, fileContent?.slice(0, 500)].filter(Boolean).join(' ');
       const contentHash = crypto
         .createHash('md5')

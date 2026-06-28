@@ -317,7 +317,7 @@ export default function WorkspacePage() {
         />
         <main className="flex-1 flex overflow-hidden">
         {/* LEFT: Chat 70% */}
-        <div className="flex-[7] flex flex-col min-w-0 border-r border-slate-200">">
+        <div className="flex-[7] flex flex-col min-w-0 border-r border-slate-200">
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-[860px] mx-auto px-6 py-6 space-y-4">
               {messages.length === 0 && !thinking && (

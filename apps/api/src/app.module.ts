@@ -14,6 +14,7 @@ import { ContentModule } from './modules/content/content.module';
 import { AIModule } from './modules/ai/ai.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { HomeGroupModule } from './modules/home-group/home-group.module';
+import { ConversationModule } from './modules/conversation/conversation.module';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
@@ -65,6 +66,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AIModule,
     AiConfigModule,
     HomeGroupModule,
+    ConversationModule,
   ],
   controllers: [],
   providers: [],

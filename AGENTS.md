@@ -1,3 +1,17 @@
+# 开发宪法引用
+
+This repository follows the Development Constitution defined in:
+
+**docs/development/DEVELOPMENT_CONSTITUTION.md**
+
+Before making any code changes, you MUST read and follow this document.
+
+If any implementation conflicts with the Constitution, stop coding and report the conflict first.
+
+Never bypass the Constitution.
+
+---
+
 # 项目开发强制规则：证据驱动验收
 
 ## 一、核心原则

@@ -261,7 +261,42 @@ export function computeAcademicTerm(): { academic_year: string; semester: string
   return { academic_year: academicYear, semester };
 }
 
-// ======= 场景识别 =======
+// ======= Prompt V2.1：拆分为 Intent + Task + Scene =======
+
+/** 意图识别 Prompt（V1） */
+export const INTENT_PROMPT = `你是意图识别器。判断用户想做什么。只返回JSON。
+
+意图：
+- CHAT：问候、闲聊、感谢、无明确业务目的
+- ASK：教学咨询（什么是/如何/怎样提高）
+- CREATE：明确要求生成内容（帮我写/生成/整理成）
+- EDIT：修改已有内容（优化/润色/改一下）
+- UPLOAD：上传了文件后的首次分析
+
+原则：
+- 无明确业务意图 → CHAT
+- 只问不生成 → ASK
+- 要求创建 → CREATE
+- 修改已有 → EDIT
+
+返回：{"intent":"CHAT","confidence":0.9,"reason":"用户普通问候"}`;
+
+/** 任务识别 Prompt（V1）- 仅 Intent=CREATE/EDIT 时调用 */
+export const TASK_PROMPT = `你是任务识别器。用户想创建或修改什么。只返回JSON。
+
+任务：
+- Create Lesson：备课/教案/教学设计
+- Create Reflection：教学反思/课后反思
+- Create Summary：学期总结/期末总结
+- Create Plan：教学计划/学期计划
+- Optimize：优化/润色已有内容
+- Other：不明确
+
+原则：根据文本内容判断。
+
+返回：{"task":"Create Lesson","confidence":0.9,"reason":"包含备课关键词"}`;
+
+// ======= 场景识别（保留，供 SAVE 时使用）=======
 
 export type AIScene =
   | 'normal_chat'

@@ -3,7 +3,8 @@ import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 import { createAIAdapter } from '@workspace/adapter-ai';
 import type { DeepSeekAdapter, DeepSeekCallResult } from '@workspace/adapter-ai';
-import { detectScene, SCENE_DETECTION_PROMPT } from './prompts/prompt-registry';
+import { detectScene, SCENE_DETECTION_PROMPT, INTENT_PROMPT, TASK_PROMPT } from './prompts/prompt-registry';
+import { resolveSaveType } from './tasks/task-registry';
 
 // ======= 配置 =======
 const CFG = {
@@ -409,6 +410,35 @@ async function bootstrap() {
       }
 
       // 4. 场景识别
+      // 4a. Intent Detection（V2.1新增）
+      let intent = 'CHAT';
+      if (job.data.mode && job.data.mode !== 'auto') {
+        intent = job.data.mode === 'normal_chat' ? 'CHAT' : 'CREATE';
+      } else if (config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
+        try {
+          const c = new AbortController();
+          const t = setTimeout(() => c.abort(), 8000);
+          const r = await fetch(`${config.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+            body: JSON.stringify({
+              model: config.model,
+              messages: [{ role: 'system', content: INTENT_PROMPT }, { role: 'user', content: inputText }],
+              temperature: 0.1, max_tokens: 200,
+              response_format: { type: 'json_object' },
+            }),
+            signal: c.signal,
+          });
+          clearTimeout(t);
+          if (r.ok) {
+            const j: any = await r.json();
+            intent = JSON.parse(j.choices?.[0]?.message?.content || '{}').intent || 'CHAT';
+          }
+        } catch {}
+      }
+      console.log('[INTENT-DETECT]', { messageId, intent });
+
+      // 4b. Scene Detection（保留现有逻辑）
       const scene = detectScene(inputText, job.data.mode);
 
       // auto 模式 + 关键词无法判断 → 调 AI 做场景识别
@@ -459,6 +489,13 @@ async function bootstrap() {
         scene.scene = 'normal_chat';
         scene.confidence = 0.3;
         scene.reason = '无API Key，默认普通聊天';
+      }
+
+      // CHAT/ASK intent → 强制 normal_chat，跳过业务场景
+      if (intent === 'CHAT' || intent === 'ASK') {
+        scene.scene = 'normal_chat';
+        scene.confidence = 0.9;
+        scene.reason = `Intent: ${intent}`;
       }
 
       const isBusinessScene = scene.scene !== 'normal_chat' && scene.scene !== 'unknown';

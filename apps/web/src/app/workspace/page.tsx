@@ -343,6 +343,28 @@ export default function WorkspacePage() {
                         <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
                           {msg.text}
                         </p>
+                        {msg.result?.actions && (
+                          <div className="flex gap-2 mt-2">
+                            {msg.result.actions.map((a: string) => (
+                              <Button
+                                key={a}
+                                size="sm"
+                                variant={a.includes('保存') ? 'default' : 'outline'}
+                                onClick={() => {
+                                  if (a.includes('保存')) {
+                                    // 进入结构化卡片流程
+                                    const taskType = msg.result.suggestType || 'personal_lesson';
+                                    setMessages(prev => prev.map(m => m.id === msg.id ? {
+                                      ...m, result: { ...m.result, type: taskType, isBusinessScene: true, actions: undefined },
+                                    } : m));
+                                  }
+                                }}
+                              >
+                                {a}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
                         {msg.result && msg.result.isBusinessScene !== false && ['personal_lesson','reflection','group_lesson','plan_summary'].includes(msg.result.type) && (
                           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             <div className="flex flex-wrap gap-2 text-xs">

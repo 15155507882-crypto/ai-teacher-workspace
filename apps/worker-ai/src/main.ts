@@ -534,57 +534,6 @@ async function bootstrap() {
         scene.reason = `Intent: ${intent}`;
       }
 
-      // CREATE/EDIT intent → Task Detection + Need More Info（V2.1新增）
-      let task: string | null = null;
-      let needMoreInfo = false;
-      if ((intent === 'CREATE' || intent === 'EDIT') && config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
-        try {
-          const c2 = new AbortController();
-          const t2 = setTimeout(() => c2.abort(), 8000);
-          const r2 = await fetch(`${config.baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-            body: JSON.stringify({
-              model: config.model,
-              messages: [{ role: 'system', content: TASK_PROMPT }, { role: 'user', content: inputText }],
-              temperature: 0.1, max_tokens: 200,
-              response_format: { type: 'json_object' },
-            }),
-            signal: c2.signal,
-          });
-          clearTimeout(t2);
-          if (r2.ok) {
-            const j2: any = await r2.json();
-            const parsed = JSON.parse(j2.choices?.[0]?.message?.content || '{}');
-            task = parsed.task || null;
-            // 信息充分性判断：有年级/学科/具体要求 → 直接生成；否则需追问
-            const hasGrade = inputText.includes('年级') || inputText.includes('年');
-            const hasSubject = inputText.includes('语文') || inputText.includes('数学') || inputText.includes('英语');
-            needMoreInfo = !hasGrade || !hasSubject;
-          }
-        } catch {}
-      }
-      console.log('[TASK-DETECT]', { messageId, intent, task, needMoreInfo });
-
-      // Need More Info：信息不足时追问而非生成卡片
-      if (needMoreInfo && task) {
-        const infoResult = {
-          intent, isBusinessScene: false, scene: 'need_info',
-          type: 'need_info', title_candidate: '', summary: '',
-          confidence: 0.6, need_user_confirm: false, need_lesson_link: false,
-          next_action: 'ask_info', extracted_entities: { task },
-          reason: '信息不足，需追问',
-          nl_reply: task === 'Create Lesson'
-            ? `好的，帮你创建备课。为了写得更准确，请告诉我：①哪个年级？②什么学科？③有什么具体要求？`
-            : task === 'Create Reflection'
-              ? `好的，帮你整理教学反思。请告诉我：①哪个年级？②什么学科？③这节课主要讲什么？④课堂效果如何？`
-              : `好的。请补充更多信息：年级、学科、具体要求？`,
-        };
-        await redis.set(`ai_result:${messageId}`, JSON.stringify(infoResult), 'EX', 600);
-        await redis.set(`ai_session:${messageId}`, String(sessionId), 'EX', 600);
-        return infoResult;
-      }
-
       const isBusinessScene = scene.scene !== 'normal_chat' && scene.scene !== 'unknown';
 
       // 4b. 业务场景：执行原有 AI 识别

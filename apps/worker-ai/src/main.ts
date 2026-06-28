@@ -416,29 +416,65 @@ async function bootstrap() {
         intent = job.data.mode === 'normal_chat' ? 'CHAT' : 'CREATE';
       } else if (config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
         try {
-          const c = new AbortController();
-          const t = setTimeout(() => c.abort(), 8000);
-          const r = await fetch(`${config.baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-            body: JSON.stringify({
-              model: config.model,
-              messages: [{ role: 'system', content: INTENT_PROMPT }, { role: 'user', content: inputText }],
-              temperature: 0.1, max_tokens: 200,
-              response_format: { type: 'json_object' },
-            }),
-            signal: c.signal,
-          });
+          const c = new AbortController(); const t = setTimeout(() => c.abort(), 8000);
+          const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:INTENT_PROMPT},{role:'user',content:inputText}], temperature:0.1, max_tokens:200, response_format:{type:'json_object'} }), signal:c.signal });
           clearTimeout(t);
-          if (r.ok) {
-            const j: any = await r.json();
-            intent = JSON.parse(j.choices?.[0]?.message?.content || '{}').intent || 'CHAT';
-          }
+          if (r.ok) { const j = await r.json(); intent = JSON.parse(j.choices?.[0]?.message?.content||'{}').intent||'CHAT'; }
         } catch {}
       }
       console.log('[INTENT-DETECT]', { messageId, intent });
 
-      // 4b. Scene Detection（保留现有逻辑）
+      // CHAT/ASK → normal_chat（跳过所有业务Pipeline）
+      if (intent === 'CHAT' || intent === 'ASK') {
+        const ck2 = 'ai:chat_quota:' + userId + ':' + new Date().toISOString().slice(0,10);
+        const cu2 = parseInt((await redis.get(ck2))||'0');
+        const now = new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'});
+        let nl = '';
+        const hasKey = config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key';
+        try {
+          if (hasKey) {
+            const c = new AbortController(); const t = setTimeout(() => c.abort(), CFG.httpTimeout);
+            const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:'你是AI教学助手。当前日期：'+now+'。问什么答什么。不说"整理成保存"。'},{role:'user',content:inputText}], temperature:0.7, max_tokens:800 }), signal:c.signal });
+            clearTimeout(t);
+            if (r.ok) { const j = await r.json(); nl = j.choices?.[0]?.message?.content||''; }
+          }
+        } catch {}
+        if (!nl||nl.length<5) { nl = hasKey?'AI模型暂不可用，请稍后重试。':'AI模型未配置，请管理员配置。'; }
+        const rs = { intent, isBusinessScene:false, type:'chat', title_candidate:'', summary:'', confidence:0.9, need_user_confirm:false, need_lesson_link:false, next_action:'none', extracted_entities:{}, reason:'Intent:'+intent, nl_reply:nl, chatQuota:{used:cu2,limit:100,remaining:Math.max(0,100-cu2)} };
+        await redis.set('ai_result:'+messageId, JSON.stringify(rs), 'EX', 600);
+        await redis.set('ai_session:'+messageId, String(sessionId), 'EX', 600);
+        return rs;
+      }
+
+      // UPLOAD → 提示已分析
+      if (intent === 'UPLOAD') {
+        const rs = { intent, isBusinessScene:false, type:'upload_analyzed', title_candidate:fileName||'', summary:'', confidence:0.8, need_user_confirm:false, need_lesson_link:false, next_action:'none', extracted_entities:{}, reason:'文件已分析', nl_reply: fileName?'已分析「'+fileName+'」。你需要做什么：生成教案、优化、还是其他？':'文件已分析。你需要做什么？' };
+        await redis.set('ai_result:'+messageId, JSON.stringify(rs), 'EX', 600);
+        return rs;
+      }
+
+      // CREATE/EDIT → Task → NeedMoreInfo → 信息足进业务Pipeline
+      let task = null;
+      let needMoreInfo = false;
+      if (config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key') {
+        try {
+          const c = new AbortController(); const t = setTimeout(() => c.abort(), 8000);
+          const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:TASK_PROMPT},{role:'user',content:inputText}], temperature:0.1, max_tokens:200, response_format:{type:'json_object'} }), signal:c.signal });
+          clearTimeout(t);
+          if (r.ok) { const j = await r.json(); task = JSON.parse(j.choices?.[0]?.message?.content||'{}').task||null; }
+        } catch {}
+      }
+      const hasG = /[一二三四五六七八九]年级|一年级|二年级|三年级|四年级|五年级|六年级|七年级|八年级|九年级/.test(inputText);
+      const hasS = /语文|数学|英语|物理|化学|生物|历史|地理|政治/.test(inputText);
+      needMoreInfo = !hasG || !hasS;
+      console.log('[TASK-DETECT]', { messageId, intent, task, needMoreInfo });
+
+      if (needMoreInfo && task) {
+        const info = { intent, isBusinessScene:false, type:'need_info', title_candidate:'', summary:'', confidence:0.6, need_user_confirm:false, need_lesson_link:false, next_action:'none', extracted_entities:{task}, reason:'信息不足', nl_reply: task==='Create Lesson'?'好的，帮你创建备课。请告诉我：①年级？②学科？③具体要求？':task==='Create Reflection'?'好的。请告诉我：①年级？②学科？③课堂效果如何？':'请补充：年级、学科、具体要求？' };
+        await redis.set('ai_result:'+messageId, JSON.stringify(info), 'EX', 600);
+        await redis.set('ai_session:'+messageId, String(sessionId), 'EX', 600);
+        return info;
+      }
       const scene = detectScene(inputText, job.data.mode);
 
       // auto 模式 + 关键词无法判断 → 调 AI 做场景识别
@@ -550,86 +586,6 @@ async function bootstrap() {
       }
 
       const isBusinessScene = scene.scene !== 'normal_chat' && scene.scene !== 'unknown';
-
-      // 普通聊天额度检查
-      if (scene.scene === 'normal_chat') {
-        const chatKey = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
-        const chatUsed = await redis.incr(chatKey);
-        if (chatUsed === 1) await redis.expire(chatKey, 86400);
-        const chatLimit = 100;
-        if (chatUsed > chatLimit) {
-          const result = {
-            scene: 'normal_chat',
-            isBusinessScene: false,
-            type: 'quota_exceeded',
-            title_candidate: '',
-            summary: '',
-            confidence: 0,
-            need_user_confirm: false,
-            need_lesson_link: false,
-            next_action: 'skip',
-            extracted_entities: {},
-            reason: 'chat_quota_exceeded',
-            nl_reply: `今日普通 AI 对话次数已用完（${chatLimit}/${chatLimit}）。你仍可以继续使用个人备课、集体备课、学期计划、学期总结、教学反思等教学工作场景。`,
-            chatQuota: { used: chatUsed, limit: chatLimit, remaining: 0 },
-          };
-          await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
-          return result;
-        }
-      }
-
-      // 普通聊天 → 直接调 AI（非 JSON format）
-      if (scene.scene === 'normal_chat') {
-        const chatKey2 = `ai:chat_quota:${userId}:${new Date().toISOString().slice(0, 10)}`;
-        const chatUsed2 = parseInt((await redis.get(chatKey2)) || '0');
-        const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-        const hasApiKey = config.apiKey && config.apiKey !== 'sk-your-deepseek-api-key';
-        console.log('[LLM-CONFIG]', { provider: config.providerName, model: config.model, hasApiKey, baseUrl: config.baseUrl });
-        let nlReply = '';
-        let llmCalled = false;
-        try {
-          if (hasApiKey) {
-            console.log('[LLM-CALL-START]', { messageId, scene: scene.scene, hasFile: !!fileName, file_id: job.data.fileId, promptLen: inputText.length });
-            llmCalled = true;
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), CFG.httpTimeout);
-            const res = await fetch(`${config.baseUrl}/chat/completions`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-              body: JSON.stringify({
-                model: config.model,
-                messages: [
-                  { role: 'system', content: `你是学校备课系统中的 AI 教学助手。当前日期：${now}。回复原则：1.问什么答什么，不要套模板。2.日期/时间直接给出。3.教学问题给建议，文本优化给改写版。4.不说"整理成可保存的备课内容"。5.只有用户明确要保存时才建议切换业务模式。6.友好、专业、简洁。` },
-                  { role: 'user', content: inputText },
-                ],
-                temperature: 0.7,
-                max_tokens: 800,
-              }),
-              signal: controller.signal,
-            });
-            clearTimeout(timeout);
-            if (res.ok) {
-              const json: any = await res.json();
-              nlReply = json.choices?.[0]?.message?.content || '';
-            }
-          }
-          if (!nlReply || nlReply.length < 5) {
-            nlReply = hasApiKey ? '当前 AI 模型暂时不可用，请稍后重试或联系管理员检查模型配置。' : '当前 AI 模型未配置或不可用，请管理员到系统设置 → AI 配置中配置有效模型。';
-          }
-        } catch {
-              nlReply = hasApiKey ? '当前 AI 模型暂时不可用，请稍后重试或联系管理员检查模型配置。' : '当前 AI 模型未配置或不可用，请管理员到系统设置 → AI 配置中配置有效模型。';
-        }
-        const result = {
-          scene: 'normal_chat', isBusinessScene: false, type: 'normal_chat',
-          title_candidate: '', summary: '', confidence: scene.confidence,
-          need_user_confirm: false, need_lesson_link: false, next_action: 'chat_reply',
-          extracted_entities: {}, reason: scene.reason, nl_reply: nlReply,
-          chatQuota: { used: chatUsed2, limit: 100, remaining: Math.max(0, 100 - chatUsed2) },
-        };
-        await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
-        await redis.set(`ai_session:${messageId}`, String(sessionId), 'EX', 600);
-        return result;
-      }
 
       // 4b. 业务场景：执行原有 AI 识别
       const acquired = await guard.acquire();

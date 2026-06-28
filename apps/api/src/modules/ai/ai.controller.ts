@@ -100,17 +100,19 @@ export class AIController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@Req() req: any, @UploadedFile() file: any) {
     if (!file) throw new BadRequestException('请选择文件');
+    // 修复中文文件名编码（multer 默认 latin1 → 转 UTF-8）
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
     const allowed = ['doc', 'docx', 'ppt', 'pptx', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
-    const ext = file.originalname.split('.').pop()?.toLowerCase() || '';
+    const ext = originalName.split('.').pop()?.toLowerCase() || '';
     if (!allowed.includes(ext)) throw new BadRequestException('不支持的文件类型: ' + ext);
     const maxSize = parseInt(process.env.UPLOAD_MAX_SIZE_MB || '200', 10) * 1024 * 1024;
     if (file.size > maxSize) throw new BadRequestException('文件超过限制');
-    const storageKey = 'original/' + Date.now() + '_' + file.originalname;
+    const storageKey = 'original/' + Date.now() + '_' + originalName;
     await this.storage.put({ key: storageKey, body: file.buffer, contentType: file.mimetype });
     const asset = this.fileRepo.create({
       school_id: req.user.schoolId,
       uploader_id: req.user.teacherId,
-      original_name: file.originalname,
+      original_name: originalName,
       storage_key: storageKey,
       mime_type: file.mimetype,
       file_ext: ext,

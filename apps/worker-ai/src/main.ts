@@ -419,7 +419,7 @@ async function bootstrap() {
           const c = new AbortController(); const t = setTimeout(() => c.abort(), 8000);
           const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:INTENT_PROMPT},{role:'user',content:inputText}], temperature:0.1, max_tokens:200, response_format:{type:'json_object'} }), signal:c.signal });
           clearTimeout(t);
-          if (r.ok) { const j = await r.json(); intent = JSON.parse(j.choices?.[0]?.message?.content||'{}').intent||'CHAT'; }
+          if (r.ok) { const j: any = await r.json(); intent = JSON.parse(j.choices?.[0]?.message?.content||'{}').intent||'CHAT'; }
         } catch {}
       }
       console.log('[INTENT-DETECT]', { messageId, intent });
@@ -436,7 +436,7 @@ async function bootstrap() {
             const c = new AbortController(); const t = setTimeout(() => c.abort(), CFG.httpTimeout);
             const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:'你是AI教学助手。当前日期：'+now+'。问什么答什么。不说"整理成保存"。'},{role:'user',content:inputText}], temperature:0.7, max_tokens:800 }), signal:c.signal });
             clearTimeout(t);
-            if (r.ok) { const j = await r.json(); nl = j.choices?.[0]?.message?.content||''; }
+            if (r.ok) { const j: any = await r.json(); nl = j.choices?.[0]?.message?.content||''; }
           }
         } catch {}
         if (!nl||nl.length<5) { nl = hasKey?'AI模型暂不可用，请稍后重试。':'AI模型未配置，请管理员配置。'; }
@@ -461,7 +461,7 @@ async function bootstrap() {
           const c = new AbortController(); const t = setTimeout(() => c.abort(), 8000);
           const r = await fetch(config.baseUrl + '/chat/completions'.replace('//v1','/v1'), { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+config.apiKey}, body:JSON.stringify({ model:config.model, messages:[{role:'system',content:TASK_PROMPT},{role:'user',content:inputText}], temperature:0.1, max_tokens:200, response_format:{type:'json_object'} }), signal:c.signal });
           clearTimeout(t);
-          if (r.ok) { const j = await r.json(); task = JSON.parse(j.choices?.[0]?.message?.content||'{}').task||null; }
+          if (r.ok) { const j: any = await r.json(); task = JSON.parse(j.choices?.[0]?.message?.content||'{}').task||null; }
         } catch {}
       }
       const hasG = /[一二三四五六七八九]年级|一年级|二年级|三年级|四年级|五年级|六年级|七年级|八年级|九年级/.test(inputText);

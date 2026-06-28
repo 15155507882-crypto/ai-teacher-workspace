@@ -305,18 +305,17 @@ export default function WorkspacePage() {
   });
 
   return (
-    <div className="h-screen bg-slate-50 flex overflow-hidden">
-      <ConversationSidebar
-        token={tk()}
-        activeId={convId}
-        onSelect={(id) => {
-          setConvId(id);
-          // TODO: restore workspace state for selected conversation
-        }}
-      />
-      <main className="flex-1 flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       <TopNav />
       <div className="flex-1 flex overflow-hidden">
+        <ConversationSidebar
+          token={tk()}
+          activeId={convId}
+          onSelect={(id) => {
+            setConvId(id);
+          }}
+        />
+        <main className="flex-1 flex overflow-hidden">
         {/* LEFT: Chat 70% */}
         <div className="flex-[7] flex flex-col min-w-0 border-r border-slate-200">
           <div className="flex-1 overflow-y-auto">
@@ -615,6 +614,7 @@ export default function WorkspacePage() {
         )}
       </div>
       </main>
+      </div>
     </div>
   );
 }

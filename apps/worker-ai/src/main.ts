@@ -627,16 +627,26 @@ async function bootstrap() {
           userId,
         });
 
+        const predictedType = aiResult.predictedType || 'personal_lesson';
+        // Metadata Builder: 生成结构化元数据
+        const metadataTitle = fileName
+          ? fileName.replace(/\.(docx?|pdf|pptx?|txt)$/i, '').replace(/[_-]/g, ' ')
+          : (aiResult.title || inputText?.slice(0, 30) || '未命名');
+        const now = new Date().toISOString().slice(0, 10);
+        const recognitionReasons = getRecognitionReasons(predictedType, aiResult);
+        const modules = getTypeModules(predictedType, aiResult);
+
         const result = {
-          type: aiResult.predictedType || 'personal_lesson',
-          title_candidate: aiResult.title || fileName || '未命名',
+          // 原有字段
+          type: predictedType,
+          title_candidate: metadataTitle,
           subject: aiResult.subject || '',
           grade: aiResult.grade || '',
           summary: aiResult.summary || '',
           confidence: aiResult.confidence || 0,
           need_user_confirm: true,
-          need_lesson_link: aiResult.predictedType === 'reflection',
-          next_action: 'confirm_' + (aiResult.predictedType || 'personal_lesson'),
+          need_lesson_link: predictedType === 'reflection',
+          next_action: 'preview',
           extracted_entities:
             scene.scene === 'semester_plan'
               ? { plan_subtype: 'teaching_plan' }
@@ -644,7 +654,14 @@ async function bootstrap() {
                 ? { plan_subtype: 'semester_summary' }
                 : {},
           reason: aiResult.fallback ? `fallback: ${aiResult.error || 'mock'}` : 'AI识别',
-          nl_reply: `识别完成: ${aiResult.predictedType} - ${aiResult.title}`,
+          nl_reply: `资料预览已生成`,
+          // V2.1 Metadata
+          metadata_title: metadataTitle,
+          content_date: now,
+          source: fileName ? '文件' : '聊天',
+          modules,
+          recognition_reasons: recognitionReasons,
+          showPreviewCard: true,
         };
         await redis.set(`ai_result:${messageId}`, JSON.stringify(result), 'EX', 600);
         await redis.set(`ai_session:${messageId}`, String(sessionId), 'EX', 600);
@@ -663,3 +680,44 @@ async function bootstrap() {
 }
 
 bootstrap().catch(console.error);
+
+
+// ======= Metadata Helpers =======
+function getRecognitionReasons(type: string, aiResult: any): string[] {
+  const reasons: Record<string, string[]> = {
+    personal_lesson: ['包含教学目标', '包含教学过程', '包含课堂练习', '包含板书设计'],
+    reflection: ['包含课堂描述', '包含改进建议', '包含效果分析'],
+    group_lesson: ['包含研讨主题', '包含参与人员', '包含达成共识'],
+    plan_summary: ['包含工作目标', '包含完成情况', '包含改进计划'],
+  };
+  return reasons[type] || ['AI自动识别'];
+}
+
+function getTypeModules(type: string, aiResult: any): { label: string; content: string }[] {
+  const modules: Record<string, { label: string; content: string }[]> = {
+    personal_lesson: [
+      { label: '教学目标', content: aiResult.extractedFields?.objectives || aiResult.summary?.slice(0, 50) || '' },
+      { label: '教学重点', content: aiResult.extractedFields?.key_points || '' },
+      { label: '教学过程', content: aiResult.extractedFields?.process || '' },
+      { label: '课堂练习', content: aiResult.extractedFields?.exercises || '' },
+    ],
+    reflection: [
+      { label: '成功经验', content: aiResult.extractedFields?.success || '' },
+      { label: '存在问题', content: aiResult.extractedFields?.problems || '' },
+      { label: '改进措施', content: aiResult.extractedFields?.improvements || '' },
+    ],
+    group_lesson: [
+      { label: '课题', content: aiResult.title || '' },
+      { label: '研讨重点', content: aiResult.extractedFields?.focus || '' },
+      { label: '达成共识', content: aiResult.extractedFields?.consensus || '' },
+    ],
+    plan_summary: [
+      { label: '工作目标', content: aiResult.extractedFields?.goals || '' },
+      { label: '完成情况', content: aiResult.extractedFields?.completion || '' },
+      { label: '存在问题', content: aiResult.extractedFields?.problems || '' },
+      { label: '改进计划', content: aiResult.extractedFields?.improvements || '' },
+    ],
+  };
+  const list = modules[type] || [{ label: '概要', content: aiResult.summary || '' }];
+  return list.filter((m: any) => m.content);
+}

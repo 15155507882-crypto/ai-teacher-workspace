@@ -158,13 +158,13 @@ export default function AdminDeptPage() {
 
   return (
     <AdminShell>
-      <div className="p-6">
+      <div className="p-8">
         <AdminPageHeader
           title="组织管理"
           action={
             <button
               onClick={openNew}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="h-11 inline-flex items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition"
             >
               + 新增组织
             </button>
@@ -172,91 +172,96 @@ export default function AdminDeptPage() {
         />
         {msg && (
           <div
-            className={`mb-3 text-sm p-3 rounded-lg ${msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
+            className={`mb-4 text-sm p-3 rounded-xl ${msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
           >
             {msg}
           </div>
         )}
 
         {loading ? (
-          <div className="space-y-2">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)] p-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+              <div key={i} className="h-12 bg-[#f7faff] rounded-xl animate-pulse mb-3 last:mb-0" />
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-base">
-              <thead className="bg-slate-50 text-slate-500 text-sm whitespace-nowrap">
-                <tr>
-                  <th className="p-3 text-left">排序</th>
-                  <th className="p-3 text-left">名称</th>
-                  <th className="p-3 text-left">上级组织</th>
-                  <th className="p-3 text-left">状态</th>
-                  <th className="p-3 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {depts
-                  .sort((a, b) => {
-                    if (a.status === 'disabled' && b.status !== 'disabled') return 1;
-                    if (b.status === 'disabled' && a.status !== 'disabled') return -1;
-                    return a.sort_order - b.sort_order;
-                  })
-                  .map((d) => (
-                    <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
-                      <td className="p-3 text-slate-500">{d.sort_order}</td>
-                      <td className="p-3 font-medium text-slate-800">{d.name}</td>
-                      <td className="p-3 text-slate-500">
-                        {d.parent_id
-                          ? depts.find((x) => x.id === d.parent_id)?.name || ''
-                          : '学校（顶级）'}
-                      </td>
-                      <td className="p-3">
-                        <AdminStatusTag status={d.status} />
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        <button
-                          onClick={() => openEdit(d)}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          编辑
-                        </button>
-                        {d.status === 'active' && (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)]">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-base">
+                <thead className="bg-[#f7faff] text-sm font-semibold text-[#6e7fa7] whitespace-nowrap">
+                  <tr>
+                    <th className="px-5 py-4 text-left">排序</th>
+                    <th className="px-5 py-4 text-left">名称</th>
+                    <th className="px-5 py-4 text-left">上级组织</th>
+                    <th className="px-5 py-4 text-left">状态</th>
+                    <th className="px-5 py-4 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {depts
+                    .sort((a, b) => {
+                      if (a.status === 'disabled' && b.status !== 'disabled') return 1;
+                      if (b.status === 'disabled' && a.status !== 'disabled') return -1;
+                      return a.sort_order - b.sort_order;
+                    })
+                    .map((d) => (
+                      <tr key={d.id} className="transition hover:bg-[#f7faff]">
+                        <td className="px-5 py-4 text-[#53688f]">{d.sort_order}</td>
+                        <td className="px-5 py-4 font-semibold text-[#10234f]">{d.name}</td>
+                        <td className="px-5 py-4 text-[#53688f]">
+                          {d.parent_id
+                            ? depts.find((x) => x.id === d.parent_id)?.name || ''
+                            : '学校（顶级）'}
+                        </td>
+                        <td className="px-5 py-4">
+                          <AdminStatusTag status={d.status} />
+                        </td>
+                        <td className="px-5 py-4 text-right space-x-3">
                           <button
-                            onClick={() => handleDisable(d)}
-                            className="text-sm text-red-500 hover:underline"
+                            onClick={() => openEdit(d)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
                           >
-                            停用
+                            编辑
                           </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setTarget(d);
-                            setDeleteOpen(true);
-                          }}
-                          className="text-sm text-red-400 hover:underline"
-                        >
-                          删除
-                        </button>
-                        <button
-                          onClick={() => openTeachers(d)}
-                          className="text-sm text-blue-500 hover:underline"
-                        >
-                          教师
-                        </button>
+                          {d.status === 'active' && (
+                            <button
+                              onClick={() => handleDisable(d)}
+                              className="text-sm font-medium text-red-500 hover:text-red-600 underline-offset-2 hover:underline"
+                            >
+                              停用
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setTarget(d);
+                              setDeleteOpen(true);
+                            }}
+                            className="text-sm font-medium text-red-400 hover:text-red-500 underline-offset-2 hover:underline"
+                          >
+                            删除
+                          </button>
+                          <button
+                            onClick={() => openTeachers(d)}
+                            className="text-sm font-medium text-blue-500 hover:text-blue-600 underline-offset-2 hover:underline"
+                          >
+                            教师
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {depts.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-5 py-16 text-center text-base font-medium text-slate-400"
+                      >
+                        暂无组织
                       </td>
                     </tr>
-                  ))}
-                {depts.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-400">
-                      暂无组织
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -267,20 +272,22 @@ export default function AdminDeptPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">组织名称</label>
+              <label className="block text-sm font-semibold text-[#30466f] mb-1.5">组织名称</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">上级组织</label>
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">
+                  上级组织
+                </label>
                 <select
                   value={form.parent_id}
                   onChange={(e) => setForm({ ...form, parent_id: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-[#30466f] shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value={0}>学校（顶级）</option>
                   {depts
@@ -293,30 +300,30 @@ export default function AdminDeptPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">排序</label>
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">排序</label>
                 <input
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">状态</label>
+              <label className="block text-sm font-semibold text-[#30466f] mb-1.5">状态</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-[#30466f] shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               >
                 <option value="active">启用</option>
                 <option value="disabled">停用</option>
               </select>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => setDialogOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border"
+                className="h-11 px-5 text-sm font-medium rounded-xl border border-slate-200 text-[#53688f] hover:bg-slate-50 transition"
               >
                 取消
               </button>
@@ -324,7 +331,7 @@ export default function AdminDeptPage() {
                 <button
                   onClick={saveAndContinue}
                   disabled={saving}
-                  className="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                  className="h-11 px-5 text-sm font-medium rounded-xl border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition"
                 >
                   {saving ? '保存中...' : '保存并继续'}
                 </button>
@@ -332,7 +339,7 @@ export default function AdminDeptPage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="h-11 px-5 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-sm transition"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -350,7 +357,7 @@ export default function AdminDeptPage() {
             value={teacherSearch}
             onChange={(e) => setTeacherSearch(e.target.value)}
             placeholder="搜索教师姓名/手机号..."
-            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100 mb-4"
           />
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {allTeachers
@@ -380,10 +387,10 @@ export default function AdminDeptPage() {
                 </label>
               ))}
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={() => setTeacherOpen(false)}
-              className="px-4 py-2 text-sm rounded-lg border"
+              className="h-11 px-5 text-sm font-medium rounded-xl border border-slate-200 text-[#53688f] hover:bg-slate-50 transition"
             >
               取消
             </button>
@@ -399,7 +406,7 @@ export default function AdminDeptPage() {
                 fetchDepts();
                 setMsg('已更新');
               }}
-              className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              className="h-11 px-5 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition"
             >
               保存
             </button>

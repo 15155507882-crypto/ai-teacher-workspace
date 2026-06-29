@@ -6,6 +6,7 @@ import {
   Query,
   Req,
   Body,
+  Put,
   UseGuards,
   Res,
   Post,
@@ -65,7 +66,13 @@ export class ContentController {
 
   @Get('teachers/:teacherId/content-stats')
   @UseGuards(JwtAuthGuard)
-  async contentStats(@Param('teacherId') teacherId: string) {
+  async contentStats(@Param('teacherId') teacherId: string, @Req() req: any) {
+    // 调用来源追踪日志
+    const caller = req.headers['x-caller'] || req.headers['referer'] || 'unknown';
+    console.log(
+      `[content-stats] teacherId=${teacherId} caller=${caller} time=${new Date().toISOString()}`
+    );
+
     // Get current school settings for semester filter
     let academicYear: string | undefined;
     let semester: string | undefined;
@@ -113,6 +120,35 @@ export class ContentController {
     try {
       const file = await this.fileRepo.findOne({ where: { id: parseInt(id) } });
       if (!file) return res.status(404).json({ code: 40400, message: '文件不存在' });
+
+      // V2: If preview PDF exists, serve it
+      if ((file as any).preview_status === 'SUCCESS' && (file as any).preview_url) {
+        const previewResult = await this.storage.get((file as any).preview_url);
+        if (previewResult?.body) {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.send(previewResult.body);
+          return;
+        }
+      }
+
+      // V2: If preview is processing, return status
+      if ((file as any).preview_status === 'PROCESSING') {
+        return res.json({
+          code: 0,
+          message: '正在生成预览...',
+          data: { previewStatus: 'PROCESSING' },
+        });
+      }
+
+      if ((file as any).preview_status === 'FAILED') {
+        return res.json({
+          code: 0,
+          message: '预览生成失败，可下载原文件',
+          data: { previewStatus: 'FAILED', error: (file as any).preview_error },
+        });
+      }
+
+      // Fallback: serve original file (images, PDFs)
       const result = await this.storage.get(file.storage_key);
       if (result?.body) {
         res.setHeader(
@@ -124,6 +160,28 @@ export class ContentController {
       }
     } catch {}
     res.status(404).json({ code: 40400, message: '文件不存在' });
+  }
+
+  // V2: Admin endpoint to update preview status (called by worker)
+  @Put('admin/files/:id/preview-status')
+  async updatePreviewStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; previewUrl?: string; error?: string }
+  ) {
+    const file = await this.fileRepo.findOne({ where: { id: parseInt(id) } });
+    if (!file) return { code: 40400, message: '文件不存在' };
+
+    (file as any).preview_status = body.status;
+    if (body.previewUrl) (file as any).preview_url = body.previewUrl;
+    if (body.error) (file as any).preview_error = body.error;
+    (file as any).preview_updated_at = new Date();
+
+    await this.fileRepo.save(file);
+    return {
+      code: 0,
+      message: 'success',
+      data: { id: file.id, previewStatus: (file as any).preview_status },
+    };
   }
 
   // ====== 集体备课评论 ======

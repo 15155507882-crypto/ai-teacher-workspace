@@ -262,7 +262,7 @@ export default function AdminTeachersPage() {
 
   return (
     <AdminShell>
-      <div className="p-6">
+      <div className="p-8">
         <AdminPageHeader
           title="教师管理"
           action={
@@ -279,11 +279,11 @@ export default function AdminTeachersPage() {
                   }\n`
                 )}`}
                 download="教师导入模板.csv"
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="h-11 inline-flex items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-[#53688f] hover:bg-[#f7faff] transition"
               >
                 📥 下载模板
               </a>
-              <label className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 cursor-pointer">
+              <label className="h-11 inline-flex items-center rounded-xl bg-green-600 px-4 text-sm font-medium text-white hover:bg-green-700 cursor-pointer shadow-sm transition">
                 📤 批量导入
                 <input
                   type="file"
@@ -398,7 +398,7 @@ export default function AdminTeachersPage() {
               </label>
               <button
                 onClick={openNew}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="h-11 inline-flex items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition"
               >
                 + 新增教师
               </button>
@@ -407,7 +407,9 @@ export default function AdminTeachersPage() {
         />
         {msg && (
           <div
-            className={`mb-3 text-sm p-3 rounded-lg ${msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
+            className={`mb-4 text-sm p-3 rounded-xl ${
+              msg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+            }`}
           >
             {msg}
           </div>
@@ -418,12 +420,12 @@ export default function AdminTeachersPage() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="搜索姓名/手机号..."
-            className="w-56 rounded-lg border px-3 py-2 text-sm"
+            className="h-11 w-56 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-[#30466f] shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
           >
             <option value="">全部状态</option>
             <option value="active">在职</option>
@@ -433,138 +435,149 @@ export default function AdminTeachersPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-[#30466f] shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
           >
             <option value="">全部角色</option>
             <option value="teacher">教师</option>
             <option value="admin">管理员</option>
           </select>
-          <span className="text-sm text-slate-400 self-center ml-auto">{filtered.length} 人</span>
+          <span className="text-sm font-medium text-[#8ba0c5] self-center ml-auto">
+            {filtered.length} 人
+          </span>
         </AdminFilterBar>
 
         {loading ? (
-          <div className="space-y-2">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)] p-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+              <div key={i} className="h-12 bg-[#f7faff] rounded-xl animate-pulse mb-3 last:mb-0" />
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-base">
-              <thead className="bg-slate-50 text-sm text-slate-500 whitespace-nowrap">
-                <tr>
-                  <th className="p-3 text-left w-14">序号</th>
-                  <th className="p-3 text-left">姓名</th>
-                  <th className="p-3 text-left">手机号</th>
-                  <th className="p-3 text-left">性别</th>
-                  <th className="p-3 text-left">角色</th>
-                  <th className="p-3 text-left">组织</th>
-                  <th className="p-3 text-left">状态</th>
-                  <th className="p-3 text-left">最近登录</th>
-                  <th className="p-3 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => {
-                  const deptMap = new Map(
-                    departments.map((d) => [Number(d.id), d.name] as [number, string])
-                  );
-                  const roleMap: Record<string, string> = { teacher: '教师', admin: '管理员' };
-                  const roles = (t.role || '')
-                    .split(',')
-                    .map((r) => roleMap[r.trim()] || r.trim())
-                    .filter(Boolean);
-                  // 合并 department_name 和 department_ids 显示
-                  const deptNames: string[] = [];
-                  // 先收集所有去重ID
-                  const allDeptIds = new Set<number>();
-                  if (t.department_id) allDeptIds.add(Number(t.department_id));
-                  if (t.department_ids) {
-                    t.department_ids.split(',').forEach((idStr) => {
-                      const did = Number(idStr.trim());
-                      if (did) allDeptIds.add(did);
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)]">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[920px] text-base">
+                <thead className="bg-[#f7faff] text-sm font-semibold text-[#6e7fa7] whitespace-nowrap">
+                  <tr>
+                    <th className="px-5 py-4 text-left w-24">序号</th>
+                    <th className="px-5 py-4 text-left">姓名</th>
+                    <th className="px-5 py-4 text-left">手机号</th>
+                    <th className="px-5 py-4 text-left">性别</th>
+                    <th className="px-5 py-4 text-left">角色</th>
+                    <th className="px-5 py-4 text-left">组织</th>
+                    <th className="px-5 py-4 text-left">状态</th>
+                    <th className="px-5 py-4 text-left">最近登录</th>
+                    <th className="px-5 py-4 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.slice((page - 1) * pageSize, page * pageSize).map((t, i) => {
+                    const deptMap = new Map(
+                      departments.map((d) => [Number(d.id), d.name] as [number, string])
+                    );
+                    const roleMap: Record<string, string> = { teacher: '教师', admin: '管理员' };
+                    const roles = (t.role || '')
+                      .split(',')
+                      .map((r) => roleMap[r.trim()] || r.trim())
+                      .filter(Boolean);
+                    // 合并 department_name 和 department_ids 显示
+                    const deptNames: string[] = [];
+                    // 先收集所有去重ID
+                    const allDeptIds = new Set<number>();
+                    if (t.department_id) allDeptIds.add(Number(t.department_id));
+                    if (t.department_ids) {
+                      t.department_ids.split(',').forEach((idStr) => {
+                        const did = Number(idStr.trim());
+                        if (did) allDeptIds.add(did);
+                      });
+                    }
+                    // 按ID查名称
+                    allDeptIds.forEach((did) => {
+                      const name = deptMap.get(did) || '';
+                      if (name) deptNames.push(name);
                     });
-                  }
-                  // 按ID查名称
-                  allDeptIds.forEach((did) => {
-                    const name = deptMap.get(did) || '';
-                    if (name) deptNames.push(name);
-                  });
-                  return (
-                    <tr key={t.id} className="border-t hover:bg-slate-50">
-                      <td className="p-3 text-sm text-slate-400">
-                        {(page - 1) * pageSize + i + 1}
-                      </td>
-                      <td className="p-3 font-medium text-slate-800">{t.name}</td>
-                      <td className="p-3 text-slate-500">{t.mobile}</td>
-                      <td className="p-3 text-slate-500 text-sm">
-                        {(t as any).gender === 'male'
-                          ? '男'
-                          : (t as any).gender === 'female'
-                            ? '女'
+                    return (
+                      <tr key={t.id} className="transition hover:bg-[#f7faff]">
+                        <td className="px-5 py-4 text-sm font-medium text-[#8ba0c5]">
+                          {(page - 1) * pageSize + i + 1}
+                        </td>
+                        <td className="px-5 py-4 font-semibold text-[#10234f]">{t.name}</td>
+                        <td className="px-5 py-4 text-[#53688f]">{t.mobile}</td>
+                        <td className="px-5 py-4 text-[#53688f] text-sm">
+                          {(t as any).gender === 'male'
+                            ? '男'
+                            : (t as any).gender === 'female'
+                              ? '女'
+                              : '—'}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm px-2.5 py-1 rounded-lg bg-[#f7faff] text-[#53688f] font-medium">
+                            {roles.join(' / ') || '—'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-[#53688f] text-sm">
+                          {deptNames.join(' / ') || '—'}
+                        </td>
+                        <td className="px-5 py-4">
+                          <AdminStatusTag status={t.status} />
+                        </td>
+                        <td className="px-5 py-4 text-sm text-[#8ba0c5]">
+                          {t.last_login_at
+                            ? new Date(t.last_login_at).toLocaleString('zh-CN')
                             : '—'}
-                      </td>
-                      <td className="p-3">
-                        <span className="text-sm px-2 py-0.5 rounded-md bg-slate-50 text-slate-600">
-                          {roles.join(' / ') || '—'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-slate-500 text-sm">{deptNames.join(' / ') || '—'}</td>
-                      <td className="p-3">
-                        <AdminStatusTag status={t.status} />
-                      </td>
-                      <td className="p-3 text-sm text-slate-400">
-                        {t.last_login_at ? new Date(t.last_login_at).toLocaleString('zh-CN') : '—'}
-                      </td>
-                      <td className="p-3 text-right space-x-1">
-                        <button
-                          onClick={() => openEdit(t)}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          编辑
-                        </button>
-                        <button
-                          onClick={() => {
-                            setTarget(t);
-                            setPwdForm({ password: '', confirm: '' });
-                            setResetPwdOpen(true);
-                          }}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          密码
-                        </button>
-                        {t.status === 'active' && (
+                        </td>
+                        <td className="px-5 py-4 text-right space-x-3">
+                          <button
+                            onClick={() => openEdit(t)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
+                          >
+                            编辑
+                          </button>
                           <button
                             onClick={() => {
                               setTarget(t);
-                              setResignOpen(true);
+                              setPwdForm({ password: '', confirm: '' });
+                              setResetPwdOpen(true);
                             }}
-                            className="text-sm text-orange-500 hover:underline"
+                            className="text-sm font-medium text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
                           >
-                            离职
+                            密码
                           </button>
-                        )}
-                        {t.status === 'resigned' && (
-                          <button
-                            onClick={() => handleRestore(t.id)}
-                            className="text-sm text-green-600 hover:underline"
-                          >
-                            恢复
-                          </button>
-                        )}
+                          {t.status === 'active' && (
+                            <button
+                              onClick={() => {
+                                setTarget(t);
+                                setResignOpen(true);
+                              }}
+                              className="text-sm font-medium text-orange-500 hover:text-orange-600 underline-offset-2 hover:underline"
+                            >
+                              离职
+                            </button>
+                          )}
+                          {t.status === 'resigned' && (
+                            <button
+                              onClick={() => handleRestore(t.id)}
+                              className="text-sm font-medium text-green-600 hover:text-green-700 underline-offset-2 hover:underline"
+                            >
+                              恢复
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={10}
+                        className="px-5 py-16 text-center text-base font-medium text-slate-400"
+                      >
+                        暂无数据
                       </td>
                     </tr>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={10} className="p-8 text-center text-slate-400">
-                      暂无数据
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
@@ -576,40 +589,40 @@ export default function AdminTeachersPage() {
           width="max-w-xl"
         >
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">姓名</label>
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">姓名</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">手机号</label>
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">手机号</label>
                 <input
                   value={form.mobile}
                   onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                   disabled={!!editing}
                 />
               </div>
               {!editing && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                  <label className="block text-sm font-semibold text-[#30466f] mb-1.5">密码</label>
                   <input
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">性别</label>
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">性别</label>
                 <select
                   value={form.gender}
                   onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">--</option>
                   <option value="male">男</option>
@@ -617,17 +630,17 @@ export default function AdminTeachersPage() {
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">
                   组织（可多选）
                 </label>
                 <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                   {departments.map((d) => (
                     <label
                       key={d.id}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium cursor-pointer transition ${
                         form.department_ids.includes(Number(d.id))
                           ? 'border-blue-400 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                          : 'border-slate-200 text-[#53688f] hover:bg-[#f7faff]'
                       }`}
                     >
                       <input
@@ -655,7 +668,7 @@ export default function AdminTeachersPage() {
                 </div>
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-semibold text-[#30466f] mb-1.5">
                   角色（可多选）
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -665,10 +678,10 @@ export default function AdminTeachersPage() {
                   ].map((r) => (
                     <label
                       key={r.value}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium cursor-pointer transition ${
                         form.role.includes(r.value)
                           ? 'border-blue-400 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                          : 'border-slate-200 text-[#53688f] hover:bg-[#f7faff]'
                       }`}
                     >
                       <input
@@ -690,10 +703,10 @@ export default function AdminTeachersPage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={() => setDialogOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border"
+                className="h-11 px-5 text-sm font-medium rounded-xl border border-slate-200 text-[#53688f] hover:bg-slate-50 transition"
               >
                 取消
               </button>
@@ -701,7 +714,7 @@ export default function AdminTeachersPage() {
                 <button
                   onClick={saveAndContinue}
                   disabled={saving}
-                  className="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                  className="h-11 px-5 text-sm font-medium rounded-xl border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition"
                 >
                   {saving ? '保存中...' : '保存并继续'}
                 </button>
@@ -709,7 +722,7 @@ export default function AdminTeachersPage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="h-11 px-5 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-sm transition"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -725,34 +738,34 @@ export default function AdminTeachersPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">新密码</label>
+              <label className="block text-sm font-semibold text-[#30466f] mb-1.5">新密码</label>
               <input
                 type="password"
                 value={pwdForm.password}
                 onChange={(e) => setPwdForm({ ...pwdForm, password: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">确认密码</label>
+              <label className="block text-sm font-semibold text-[#30466f] mb-1.5">确认密码</label>
               <input
                 type="password"
                 value={pwdForm.confirm}
                 onChange={(e) => setPwdForm({ ...pwdForm, confirm: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               />
             </div>
-            <p className="text-sm text-slate-400">重置后需使用新密码登录</p>
-            <div className="flex justify-end gap-2">
+            <p className="text-sm text-[#7587ad]">重置后需使用新密码登录</p>
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setResetPwdOpen(false)}
-                className="px-4 py-2 text-sm rounded-lg border"
+                className="h-11 px-5 text-sm font-medium rounded-xl border border-slate-200 text-[#53688f] hover:bg-slate-50 transition"
               >
                 取消
               </button>
               <button
                 onClick={resetPwd}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                className="h-11 px-5 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition"
               >
                 确认
               </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WorkspaceContext } from './teacher-workspace';
 
 interface ContentItem {
@@ -52,15 +52,21 @@ export function ContentSidebar({
   const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const lastFetchRef = useRef('');
 
   useEffect(() => {
+    // 防止同一参数重复请求（仅 teacherId+refreshKey 变化时真正请求）
+    const fetchKey = `${ctx.teacherId}:${refreshKey}`;
+    if (fetchKey === lastFetchRef.current) return;
+    lastFetchRef.current = fetchKey;
+
     setLoading(true);
     Promise.all([
       fetch(`/api/teachers/${ctx.teacherId}/contents?size=200`, {
         headers: { Authorization: `Bearer ${ctx.token}` },
       }).then((r) => r.json()),
       fetch(`/api/teachers/${ctx.teacherId}/content-stats`, {
-        headers: { Authorization: `Bearer ${ctx.token}` },
+        headers: { Authorization: `Bearer ${ctx.token}`, 'x-caller': 'ContentSidebar' },
       }).then((r) => r.json()),
     ])
       .then(([cJson, sJson]) => {

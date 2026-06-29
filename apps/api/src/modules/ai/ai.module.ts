@@ -29,6 +29,7 @@ import { ActionEngineService } from './action-engine.service';
       ActionHistory,
     ]),
     BullModule.registerQueue({ name: 'ai-recognition' }),
+    BullModule.registerQueue({ name: 'file-preview' }),
   ],
   controllers: [AIController],
   providers: [

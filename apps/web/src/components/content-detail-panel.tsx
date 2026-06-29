@@ -114,17 +114,20 @@ export function ContentDetailPanel({
           )}
 
           <div className="pt-3 border-t border-[var(--color-border)] space-y-2">
-            <AppButton variant="secondary" size="sm" className="w-full justify-start">
+            <a
+              href={`/api/files/${content.file_id || contentId}/preview`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-2 justify-start px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition"
+            >
               🔍 在线预览
-            </AppButton>
-            <AppButton
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
+            </a>
+            <button
               onClick={() => setShowDelete(true)}
+              className="w-full flex items-center gap-2 justify-start px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition"
             >
               🗑 删除
-            </AppButton>
+            </button>
           </div>
 
           {showDelete && (

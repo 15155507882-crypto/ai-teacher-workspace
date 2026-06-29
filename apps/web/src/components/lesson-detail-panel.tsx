@@ -353,10 +353,15 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
               var isImage =
                 att.file && att.file.mime_type && att.file.mime_type.startsWith('image/');
               var isPDF = att.file && att.file.mime_type === 'application/pdf';
-              var isWord =
-                (att.file && att.file.mime_type && att.file.mime_type.includes('word')) ||
-                (att.file && (att.file.file_ext === 'doc' || att.file.file_ext === 'docx'));
+              var isOffice =
+                (att.file &&
+                  att.file.mime_type &&
+                  (att.file.mime_type.includes('word') ||
+                    att.file.mime_type.includes('officedocument'))) ||
+                (att.file &&
+                  ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(att.file.file_ext));
               var previewUrl = '/api/files/' + att.file_id + '/preview';
+              var downloadUrl = '/api/files/' + att.file_id + '/download';
               return React.createElement(
                 'div',
                 {
@@ -366,7 +371,7 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
                 React.createElement(
                   'span',
                   { className: 'text-sm font-medium' },
-                  (isImage ? '🖼 ' : isPDF ? '📕 ' : isWord ? '📝 ' : '📄 ') +
+                  (isImage ? '🖼 ' : isPDF ? '📕 ' : isOffice ? '📝 ' : '📄 ') +
                     (att.file ? att.file.original_name : '附件')
                 ),
                 isImage
@@ -375,28 +380,35 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
                       className: 'w-full max-h-48 object-contain mt-1 rounded',
                       alt: 'preview',
                     })
-                  : isPDF
+                  : isPDF || isOffice
                     ? React.createElement('iframe', {
                         src: previewUrl,
                         className: 'w-full h-48 border rounded mt-1',
                         title: 'preview',
                       })
-                    : isWord
-                      ? React.createElement(
-                          'div',
-                          { className: 'text-xs text-amber-600 mt-1' },
-                          'Word 文档请下载查看'
-                        )
-                      : null,
+                    : null,
                 React.createElement(
-                  'a',
-                  {
-                    href: previewUrl,
-                    target: '_blank',
-                    className:
-                      'mt-2 inline-flex rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50',
-                  },
-                  '🔍 预览'
+                  'div',
+                  { className: 'flex gap-2 mt-2' },
+                  React.createElement(
+                    'a',
+                    {
+                      href: previewUrl,
+                      target: '_blank',
+                      className:
+                        'inline-flex rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50',
+                    },
+                    '👁 在线预览'
+                  ),
+                  React.createElement(
+                    'a',
+                    {
+                      href: downloadUrl,
+                      className:
+                        'inline-flex rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#53688f] hover:bg-slate-50',
+                    },
+                    '⬇ 下载原文件'
+                  )
                 )
               );
             })

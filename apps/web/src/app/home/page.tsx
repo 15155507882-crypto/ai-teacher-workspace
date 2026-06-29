@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Calculator, Languages, Loader2, PencilLine, Search, Users } from 'lucide-react';
 import { TopNav } from '@/components/top-nav';
@@ -28,12 +28,9 @@ interface HomeGroup {
 const avatarFaces = {
   male: ['👨🏻‍🏫', '👨🏻‍💼', '👨🏻‍🎓', '👨🏻'],
   female: ['👩🏻‍🏫', '👩🏻‍💼', '👩🏻‍🎓', '👩🏻'],
-  admin: ['管'],
 };
 
 function getTeacherFace(teacher: Teacher) {
-  if (teacher.role?.includes('admin') || teacher.name.includes('管理员'))
-    return avatarFaces.admin[0];
   const list = teacher.gender === 'female' ? avatarFaces.female : avatarFaces.male;
   return list[(teacher.name?.charCodeAt(0) || 0) % list.length];
 }
@@ -57,15 +54,9 @@ function TeacherAvatar({ teacher }: { teacher: Teacher }) {
     );
   }
 
-  const isAdmin = teacher.role?.includes('admin') || teacher.name.includes('管理员');
-
   return (
     <div
-      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-sm ${
-        isAdmin
-          ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-base font-bold text-white'
-          : 'bg-slate-100 text-3xl'
-      }`}
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-3xl shadow-sm"
       title={teacher.name}
     >
       {getTeacherFace(teacher)}
@@ -102,10 +93,18 @@ export default function HomePage() {
   const [depts, setDepts] = useState<HomeGroup[]>([]);
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(true);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
+    // 防止 React StrictMode 开发环境双次执行
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     const token = localStorage.getItem('accessToken');
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     (async () => {
       const d = await fetch('/api/home/groups', {
         headers: { Authorization: `Bearer ${token}` },
@@ -124,7 +123,7 @@ export default function HomePage() {
           list.map(async (teacher: any) => {
             try {
               const sRes = await fetch(`/api/teachers/${teacher.id}/content-stats`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}`, 'x-caller': 'HomePage' },
               }).then((r) => r.json());
               if (sRes.code === 0) {
                 statsMap.set(Number(teacher.id), {
@@ -157,14 +156,12 @@ export default function HomePage() {
     })();
   }, []);
 
-  const filtered = depts
-    .map((d) => ({
-      ...d,
-      teachers: keyword
-        ? d.teachers.filter((teacher) => teacher.name.includes(keyword.trim()))
-        : d.teachers,
-    }))
-    .filter((g) => g.teachers.length > 0);
+  const filtered = depts.map((d) => ({
+    ...d,
+    teachers: keyword
+      ? d.teachers.filter((teacher) => teacher.name.includes(keyword.trim()))
+      : d.teachers,
+  }));
 
   if (loading)
     return (

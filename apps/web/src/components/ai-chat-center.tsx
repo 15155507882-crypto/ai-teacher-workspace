@@ -50,7 +50,8 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
     const t = localStorage.getItem('teacher');
     if (t) setTeacher(JSON.parse(t));
     loadHistory();
-  }, [ctx]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.teacherId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

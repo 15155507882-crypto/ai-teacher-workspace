@@ -97,7 +97,7 @@ export default function AdminRolesPage() {
 
   return (
     <AdminShell>
-      <div className="p-6">
+      <div className="p-8">
         <AdminPageHeader
           title="角色管理"
           action={
@@ -113,60 +113,62 @@ export default function AdminRolesPage() {
             </button>
           }
         />
-        {msg && <div className="mb-3 text-sm p-3 rounded-lg bg-blue-50 text-blue-700">{msg}</div>}
+        {msg && <div className="mb-4 text-sm p-3 rounded-xl bg-blue-50 text-blue-700">{msg}</div>}
 
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-base">
-            <thead className="bg-slate-50 text-slate-500 text-sm whitespace-nowrap">
-              <tr>
-                <th className="p-3 text-left">名称</th>
-                <th className="p-3 text-left">编码</th>
-                <th className="p-3 text-left">说明</th>
-                <th className="p-3 text-left">内置</th>
-                <th className="p-3 text-left">状态</th>
-                <th className="p-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roles.map((r) => (
-                <tr key={r.code} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="p-3 font-medium text-slate-800">{r.name}</td>
-                  <td className="p-3 text-slate-500 font-mono text-sm">{r.code}</td>
-                  <td className="p-3 text-slate-500 text-sm">{r.desc}</td>
-                  <td className="p-3">
-                    {r.builtin ? (
-                      <span className="text-sm text-amber-600 font-medium">系统内置</span>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <AdminStatusTag status={r.status} />
-                  </td>
-                  <td className="p-3 text-right space-x-1">
-                    <button
-                      onClick={() => openEdit(r)}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => openPerms(r)}
-                      className="text-sm text-purple-600 hover:underline"
-                    >
-                      权限
-                    </button>
-                    <button
-                      onClick={() => openDelete(r)}
-                      className="text-sm text-red-500 hover:underline"
-                    >
-                      删除
-                    </button>
-                  </td>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-base">
+              <thead className="bg-[#f7faff] text-sm font-semibold text-[#6e7fa7] whitespace-nowrap">
+                <tr>
+                  <th className="px-5 py-4 text-left">名称</th>
+                  <th className="px-5 py-4 text-left">编码</th>
+                  <th className="px-5 py-4 text-left">说明</th>
+                  <th className="px-5 py-4 text-left">内置</th>
+                  <th className="px-5 py-4 text-left">状态</th>
+                  <th className="px-5 py-4 text-right">操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {roles.map((r) => (
+                  <tr key={r.code} className="transition hover:bg-[#f7faff]">
+                    <td className="px-5 py-4 font-semibold text-[#10234f]">{r.name}</td>
+                    <td className="px-5 py-4 text-[#53688f] font-mono text-sm">{r.code}</td>
+                    <td className="px-5 py-4 text-[#53688f] text-sm">{r.desc}</td>
+                    <td className="px-5 py-4">
+                      {r.builtin ? (
+                        <span className="text-sm text-amber-600 font-medium">系统内置</span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      <AdminStatusTag status={r.status} />
+                    </td>
+                    <td className="px-5 py-4 text-right space-x-3">
+                      <button
+                        onClick={() => openEdit(r)}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        onClick={() => openPerms(r)}
+                        className="text-sm font-medium text-purple-600 hover:text-purple-700 underline-offset-2 hover:underline"
+                      >
+                        权限
+                      </button>
+                      <button
+                        onClick={() => openDelete(r)}
+                        className="text-sm font-medium text-red-500 hover:text-red-600 underline-offset-2 hover:underline"
+                      >
+                        删除
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Role Form Dialog */}

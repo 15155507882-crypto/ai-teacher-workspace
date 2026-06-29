@@ -231,12 +231,12 @@ export default function AdminHomeGroupsPage() {
 
   return (
     <AdminShell>
-      <div className="p-6">
+      <div className="p-8">
         <AdminPageHeader
           title="备课组"
           action={
             <div className="flex gap-2">
-              <label className="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 cursor-pointer">
+              <label className="h-11 inline-flex items-center rounded-xl bg-green-600 px-4 text-sm font-medium text-white hover:bg-green-700 cursor-pointer shadow-sm transition">
                 📤 导入
                 <input
                   type="file"
@@ -247,7 +247,7 @@ export default function AdminHomeGroupsPage() {
               </label>
               <button
                 onClick={openNew}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="h-11 inline-flex items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition"
               >
                 + 新增
               </button>
@@ -256,7 +256,7 @@ export default function AdminHomeGroupsPage() {
         />
         {msg && (
           <div
-            className={`mb-3 text-sm p-3 rounded-lg ${msg.includes('成功') || msg.includes('完成') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
+            className={`mb-4 text-sm p-3 rounded-xl ${msg.includes('成功') || msg.includes('完成') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}
           >
             {msg}
           </div>
@@ -269,117 +269,123 @@ export default function AdminHomeGroupsPage() {
               setPage(1);
             }}
             placeholder="搜索名称..."
-            className="w-56 rounded-lg border px-3 py-2 text-sm"
+            className="h-11 w-56 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
           />
         </div>
         {loading ? (
-          <div className="space-y-2">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)] p-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+              <div key={i} className="h-12 bg-[#f7faff] rounded-xl animate-pulse mb-3 last:mb-0" />
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-base">
-              <thead className="bg-slate-50 text-sm text-slate-500 whitespace-nowrap">
-                <tr>
-                  <th className="p-3 text-left w-14">序号</th>
-                  <th className="p-3 text-left">名称</th>
-                  <th className="p-3 text-left">上级</th>
-                  <th className="p-3 text-left">排序</th>
-                  <th className="p-3 text-left">首页</th>
-                  <th className="p-3 text-left">状态</th>
-                  <th className="p-3 text-left">备注</th>
-                  <th className="p-3 text-left">绑定老师</th>
-                  <th className="p-3 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((g, i) => (
-                  <tr key={g.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-slate-400 text-sm">{(page - 1) * pageSize + i + 1}</td>
-                    <td className="p-3 font-medium text-slate-800">{g.name}</td>
-                    <td className="p-3 text-slate-500">
-                      {g.parent_id ? groups.find((x) => x.id === g.parent_id)?.name || '' : '顶级'}
-                    </td>
-                    <td className="p-3 text-slate-500">{g.sort_order}</td>
-                    <td className="p-3">
-                      {g.is_home_visible ? (
-                        <span className="text-green-600 text-sm">可见</span>
-                      ) : (
-                        <span className="text-slate-400 text-sm">隐藏</span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {g.status === 'active' ? (
-                        <span className="inline-flex rounded-md px-2 py-0.5 text-sm font-medium bg-green-50 text-green-700">
-                          启用
-                        </span>
-                      ) : (
-                        <span className="inline-flex rounded-md px-2 py-0.5 text-sm font-medium bg-orange-50 text-orange-700">
-                          停用
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-sm text-slate-400 max-w-[120px] truncate">
-                      {g.remark || '—'}
-                    </td>
-                    <td className="p-3 text-sm max-w-[180px]">
-                      {g.teachers?.length ? (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(31,45,78,0.07)]">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[920px] text-base">
+                <thead className="bg-[#f7faff] text-sm font-semibold text-[#6e7fa7] whitespace-nowrap">
+                  <tr>
+                    <th className="px-5 py-4 text-left w-24">序号</th>
+                    <th className="px-5 py-4 text-left">名称</th>
+                    <th className="px-5 py-4 text-left">上级</th>
+                    <th className="px-5 py-4 text-left">排序</th>
+                    <th className="px-5 py-4 text-left">首页</th>
+                    <th className="px-5 py-4 text-left">状态</th>
+                    <th className="px-5 py-4 text-left">备注</th>
+                    <th className="px-5 py-4 text-left">绑定老师</th>
+                    <th className="px-5 py-4 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paged.map((g, i) => (
+                    <tr key={g.id} className="transition hover:bg-[#f7faff]">
+                      <td className="px-5 py-4 text-sm font-medium text-[#8ba0c5]">
+                        {(page - 1) * pageSize + i + 1}
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-[#10234f]">{g.name}</td>
+                      <td className="px-5 py-4 text-[#53688f]">
+                        {g.parent_id
+                          ? groups.find((x) => x.id === g.parent_id)?.name || ''
+                          : '顶级'}
+                      </td>
+                      <td className="px-5 py-4 text-[#53688f]">{g.sort_order}</td>
+                      <td className="px-5 py-4">
+                        {g.is_home_visible ? (
+                          <span className="text-green-600 text-sm font-medium">可见</span>
+                        ) : (
+                          <span className="text-[#8ba0c5] text-sm">隐藏</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {g.status === 'active' ? (
+                          <span className="inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold bg-green-50 text-green-700">
+                            启用
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold bg-orange-50 text-orange-700">
+                            停用
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-[#8ba0c5] max-w-[120px] truncate">
+                        {g.remark || '—'}
+                      </td>
+                      <td className="px-5 py-4 text-sm max-w-[180px]">
+                        {g.teachers?.length ? (
+                          <button
+                            onClick={() => {
+                              setEditing(g);
+                              setViewTeachersOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700 font-medium hover:underline underline-offset-2 text-left"
+                          >
+                            {g.teachers.length <= 3
+                              ? g.teachers.map((t) => t.name).join('、')
+                              : `${g.teachers
+                                  .slice(0, 2)
+                                  .map((t) => t.name)
+                                  .join('、')} 等 ${g.teachers.length} 人`}
+                          </button>
+                        ) : (
+                          <span className="text-slate-400">暂无老师</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-right space-x-3">
+                        <button
+                          onClick={() => openTeachers(g)}
+                          className="text-sm font-medium text-blue-500 hover:text-blue-600 underline-offset-2 hover:underline"
+                        >
+                          老师
+                        </button>
+                        <button
+                          onClick={() => openEdit(g)}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => toggleStatus(g)}
+                          className="text-sm text-orange-500 hover:underline"
+                        >
+                          {g.status === 'active' ? '停用' : '启用'}
+                        </button>
                         <button
                           onClick={() => {
                             setEditing(g);
-                            setViewTeachersOpen(true);
+                            setDeleteOpen(true);
                           }}
-                          className="text-blue-600 hover:underline text-left"
+                          className="text-sm text-red-400 hover:underline"
                         >
-                          {g.teachers.length <= 3
-                            ? g.teachers.map((t) => t.name).join('、')
-                            : `${g.teachers
-                                .slice(0, 2)
-                                .map((t) => t.name)
-                                .join('、')} 等 ${g.teachers.length} 人`}
+                          删除
                         </button>
-                      ) : (
-                        <span className="text-slate-400">暂无老师</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-right space-x-1">
-                      <button
-                        onClick={() => openTeachers(g)}
-                        className="text-sm text-blue-500 hover:underline"
-                      >
-                        老师
-                      </button>
-                      <button
-                        onClick={() => openEdit(g)}
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        编辑
-                      </button>
-                      <button
-                        onClick={() => toggleStatus(g)}
-                        className="text-sm text-orange-500 hover:underline"
-                      >
-                        {g.status === 'active' ? '停用' : '启用'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditing(g);
-                          setDeleteOpen(true);
-                        }}
-                        className="text-sm text-red-400 hover:underline"
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="p-12 text-center text-slate-400">暂无备课组</div>
-            )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <div className="p-12 text-center text-slate-400">暂无备课组</div>
+              )}
+            </div>
           </div>
         )}
         <Pagination page={page} pageSize={pageSize} total={filtered.length} onChange={setPage} />
@@ -396,7 +402,7 @@ export default function AdminHomeGroupsPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 required
               />
             </div>
@@ -406,7 +412,7 @@ export default function AdminHomeGroupsPage() {
                 <select
                   value={form.parent_id}
                   onChange={(e) => setForm({ ...form, parent_id: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value={0}>顶级</option>
                   {groups
@@ -424,7 +430,7 @@ export default function AdminHomeGroupsPage() {
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
               <div>
@@ -432,7 +438,7 @@ export default function AdminHomeGroupsPage() {
                 <select
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="active">启用</option>
                   <option value="disabled">停用</option>
@@ -452,7 +458,7 @@ export default function AdminHomeGroupsPage() {
               <input
                 value={form.remark}
                 onChange={(e) => setForm({ ...form, remark: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
+                className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">

@@ -43,4 +43,17 @@ export class FileAsset {
 
   @Column({ type: 'timestamp', nullable: true })
   deleted_at: Date | null;
+
+  // ===== Preview System V2 =====
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  preview_url: string | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'PENDING' })
+  preview_status: string; // PENDING | PROCESSING | SUCCESS | FAILED
+
+  @Column({ type: 'text', nullable: true })
+  preview_error: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  preview_updated_at: Date | null;
 }

@@ -6,6 +6,7 @@ export default function RootPage() {
   useEffect(() => {
     const t = localStorage.getItem('accessToken');
     router.replace(t ? '/home' : '/login');
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return null;
 }

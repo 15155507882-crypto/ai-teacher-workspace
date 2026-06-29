@@ -6,7 +6,6 @@ import {
   CalendarDays,
   ClipboardList,
   Eye,
-  FileText,
   Lightbulb,
   Search,
   Trash2,
@@ -272,7 +271,7 @@ export function ContentLibraryPage({ kind }: { kind: ContentKind }) {
               <table className="w-full min-w-[920px] text-base">
                 <thead className="bg-[#f7faff] text-sm font-semibold text-[#6e7fa7]">
                   <tr>
-                    <th className="w-16 px-5 py-4 text-left">序号</th>
+                    <th className="w-24 px-5 py-4 text-left">序号</th>
                     <th className="px-5 py-4 text-left">
                       {kind === 'plan_summary'
                         ? '名称'
@@ -295,20 +294,13 @@ export function ContentLibraryPage({ kind }: { kind: ContentKind }) {
                         {(page - 1) * pageSize + i + 1}
                       </td>
                       <td className="max-w-[520px] px-5 py-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                            {kind === 'reflection' ? (
-                              <Lightbulb className="h-4 w-4" />
-                            ) : kind === 'plan_summary' ? (
-                              <FileText className="h-4 w-4" />
-                            ) : (
-                              <BookOpen className="h-4 w-4" />
-                            )}
-                          </span>
-                          <span className="truncate text-base font-bold text-[#10234f]">
-                            {formatTitle(kind, item)}
-                          </span>
-                        </div>
+                        <button
+                          onClick={() => openDetail(item)}
+                          className="text-left truncate text-base font-bold text-[#10234f] hover:text-blue-600 transition cursor-pointer max-w-full"
+                          title={formatTitle(kind, item)}
+                        >
+                          {formatTitle(kind, item)}
+                        </button>
                       </td>
                       {kind === 'group_lesson' && (
                         <td className="px-5 py-4">

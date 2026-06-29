@@ -23,6 +23,8 @@ import { Role } from '@workspace/shared';
 import { ActionHistory } from '../../database/entities/action-history.entity';
 import { createStorageAdapter } from '@workspace/adapter-storage';
 import { FileAssetRepository } from '../../database/repositories/file-asset.repository';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -36,7 +38,8 @@ export class AIController {
     private readonly aiService: AIService,
     private readonly actionEngine: ActionEngineService,
     private readonly fileRepo: FileAssetRepository,
-    @InjectRepository(ActionHistory) private readonly actionHistoryRepo: Repository<ActionHistory>
+    @InjectRepository(ActionHistory) private readonly actionHistoryRepo: Repository<ActionHistory>,
+    @InjectQueue('file-preview') private readonly previewQueue: Queue
   ) {}
 
   @Post('ai/chat')
@@ -121,6 +124,18 @@ export class AIController {
       status: 'uploaded',
     });
     const saved = await this.fileRepo.save(asset);
+
+    // V2: Enqueue preview conversion for Office documents
+    const officeExts = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
+    if (officeExts.includes(ext)) {
+      await this.previewQueue.add('office-to-pdf', {
+        fileId: saved.id,
+        storageKey,
+        outputDir: `preview/${saved.id}`,
+        fileExt: ext,
+      });
+    }
+
     return {
       file_id: saved.id,
       original_name: saved.original_name,

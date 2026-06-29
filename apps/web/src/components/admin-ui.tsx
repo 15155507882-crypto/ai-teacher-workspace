@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 
 // Dialog wrapper
 export function AdminDialog({
@@ -18,17 +18,20 @@ export function AdminDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative ${width} w-full bg-white rounded-2xl shadow-xl mx-4 animate-fade-in-up`}
+        className={`relative ${width} w-full bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.22)] mx-4 animate-fade-in-up`}
       >
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <h3 className="text-lg font-bold text-[#10234f]">{title}</h3>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+          >
             &times;
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -51,25 +54,33 @@ export function AdminDeleteDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative max-w-sm w-full bg-white rounded-2xl shadow-xl mx-4 p-6 animate-fade-in-up">
+      <div className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative max-w-md w-full bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.22)] mx-4 p-6 animate-fade-in-up">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4 text-2xl">
-            ⚠️
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 mx-auto mb-5">
+            <svg
+              className="h-7 w-7"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-          <h3 className="text-base font-bold text-slate-800 mb-1">{title}</h3>
-          {description && <p className="text-sm text-slate-500 mb-4">{description}</p>}
+          <h3 className="text-lg font-bold text-[#10234f] mb-2">{title}</h3>
+          {description && <p className="text-sm text-[#7587ad] mb-5">{description}</p>}
         </div>
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="px-5 py-2.5 text-sm font-medium rounded-xl border border-slate-200 text-[#53688f] hover:bg-slate-50 transition"
           >
             取消
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+            className="px-5 py-2.5 text-sm font-medium rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-sm transition"
           >
             确认删除
           </button>
@@ -90,7 +101,7 @@ export function AdminStatusTag({ status }: { status: string }) {
   };
   const cfg = map[status] || { label: status, cls: 'bg-gray-50 text-gray-600' };
   return (
-    <span className={`inline-flex rounded-md px-2 py-0.5 text-sm font-medium ${cfg.cls}`}>
+    <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${cfg.cls}`}>
       {cfg.label}
     </span>
   );
@@ -98,7 +109,7 @@ export function AdminStatusTag({ status }: { status: string }) {
 
 // Filter bar
 export function AdminFilterBar({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap gap-3 mb-4">{children}</div>;
+  return <div className="flex flex-wrap items-center gap-3 mb-5">{children}</div>;
 }
 
 // Page header
@@ -112,10 +123,13 @@ export function AdminPageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center justify-between mb-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-1 rounded-full bg-blue-500" />
+          <h2 className="text-2xl font-extrabold text-[#0f2354] tracking-normal">{title}</h2>
+        </div>
+        {subtitle && <p className="mt-2 ml-4 text-sm font-medium text-[#7587ad]">{subtitle}</p>}
       </div>
       {action}
     </div>

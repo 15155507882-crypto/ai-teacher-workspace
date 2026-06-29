@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UserSettingsModal } from './user-settings-modal';
 
 const AVATARS = {
@@ -46,6 +46,16 @@ export function TopNav() {
   const [teacher, setTeacher] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openMenu = () => {
+    if (menuTimerRef.current) clearTimeout(menuTimerRef.current);
+    setMenuOpen(true);
+  };
+  const closeMenu = () => {
+    menuTimerRef.current = setTimeout(() => setMenuOpen(false), 150);
+  };
 
   useEffect(() => {
     const t = localStorage.getItem('teacher');
@@ -60,7 +70,8 @@ export function TopNav() {
         if (j.data) setSchool(j.data);
       })
       .catch(() => {});
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!teacher) return null;
 
@@ -74,26 +85,45 @@ export function TopNav() {
   ];
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center px-6 shrink-0 z-10 sticky top-0">
-      <Link href="/home" className="flex items-center gap-3 mr-8">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+    <header className="h-[72px] bg-white border-b border-slate-200 flex items-center px-6 shrink-0 z-10 sticky top-0">
+      <Link href="/home" className="flex items-center gap-3 mr-8 shrink-0">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden">
           {school?.logo_data ? (
-            <img src={school.logo_data} alt="logo" className="w-full h-full object-cover" />
+            <img src={school.logo_data} alt="logo" className="h-12 w-12 object-contain" />
           ) : school?.logo_file_id ? (
             <img
               src={`/api/files/${school.logo_file_id}/preview`}
               alt="logo"
-              className="w-full h-full object-cover"
+              className="h-12 w-12 object-contain"
             />
           ) : (
-            school?.short_name?.[0] || '校'
+            <span
+              className="text-[28px] font-bold text-[#1E2A44] select-none"
+              style={{
+                fontFamily: "'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+              }}
+            >
+              {school?.short_name?.[0] || '校'}
+            </span>
           )}
         </div>
-        <div className="hidden sm:block">
-          <p className="text-sm font-bold text-slate-800">
+        <div className="hidden sm:flex flex-col gap-[4px]">
+          <p
+            className="text-[18px] font-bold leading-6 tracking-normal text-[#1E2A44] whitespace-nowrap"
+            style={{
+              fontFamily: "'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+            }}
+          >
             {school?.short_name || 'AI 教师工作空间'}
           </p>
-          <p className="text-[10px] text-slate-400">智能备课助手</p>
+          <p
+            className="text-xs font-medium leading-[18px] text-[#8A94A6] whitespace-nowrap"
+            style={{
+              fontFamily: "'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+            }}
+          >
+            智能备课平台
+          </p>
         </div>
       </Link>
       <nav className="flex gap-1">
@@ -129,7 +159,7 @@ export function TopNav() {
             ⚙️ 后台管理
           </Link>
         )}
-        <div className="relative group">
+        <div className="relative" onMouseEnter={openMenu} onMouseLeave={closeMenu}>
           <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition">
             <AvatarCircle name={teacher.name} gender={(teacher as any)?.gender} size={28} />
             <span>{teacher.name}</span>
@@ -143,7 +173,11 @@ export function TopNav() {
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
-          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 hidden group-hover:block z-50">
+          {/* Invisible bridge to fill the gap between button and menu */}
+          <div className="absolute left-0 right-0 h-2 top-full" />
+          <div
+            className={`absolute right-0 top-[calc(100%+8px)] w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 transition-opacity duration-150 ${menuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+          >
             <div className="px-4 py-2 border-b border-slate-100">
               <p className="text-sm font-medium text-slate-800">{teacher.name}</p>
               <p className="text-xs text-slate-400">

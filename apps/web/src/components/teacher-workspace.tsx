@@ -29,7 +29,8 @@ export function TeacherWorkspace() {
     }
     const teacher = JSON.parse(t);
     setCtx({ teacherId: teacher.id, schoolId: teacher.schoolId || 1, token });
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 

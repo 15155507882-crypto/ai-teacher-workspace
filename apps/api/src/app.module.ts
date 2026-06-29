@@ -16,6 +16,7 @@ import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { HomeGroupModule } from './modules/home-group/home-group.module';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -68,7 +69,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     HomeGroupModule,
     ConversationModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
 export class AppModule {}

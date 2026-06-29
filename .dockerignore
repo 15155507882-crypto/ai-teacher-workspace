@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+.turbo/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Storage (large files, mounted at runtime)
+storage/original/*
+storage/preview/*
+storage/export/*
+storage/thumbnail/*
+storage/temp/*
+storage/trash/*
+!storage/*/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# Docker
+docker/
+!docker/Dockerfile.api
+!docker/Dockerfile.web
+!docker/Dockerfile.worker
+!docker/nginx.conf
+docker-compose*.yml
+
+# CI/CD
+.github/
+
+# Documentation
+docs/
+
+# Misc
+*.md
+!README.md
+*.tgz
+*.tar.gz

@@ -1,0 +1,264 @@
+version: '3.8'
+
+# ============================================================
+# 生产环境 Docker Compose 配置
+# 使用预构建的 Docker Hub 镜像，不在服务器上编译源码
+#
+# 部署步骤:
+#   1. 复制此文件到服务器
+#   2. 创建 .env 文件（参考 .env.production.example）
+#   3. docker compose -f docker-compose.prod.yml pull
+#   4. docker compose -f docker-compose.prod.yml up -d
+#   5. docker compose -f docker-compose.prod.yml exec api node dist/apps/api/src/main.js migration:run
+# ============================================================
+
+services:
+  # ==================== 基础设施 ====================
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-teacher-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_teacher}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-teacher-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  # ==================== 应用服务 ====================
+
+  api:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-api:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-api
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3000:3000'
+    environment:
+      # 数据库
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ai_teacher}
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      # 加密
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # CORS
+      WEB_URL: ${WEB_URL:-http://localhost:8080}
+      # 运行模式
+      NODE_ENV: production
+      # 存储
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      STORAGE_LOCAL_PATH: /app/storage
+      # 上传
+      UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-200}
+      # AI
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com/v1}
+      # API
+      API_PORT: '3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '100m'
+        max-file: '3'
+
+  web:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-web:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-web
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:8080'
+    environment:
+      API_URL: http://api:3000
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '100m'
+        max-file: '3'
+
+  # ==================== 消息队列 Worker ====================
+
+  worker-ai:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-ai:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-worker-ai
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com/v1}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ai_teacher}
+      STORAGE_LOCAL_PATH: /app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  worker-preview:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-preview:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-worker-preview
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_LOCAL_PATH: /app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  worker-export:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-export:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-worker-export
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+      STORAGE_LOCAL_PATH: /app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - storage_data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  worker-schedule:
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-schedule:${IMAGE_TAG:-latest}
+    container_name: ai-teacher-worker-schedule
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+  # ==================== 反向代理 ====================
+
+  nginx:
+    image: nginx:alpine
+    container_name: ai-teacher-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: '50m'
+        max-file: '3'
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  storage_data:
+    driver: local

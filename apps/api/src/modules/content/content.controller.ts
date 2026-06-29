@@ -86,6 +86,47 @@ export class ContentController {
     return this.contentService.getContentStats(parseInt(teacherId, 10), academicYear, semester);
   }
 
+  // V2.8: 批量教师统计接口，解决首页 N+1 请求问题
+  @Get('home/teachers-stats')
+  @UseGuards(JwtAuthGuard)
+  async batchTeacherStats(@Query('school_id') schoolId: string) {
+    const sid = parseInt(schoolId || '1', 10);
+
+    // 一条 SQL 完成所有教师的内容聚合统计
+    const raw = await this.contentRepo
+      .createQueryBuilder('c')
+      .select('c.teacher_id', 'teacher_id')
+      .addSelect(
+        "COUNT(CASE WHEN c.content_type = 'personal_lesson' THEN 1 END)",
+        'personal_lesson'
+      )
+      .addSelect("COUNT(CASE WHEN c.content_type = 'reflection' THEN 1 END)", 'reflection')
+      .addSelect("COUNT(CASE WHEN c.content_type = 'group_lesson' THEN 1 END)", 'group_lesson')
+      .addSelect("COUNT(CASE WHEN c.content_type = 'plan_summary' THEN 1 END)", 'plan_summary')
+      .where('c.school_id = :sid', { sid })
+      .andWhere('c.deleted_at IS NULL')
+      .groupBy('c.teacher_id')
+      .getRawMany<{
+        teacher_id: string;
+        personal_lesson: string;
+        reflection: string;
+        group_lesson: string;
+        plan_summary: string;
+      }>();
+
+    // Build map: teacher_id → stats
+    const result: Record<string, any> = {};
+    for (const row of raw) {
+      result[row.teacher_id] = {
+        personal_lesson: parseInt(row.personal_lesson) || 0,
+        reflection: parseInt(row.reflection) || 0,
+        group_lesson: parseInt(row.group_lesson) || 0,
+        plan_summary: parseInt(row.plan_summary) || 0,
+      };
+    }
+    return { code: 0, message: 'success', data: result, requestId: '' };
+  }
+
   @Get('contents/:id')
   @UseGuards(JwtAuthGuard)
   async detail(@Param('id') id: string) {

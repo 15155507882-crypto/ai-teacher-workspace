@@ -113,28 +113,17 @@ export default function HomePage() {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
 
-      // 教师统计 map
-      const statsMap = new Map<number, any>();
+      // Build teacher profile map
       const teacherMap = new Map<number, any>();
       if (tchr.code === 0) {
-        const list = tchr.data.items || [];
-        list.forEach((teacher: any) => teacherMap.set(Number(teacher.id), teacher));
-        await Promise.all(
-          list.map(async (teacher: any) => {
-            try {
-              const sRes = await fetch(`/api/teachers/${teacher.id}/content-stats`, {
-                headers: { Authorization: `Bearer ${token}`, 'x-caller': 'HomePage' },
-              }).then((r) => r.json());
-              if (sRes.code === 0) {
-                statsMap.set(Number(teacher.id), {
-                  personalLessonCount: sRes.data.personal_lesson,
-                  reflectionCount: sRes.data.reflection,
-                });
-              }
-            } catch {}
-          })
-        );
+        (tchr.data.items || []).forEach((t: any) => teacherMap.set(Number(t.id), t));
       }
+
+      // V2.8: 批量获取所有教师统计（1次请求替代34次）
+      const statsRes = await fetch('/api/home/teachers-stats?school_id=1', {
+        headers: { Authorization: `Bearer ${token}`, 'x-caller': 'HomePage' },
+      }).then((r) => r.json());
+      const allStats = statsRes.code === 0 ? statsRes.data : {};
 
       // 合并统计和基础资料到组内老师
       if (d.code === 0) {
@@ -143,10 +132,17 @@ export default function HomePage() {
             ...g,
             teachers: (g.teachers || []).map((teacher: any) => {
               const profile = teacherMap.get(Number(teacher.id)) || {};
+              const stats = allStats[String(teacher.id)] || {
+                personal_lesson: 0,
+                reflection: 0,
+                group_lesson: 0,
+                plan_summary: 0,
+              };
               return {
                 ...profile,
                 ...teacher,
-                ...statsMap.get(Number(teacher.id)),
+                personalLessonCount: stats.personal_lesson,
+                reflectionCount: stats.reflection,
               };
             }),
           }))

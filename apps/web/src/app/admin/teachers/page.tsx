@@ -42,6 +42,7 @@ export default function AdminTeachersPage() {
   const pageSize = 20;
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [form, setForm] = useState({
     name: '',
     mobile: '',
@@ -284,11 +285,12 @@ export default function AdminTeachersPage() {
                 📥 下载模板
               </a>
               <label className="h-11 inline-flex items-center rounded-xl bg-green-600 px-4 text-sm font-medium text-white hover:bg-green-700 cursor-pointer shadow-sm transition">
-                📤 批量导入
+                {importing ? '⏳ 导入中...' : '📤 批量导入'}
                 <input
                   type="file"
                   className="hidden"
                   accept=".csv,.xlsx,.xls"
+                  disabled={importing}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -381,15 +383,68 @@ export default function AdminTeachersPage() {
                         };
                       })
                       .filter((t) => t.name && t.mobile);
-                    if (!confirm(`确认导入 ${teachers.length} 名教师？`)) return;
+                    setImporting(true);
+                    // 步骤1：查重 - 检查手机号是否已存在
+                    const mobiles = teachers.map((t: any) => t.mobile).filter(Boolean);
+                    let duplicateMobiles: string[] = [];
+                    try {
+                      const dupCheck = await api('/api/admin/teachers/check-duplicates', {
+                        method: 'POST',
+                        body: JSON.stringify({ mobiles }),
+                      });
+                      if (dupCheck.code === 0 && dupCheck.data) {
+                        duplicateMobiles = dupCheck.data.duplicateMobiles || [];
+                      }
+                    } catch {}
+
+                    // 分离重复和新增
+                    const dupSet = new Set(duplicateMobiles);
+                    const newTeachers = teachers.filter((t: any) => !dupSet.has(t.mobile));
+                    const dupTeachers = teachers.filter((t: any) => dupSet.has(t.mobile));
+
+                    const dupNames = dupTeachers
+                      .map((t: any) => `${t.name}(${t.mobile})`)
+                      .join('、');
+
+                    let confirmMsg = `共 ${teachers.length} 名教师`;
+                    if (dupTeachers.length > 0) {
+                      confirmMsg += `，其中 ${dupTeachers.length} 名手机号重复将跳过（${dupNames}）`;
+                    }
+                    confirmMsg += `，确认导入 ${newTeachers.length} 名新教师？`;
+
+                    if (!window.confirm(confirmMsg)) {
+                      setImporting(false);
+                      return;
+                    }
+
+                    if (newTeachers.length === 0) {
+                      setMsg('没有可导入的新教师（所有手机号均已存在）');
+                      setImporting(false);
+                      e.target.value = '';
+                      return;
+                    }
+
+                    // 步骤2：导入未重复的教师
                     const r = await api('/api/admin/teachers/batch-import', {
                       method: 'POST',
-                      body: JSON.stringify({ teachers }),
+                      body: JSON.stringify({ teachers: newTeachers }),
                     });
+                    setImporting(false);
                     if (r.code === 0) {
-                      setMsg(
-                        `导入完成: 成功${r.data.results.filter((x: any) => x.status === '成功').length}人, 跳过${r.data.results.filter((x: any) => x.status === '跳过').length}人`
-                      );
+                      const successCount = r.data.results.filter(
+                        (x: any) => x.status === '成功'
+                      ).length;
+                      const skipCount = r.data.results.filter(
+                        (x: any) => x.status === '跳过'
+                      ).length;
+                      const failCount = r.data.results.filter(
+                        (x: any) => x.status === '失败'
+                      ).length;
+                      let msg = `导入完成: 成功${successCount}人`;
+                      if (skipCount > 0) msg += `, 跳过重复${skipCount}人`;
+                      if (dupTeachers.length > 0) msg += `, 预查重过滤${dupTeachers.length}人`;
+                      if (failCount > 0) msg += `, 失败${failCount}人`;
+                      setMsg(msg);
                       fetchTeachers();
                     } else setMsg(r.message || '导入失败');
                     e.target.value = '';

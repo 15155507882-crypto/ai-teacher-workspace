@@ -42,6 +42,12 @@ export class HomeGroupController {
     return this.svc.setTeachers(+id, body.teacher_ids || []);
   }
 
+  @Post('admin/home-groups/batch-import')
+  @UseGuards(JwtAuthGuard)
+  adminBatchImport(@Body() body: { columns: string[]; rows: string[][] }) {
+    return this.svc.batchImportWithTeachers(body.columns || [], body.rows || []);
+  }
+
   @Get('home/groups')
   @UseGuards(JwtAuthGuard)
   homeGroups() {

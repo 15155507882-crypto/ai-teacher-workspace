@@ -86,6 +86,95 @@ export class HomeGroupService {
     return this.enrichOne(updated!);
   }
 
+  /** 批量导入备课组及老师
+   *  columns: 备课组名称数组（CSV表头）
+   *  rows: 二维数组，每行为对应列的教师姓名
+   *  示例: columns=['语文组','数学组'], rows=[['张老师','李老师'],['王老师','']]
+   *  结果: 语文组→张老师、王老师，数学组→李老师
+   */
+  async batchImportWithTeachers(columns: string[], rows: string[][]) {
+    const results: any[] = [];
+    const allTeachers = await this.teacherRepo.find({
+      where: { status: 'active' },
+    });
+    const teacherMap = new Map<string, number>();
+    for (const t of allTeachers) {
+      teacherMap.set(t.name, t.id);
+      // Also map by mobile for flexibility
+      if (t.mobile) teacherMap.set(t.mobile, t.id);
+    }
+
+    for (const colIdx of columns.keys()) {
+      const groupName = columns[colIdx].trim();
+      if (!groupName) continue;
+
+      // Find or create the group
+      let group = await this.repo.findOne({ where: { name: groupName, deleted_at: IsNull() } });
+      if (!group) {
+        group = this.repo.create({
+          name: groupName,
+          code: 'HG' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          status: 'active',
+          is_home_visible: true,
+        });
+        group = await this.repo.save(group);
+      }
+
+      // Collect teacher names from all rows for this column
+      const teacherNames = new Set<string>();
+      for (const row of rows) {
+        const name = (row[colIdx] || '').trim();
+        if (name) teacherNames.add(name);
+      }
+
+      // Resolve teacher IDs
+      const foundIds: number[] = [];
+      const notFound: string[] = [];
+      for (const name of teacherNames) {
+        const tid = teacherMap.get(name);
+        if (tid) {
+          foundIds.push(tid);
+        } else {
+          notFound.push(name);
+        }
+      }
+
+      // Assign teachers to group (merge with existing, skip duplicates via unique constraint)
+      if (foundIds.length > 0) {
+        await this.dataSource.transaction(async (mgr) => {
+          for (const tid of foundIds) {
+            // Check if already assigned
+            const exists = await mgr.findOne(HomeGroupTeacher, {
+              where: { home_group_id: group!.id, teacher_id: tid },
+            });
+            if (!exists) {
+              await mgr.insert(HomeGroupTeacher, {
+                home_group_id: group!.id,
+                teacher_id: tid,
+                role: 'member',
+              });
+            }
+          }
+        });
+      }
+
+      results.push({
+        group: groupName,
+        groupId: group.id,
+        created: !group.id ? false : true,
+        assignedCount: foundIds.length,
+        notFound: notFound.length > 0 ? notFound : undefined,
+      });
+    }
+
+    return {
+      groupsProcessed: results.length,
+      totalAssigned: results.reduce((s, r) => s + r.assignedCount, 0),
+      totalNotFound: results.reduce((s, r) => s + (r.notFound?.length || 0), 0),
+      results,
+    };
+  }
+
   // ====== 辅助 ======
 
   private async enrichWithTeachers(groups: HomeGroup[]) {

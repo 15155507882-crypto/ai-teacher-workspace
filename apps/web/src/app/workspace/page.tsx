@@ -138,6 +138,7 @@ export default function WorkspacePage() {
               id: x.id,
               sender: x.sender_type === 'teacher' ? 'user' : 'ai',
               text: x.text_content || '',
+              result: x.result || x.pendingResult || x.recognition_result || undefined,
             })) || []
           );
       }
@@ -388,10 +389,27 @@ export default function WorkspacePage() {
 
   const pollResult = (msgId: number) => {
     let count = 0;
+    const MAX_POLL = 50; // 最多轮询 60 秒
     const poll = setInterval(async () => {
       count++;
       if (count === 2) setThinkingStep(1);
       else if (count === 5) setThinkingStep(2);
+
+      // 超时处理
+      if (count > MAX_POLL) {
+        clearInterval(poll);
+        setThinking(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            sender: 'ai',
+            text: 'AI 正在处理中，如果长时间无响应，请联系管理员检查 Worker 服务。',
+          },
+        ]);
+        return;
+      }
+
       try {
         const r = await fetch(`/api/ai/recognition/${msgId}`, {
           headers: { Authorization: `Bearer ${tk()}` },
@@ -404,6 +422,18 @@ export default function WorkspacePage() {
           setMessages((prev) => [
             ...prev,
             { id: msgId, sender: 'ai', text: result.nl_reply, result },
+          ]);
+        } else if (j.data?.status === 'timeout') {
+          // Worker 超时未响应
+          clearInterval(poll);
+          setThinking(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              sender: 'ai',
+              text: j.data?.message || 'AI Worker 未响应，请检查 worker-ai 服务。',
+            },
           ]);
         }
       } catch {}
@@ -626,7 +656,7 @@ export default function WorkspacePage() {
                             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#30466f]">
                               {msg.text}
                             </p>
-                            {msg.result?.actions && (
+                            {msg.result?.actions && msg.result.actions.length > 0 && (
                               <div className="flex gap-2 mt-2">
                                 {msg.result.actions.map((a: string) => (
                                   <Button

@@ -146,16 +146,114 @@ check_status() {
 
     # 健康检查
     log_info "健康检查..."
+
+    # API
     if curl -s http://localhost:3000/api/health &> /dev/null; then
         log_ok "API 健康检查通过"
     else
         log_warn "API 健康检查未通过，请检查日志: docker compose -f $COMPOSE_FILE logs api"
     fi
 
+    # Web
+    sleep 2
     if curl -s http://localhost:8080 &> /dev/null; then
         log_ok "Web 健康检查通过"
     else
         log_warn "Web 健康检查未通过，请检查日志: docker compose -f $COMPOSE_FILE logs web"
+    fi
+
+    # Worker-AI 状态检查
+    log_info "Worker 状态检查..."
+    WORKER_AI_RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | python3 -c "
+import sys,json
+for line in sys.stdin:
+    try:
+        c = json.loads(line)
+        name = c.get('Name','')
+        state = c.get('State','')
+        if 'worker-ai' in name:
+            print(state)
+    except: pass
+" 2>/dev/null || echo "unknown")
+
+    if echo "$WORKER_AI_RUNNING" | grep -q 'running'; then
+        log_ok "Worker-AI 容器运行中"
+    else
+        log_error "Worker-AI 容器未运行！状态: ${WORKER_AI_RUNNING:-unknown}"
+        log_info "请检查: docker compose -f $COMPOSE_FILE logs worker-ai"
+    fi
+
+    # Worker-Preview
+    WORKER_PREVIEW_RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | python3 -c "
+import sys,json
+for line in sys.stdin:
+    try:
+        c = json.loads(line)
+        if 'worker-preview' in c.get('Name',''):
+            print(c.get('State',''))
+    except: pass
+" 2>/dev/null || echo "unknown")
+    if echo "$WORKER_PREVIEW_RUNNING" | grep -q 'running'; then
+        log_ok "Worker-Preview 容器运行中"
+    else
+        log_warn "Worker-Preview 容器未运行"
+    fi
+
+    # Worker-Export
+    WORKER_EXPORT_RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | python3 -c "
+import sys,json
+for line in sys.stdin:
+    try:
+        c = json.loads(line)
+        if 'worker-export' in c.get('Name',''):
+            print(c.get('State',''))
+    except: pass
+" 2>/dev/null || echo "unknown")
+    if echo "$WORKER_EXPORT_RUNNING" | grep -q 'running'; then
+        log_ok "Worker-Export 容器运行中"
+    else
+        log_warn "Worker-Export 容器未运行"
+    fi
+
+    # Worker-Schedule
+    WORKER_SCHEDULE_RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | python3 -c "
+import sys,json
+for line in sys.stdin:
+    try:
+        c = json.loads(line)
+        if 'worker-schedule' in c.get('Name',''):
+            print(c.get('State',''))
+    except: pass
+" 2>/dev/null || echo "unknown")
+    if echo "$WORKER_SCHEDULE_RUNNING" | grep -q 'running'; then
+        log_ok "Worker-Schedule 容器运行中"
+    else
+        log_warn "Worker-Schedule 容器未运行"
+    fi
+
+    # BullMQ 队列积压检查
+    log_info "BullMQ 队列检查..."
+    QUEUE_HEALTH=$(curl -s http://localhost:3000/api/health 2>/dev/null | python3 -c "
+import sys,json
+try:
+    d = json.load(sys.stdin)
+    queues = d.get('queues',{})
+    for name, q in queues.items():
+        waiting = q.get('waiting',0)
+        if waiting > 10:
+            print(f'WARN:{name}:waiting={waiting}')
+    print('DONE')
+except:
+    print('ERROR')
+" 2>/dev/null || echo "ERROR")
+
+    if echo "$QUEUE_HEALTH" | grep -q 'WARN'; then
+        log_warn "部分队列有积压:"
+        echo "$QUEUE_HEALTH" | grep 'WARN'
+    elif echo "$QUEUE_HEALTH" | grep -q 'ERROR'; then
+        log_warn "无法检查队列状态"
+    else
+        log_ok "队列状态正常"
     fi
 }
 

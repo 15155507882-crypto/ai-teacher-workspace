@@ -186,41 +186,74 @@ export default function AdminHomeGroupsPage() {
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Parse CSV or Excel
-    const rows: string[][] = file.name.endsWith('.csv')
-      ? (await file.text())
-          .split('\n')
-          .filter((l: string) => l.trim())
-          .map((l: string) => l.split(','))
-      : await (async () => {
-          const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
-          return XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-        })();
-    if (rows.length < 2) return;
-    const items = rows
-      .slice(1)
-      .map((vals) => {
-        return {
-          name: String(vals[0] || '').trim(),
-          sort_order: parseInt(String(vals[1] || '0')) || 0,
-          is_home_visible: String(vals[2] || '').trim() !== '否',
-          status: String(vals[3] || '').trim() || 'active',
-          remark: String(vals[4] || '').trim(),
-        };
-      })
-      .filter((i: any) => i.name);
-    if (!confirm(`确认导入 ${items.length} 个备课组？`)) return;
-    for (const item of items) {
-      await api('/api/admin/home-groups', {
+    setMsg('正在处理文件...');
+    try {
+      // Parse CSV or Excel
+      const rows: string[][] = file.name.endsWith('.csv')
+        ? (await file.text())
+            .split('\n')
+            .filter((l: string) => l.trim())
+            .map((l: string) => l.split(','))
+        : await (async () => {
+            const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
+            return XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          })();
+      if (rows.length < 2) {
+        setMsg('文件为空或格式不正确');
+        e.target.value = '';
+        return;
+      }
+
+      // 第一行为表头（备课组名称）
+      const columns = rows[0].map((h: string) => String(h).trim()).filter(Boolean);
+      if (columns.length === 0) {
+        setMsg('未检测到有效的备课组表头');
+        e.target.value = '';
+        return;
+      }
+
+      // 后续行为教师姓名
+      const dataRows = rows
+        .slice(1)
+        .map((vals) => columns.map((_, i) => String(vals[i] || '').trim()));
+
+      // 统计
+      const teacherNames = new Set<string>();
+      for (const row of dataRows) {
+        for (const name of row) {
+          if (name) teacherNames.add(name);
+        }
+      }
+
+      const confirmMsg =
+        `检测到 ${columns.length} 个备课组（${columns.join('、')}），` +
+        `共 ${teacherNames.size} 个不同的教师姓名。` +
+        `\n\n确认导入？`;
+
+      if (!window.confirm(confirmMsg)) {
+        e.target.value = '';
+        return;
+      }
+
+      setMsg('正在导入...');
+      const r = await api('/api/admin/home-groups/batch-import', {
         method: 'POST',
-        body: JSON.stringify({
-          ...item,
-          code: 'HG' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-        }),
+        body: JSON.stringify({ columns, rows: dataRows }),
       });
+
+      if (r.code === 0 && r.data) {
+        const d = r.data;
+        let msg = `导入完成: ${d.groupsProcessed} 个备课组`;
+        if (d.totalAssigned > 0) msg += `，分配 ${d.totalAssigned} 名教师`;
+        if (d.totalNotFound > 0) msg += `，${d.totalNotFound} 名教师未找到`;
+        setMsg(msg);
+        fetchGroups();
+      } else {
+        setMsg(r.message || '导入失败');
+      }
+    } catch (err: any) {
+      setMsg('导入失败: ' + (err.message || '未知错误'));
     }
-    fetchGroups();
-    setMsg(`导入 ${items.length} 个完成`);
     e.target.value = '';
   }
 
@@ -236,8 +269,26 @@ export default function AdminHomeGroupsPage() {
           title="备课组"
           action={
             <div className="flex gap-2">
+              <a
+                href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+                  (() => {
+                    const names = groups.filter((g) => g.status === 'active').map((g) => g.name);
+                    if (names.length === 0) names.push('语文组', '数学组', '英语组');
+                    // Header row = 备课组名称
+                    const header = names.join(',');
+                    // 2 example rows
+                    const example1 = names.map(() => '教师姓名').join(',');
+                    const example2 = names.map(() => '').join(',');
+                    return `${header}\n${example1}\n${example2}`;
+                  })()
+                )}`}
+                download="备课组导入模板.csv"
+                className="h-11 inline-flex items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-[#53688f] hover:bg-[#f7faff] transition"
+              >
+                📥 下载模板
+              </a>
               <label className="h-11 inline-flex items-center rounded-xl bg-green-600 px-4 text-sm font-medium text-white hover:bg-green-700 cursor-pointer shadow-sm transition">
-                📤 导入
+                📤 批量导入
                 <input
                   type="file"
                   className="hidden"

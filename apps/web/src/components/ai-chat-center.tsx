@@ -103,11 +103,29 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
 
   const pollResult = (msgId: number) => {
     let count = 0;
+    const MAX_POLL = 40; // 最多轮询 60 秒 (1500ms * 40)
     const poll = setInterval(async () => {
       count++;
       if (count === 2) setThinkingText(texts[1]);
       else if (count === 4) setThinkingText(texts[2]);
       else if (count === 6) setThinkingText(texts[3]);
+
+      // 超时处理
+      if (count > MAX_POLL) {
+        clearInterval(poll);
+        setThinking(false);
+        setMessages((p) => [
+          ...p,
+          {
+            id: Date.now(),
+            sender_type: 'ai',
+            text_content: 'AI 正在处理中，如果长时间无响应，请联系管理员检查 Worker 服务。',
+            message_type: 'text',
+          },
+        ]);
+        return;
+      }
+
       try {
         const r = await fetch(`/api/ai/recognition/${msgId}`, {
           headers: { Authorization: `Bearer ${ctx.token}` },
@@ -124,6 +142,19 @@ export function AiChatCenter({ ctx, onSaved }: { ctx: WorkspaceContext; onSaved:
               text_content: j.data.result.nl_reply,
               message_type: 'action',
               pendingResult: j.data.result,
+            },
+          ]);
+        } else if (j.data?.status === 'timeout') {
+          // Worker 超时未响应
+          clearInterval(poll);
+          setThinking(false);
+          setMessages((p) => [
+            ...p,
+            {
+              id: Date.now(),
+              sender_type: 'ai',
+              text_content: j.data?.message || 'AI Worker 未响应，请检查 worker-ai 服务。',
+              message_type: 'text',
             },
           ]);
         }

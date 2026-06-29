@@ -163,12 +163,41 @@ export class AIService {
       recentLessons: recentData,
     });
 
+    // 记录入队时间戳，用于超时检测
+    await this.redis.set(`ai_enqueued:${savedMsg.id}`, String(Date.now()), 'EX', 600);
+
+    console.log('[AI-JOB-ENQUEUED]', {
+      messageId: savedMsg.id,
+      queueName: 'ai-recognition',
+      enqueuedAt: new Date().toISOString(),
+    });
+
     return { sessionId: session.id, messageId: savedMsg.id, status: 'processing' };
   }
 
   async getRecognitionResult(messageId: number) {
     const raw = await this.redis.get(`ai_result:${messageId}`);
-    if (!raw) return { status: 'pending' };
+    if (!raw) {
+      // 检查是否超时（入队超过 120 秒无结果）
+      const enqueuedAt = await this.redis.get(`ai_enqueued:${messageId}`);
+      if (enqueuedAt) {
+        const waitTime = Date.now() - parseInt(enqueuedAt, 10);
+        if (waitTime > 120_000) {
+          console.log('[AI-TIMEOUT]', {
+            messageId,
+            queueName: 'ai-recognition',
+            waitTimeMs: waitTime,
+            waitTimeSec: Math.round(waitTime / 1000),
+            result: 'no_response',
+          });
+          return {
+            status: 'timeout',
+            message: 'AI Worker 未响应，请检查 worker-ai 服务。',
+          };
+        }
+      }
+      return { status: 'pending' };
+    }
     const parsed = JSON.parse(raw);
     const alreadyCreated = await this.redis.get(`ai_msg_created:${messageId}`);
     if (!alreadyCreated) {

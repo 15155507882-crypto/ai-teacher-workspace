@@ -117,4 +117,11 @@ export class TeacherController {
   async batchImport(@Body() body: { teachers: any[] }) {
     return this.teacherService.batchImport(body.teachers || []);
   }
+
+  @Post('admin/teachers/check-duplicates')
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  async checkDuplicates(@Body() body: { mobiles: string[] }) {
+    return this.teacherService.checkDuplicates(body.mobiles || []);
+  }
 }

@@ -132,7 +132,12 @@ export class TeacherService {
       try {
         const existing = await this.teacherRepo.findByMobile(row.mobile);
         if (existing) {
-          results.push({ mobile: row.mobile, status: '跳过', reason: '手机号已存在' });
+          results.push({
+            mobile: row.mobile,
+            status: '跳过',
+            reason: '手机号已存在',
+            name: row.name || existing.name,
+          });
           continue;
         }
         // Resolve department: support name string, ID number, or /-separated names
@@ -180,6 +185,23 @@ export class TeacherService {
       }
     }
     return { total: rows.length, results };
+  }
+
+  /** 批量查重：返回已存在的手机号列表 */
+  async checkDuplicates(mobiles: string[]) {
+    const existingMobiles: string[] = [];
+    for (const mobile of mobiles) {
+      if (!mobile || !mobile.trim()) continue;
+      const existing = await this.teacherRepo.findByMobile(mobile.trim());
+      if (existing) {
+        existingMobiles.push(mobile.trim());
+      }
+    }
+    return {
+      total: mobiles.length,
+      duplicateCount: existingMobiles.length,
+      duplicateMobiles: existingMobiles,
+    };
   }
 
   /** 教师自服务：更新个人资料 */

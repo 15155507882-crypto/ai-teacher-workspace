@@ -1,10 +1,8 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Install build tools for native modules (bcrypt, etc.)
+RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN apk add --no-cache python3 make g++
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -14,6 +12,8 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/adapter-ai/package.json packages/adapter-ai/
 COPY packages/adapter-preview/package.json packages/adapter-preview/
 COPY packages/adapter-storage/package.json packages/adapter-storage/
+COPY packages/config/package.json packages/config/
+COPY packages/logger/package.json packages/logger/
 COPY apps/worker-ai/package.json apps/worker-ai/
 COPY apps/worker-preview/package.json apps/worker-preview/
 COPY apps/worker-export/package.json apps/worker-export/
@@ -25,6 +25,8 @@ COPY packages/ packages/
 COPY apps/ apps/
 
 RUN pnpm --filter @workspace/shared build
+RUN pnpm --filter @workspace/config build
+RUN pnpm --filter @workspace/logger build
 RUN pnpm --filter @workspace/adapter-ai build
 RUN pnpm --filter @workspace/adapter-preview build
 RUN pnpm --filter @workspace/adapter-storage build
@@ -32,27 +34,17 @@ RUN pnpm --filter @workspace/adapter-storage build
 ARG WORKER_NAME=ai
 RUN pnpm --filter @workspace/worker-${WORKER_NAME} build
 
-FROM node:22-alpine AS runner
+# Create workspace symlinks
+RUN mkdir -p node_modules/@workspace && \
+    ln -sf ../../packages/shared node_modules/@workspace/shared && \
+    ln -sf ../../packages/adapter-ai node_modules/@workspace/adapter-ai && \
+    ln -sf ../../packages/adapter-preview node_modules/@workspace/adapter-preview && \
+    ln -sf ../../packages/adapter-storage node_modules/@workspace/adapter-storage && \
+    ln -sf ../../packages/config node_modules/@workspace/config && \
+    ln -sf ../../packages/logger node_modules/@workspace/logger
 
-WORKDIR /app
+RUN pnpm prune --prod 2>/dev/null || true
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-ARG WORKER_NAME=ai
-
-# Copy worker build output (apps/worker-XX/dist -> /app/dist)
-COPY --from=builder /app/apps/worker-${WORKER_NAME}/dist ./dist
-
-# Copy node_modules (includes pnpm symlinks to workspace packages)
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy workspace packages (needed at runtime via pnpm symlinks)
-COPY --from=builder /app/packages ./packages
-
-# Copy root package.json for workspace context
-COPY --from=builder /app/package.json ./package.json
-
-# Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
     chown -R nodejs:nodejs /app
@@ -61,4 +53,4 @@ USER nodejs
 HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
     CMD pgrep -f "main.js" || exit 1
 
-CMD ["node", "dist/main.js"]
+CMD node apps/worker-${WORKER_NAME}/dist/main.js

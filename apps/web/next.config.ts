@@ -4,9 +4,8 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   async rewrites() {
-    // Proxy API calls to NestJS backend (configurable via API_URL env var)
-    const apiUrl = process.env.API_URL || 'http://localhost:3000';
-    return [{ source: '/api/:path*', destination: `${apiUrl}/api/:path*` }];
+    // Proxy API calls to NestJS backend (host network mode — always localhost)
+    return [{ source: '/api/:path*', destination: 'http://localhost:3000/api/:path*' }];
   },
   async redirects() {
     return [

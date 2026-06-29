@@ -19,9 +19,6 @@ RUN pnpm install --frozen-lockfile
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 
-ARG API_URL=http://api:3000
-ENV API_URL=${API_URL}
-
 RUN pnpm --filter @workspace/shared build
 RUN pnpm --filter @workspace/web build
 

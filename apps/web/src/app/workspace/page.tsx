@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { ConversationSidebar } from '@/components/conversation-sidebar';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -165,13 +166,13 @@ export default function WorkspacePage() {
       }).then((r) => r.json());
       if (r.code === 0) {
         setWorkDetail(r.data);
-        // 集体备课/个人备课：加载评论
+        // 集体备课：加载集体评论；其他类型：加载个人评论
         if (r.data.content_type === 'group_lesson') {
           const cr = await fetch(`/api/group-lessons/${id}/comments`, {
             headers: { Authorization: `Bearer ${tk()}` },
           }).then((r) => r.json());
           setComments(cr?.data?.items || cr?.items || []);
-        } else if (r.data.content_type === 'personal_lesson') {
+        } else {
           const cr = await fetch(`/api/personal-lessons/${id}/comments`, {
             headers: { Authorization: `Bearer ${tk()}` },
           }).then((r) => r.json());
@@ -246,17 +247,19 @@ export default function WorkspacePage() {
         if (up.code === 0) fileId = Number(up.data.file_id);
       }
       const apiPath =
-        workDetail.content_type === 'personal_lesson'
-          ? `/api/personal-lessons/${selectedWorkId}/comments`
-          : `/api/group-lessons/${selectedWorkId}/comments`;
+        workDetail.content_type === 'group_lesson'
+          ? `/api/group-lessons/${selectedWorkId}/comments`
+          : `/api/personal-lessons/${selectedWorkId}/comments`;
       const r = await fetch(apiPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
         body: JSON.stringify({ comment_text: textToSend || null, file_id: fileId }),
       }).then((r) => r.json());
-      if (r.id) {
+      if (r.code === 0 || r.id) {
+        const savedData = r.data || r;
         const newComment = {
-          ...r,
+          ...savedData,
+          teacher_id: teacher?.id,
           teacher_name: teacher?.name || '我',
           comment_text: textToSend || null,
           file_name: fileToSend?.name || null,
@@ -274,8 +277,21 @@ export default function WorkspacePage() {
     }
   };
 
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState<{
+    id: number;
+    isPersonal: boolean;
+  } | null>(null);
+
   const deleteComment = async (commentId: number, isPersonal: boolean) => {
-    if (!window.confirm('确认删除这条留言？')) return;
+    // Use custom dialog instead of window.confirm
+    setDeleteCommentTarget({ id: commentId, isPersonal });
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!deleteCommentTarget) return;
+    const { id: commentId, isPersonal } = deleteCommentTarget;
+    setDeleteCommentTarget(null);
+
     const apiPath = isPersonal
       ? `/api/personal-lessons/comments/${commentId}`
       : `/api/group-lessons/comments/${commentId}`;
@@ -284,7 +300,14 @@ export default function WorkspacePage() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${tk()}` },
       }).then((r) => r.json());
-      if (r.message === '删除成功') {
+      // Remove from local state on success OR if already deleted
+      if (
+        r.code === 0 ||
+        r.message === '删除成功' ||
+        r.data?.message === '删除成功' ||
+        r.message?.includes('不存在') ||
+        r.data?.message?.includes('不存在')
+      ) {
         if (isPersonal) {
           setPlComments((prev) => prev.filter((c) => c.id !== commentId));
         } else {
@@ -1710,6 +1733,16 @@ export default function WorkspacePage() {
             )}
           </div>
         </main>
+
+        <ConfirmDialog
+          open={!!deleteCommentTarget}
+          title="删除留言"
+          message="确认删除这条留言？删除后不可恢复。"
+          confirmLabel="确认删除"
+          danger
+          onConfirm={confirmDeleteComment}
+          onCancel={() => setDeleteCommentTarget(null)}
+        />
       </div>
     </div>
   );

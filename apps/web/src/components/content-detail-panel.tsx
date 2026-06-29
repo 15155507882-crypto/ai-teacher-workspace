@@ -101,7 +101,11 @@ export function ContentDetailPanel({
             <div>
               <p className="text-tiny text-[var(--color-text-muted)]">状态</p>
               <AppTag color={content.status === 'confirmed' ? 'green' : 'default'}>
-                {content.status}
+                {content.status === 'confirmed'
+                  ? '已确认'
+                  : content.status === 'draft'
+                    ? '草稿'
+                    : content.status}
               </AppTag>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 const typeLabels: Record<string, string> = {
   personal_lesson: '个人备课',
@@ -34,6 +35,7 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
   const [reflectionText, setReflectionText] = useState('');
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState<any>(null);
   const commentFileRef = useRef<HTMLInputElement>(null);
   const submittingRef = useRef(false);
 
@@ -59,7 +61,8 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
           return r.json();
         });
         setComments(cr && cr.data ? cr.data.items : cr && cr.items ? cr.items : []);
-      } else if (d.content_type === 'personal_lesson') {
+      } else {
+        // personal_lesson / reflection / plan_summary all use personal-lessons comments
         var pcr = await fetch('/api/personal-lessons/' + contentId + '/comments', {
           headers: { Authorization: 'Bearer ' + token },
         }).then(function (r) {
@@ -118,9 +121,9 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
         if (up.code === 0) fileId = Number(up.data.file_id);
       }
       var apiPath =
-        detail.content_type === 'personal_lesson'
-          ? '/api/personal-lessons/' + contentId + '/comments'
-          : '/api/group-lessons/' + contentId + '/comments';
+        detail.content_type === 'group_lesson'
+          ? '/api/group-lessons/' + contentId + '/comments'
+          : '/api/personal-lessons/' + contentId + '/comments';
       var res = await fetch(apiPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
@@ -128,12 +131,14 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
       }).then(function (r) {
         return r.json();
       });
-      if (res.id) {
+      if (res.code === 0 || res.id) {
+        var savedData = res.data || res;
         setComments(function (prev) {
           return prev.concat([
             {
-              id: res.id,
-              created_at: res.created_at,
+              id: savedData.id,
+              created_at: savedData.created_at,
+              teacher_id: teacher ? teacher.id : 0,
               teacher_name: teacher ? teacher.name : '我',
               comment_text: textToSend || null,
               file_name: fileToSend ? fileToSend.name : null,
@@ -149,7 +154,15 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
   };
 
   var deleteComment = async function (commentId: number, isPersonal: boolean) {
-    if (!confirm('确认删除这条留言？')) return;
+    setCommentDeleteTarget({ commentId: commentId, isPersonal: isPersonal });
+  };
+
+  var confirmDeleteComment = async function () {
+    if (!commentDeleteTarget) return;
+    var commentId = commentDeleteTarget.commentId;
+    var isPersonal = commentDeleteTarget.isPersonal;
+    setCommentDeleteTarget(null);
+
     var apiPath = isPersonal
       ? '/api/personal-lessons/comments/' + commentId
       : '/api/group-lessons/comments/' + commentId;
@@ -160,7 +173,14 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
       }).then(function (r) {
         return r.json();
       });
-      if (r.message === '删除成功') {
+      // Remove on success or if already deleted
+      if (
+        r.code === 0 ||
+        r.message === '删除成功' ||
+        r.data?.message === '删除成功' ||
+        (r.message && r.message.includes('不存在')) ||
+        (r.data?.message && r.data.message.includes('不存在'))
+      ) {
         setComments(function (prev) {
           return prev.filter(function (c) {
             return c.id !== commentId;
@@ -583,6 +603,18 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
             )
           )
         : null
-    )
+    ),
+    React.createElement(ConfirmDialog, {
+      open: !!commentDeleteTarget,
+      title: '删除留言',
+      message: '确认删除这条留言？删除后不可恢复。',
+      confirmLabel: '确认删除',
+      danger: true,
+      onConfirm: confirmDeleteComment,
+      onCancel: function () {
+        setCommentDeleteTarget(null);
+      },
+      key: 'confirm-delete',
+    })
   );
 }

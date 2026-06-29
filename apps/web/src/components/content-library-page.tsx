@@ -57,7 +57,7 @@ const pageConfig = {
     title: '教学反思',
     subtitle: '追踪课后反思与改进记录，让教学复盘更清晰。',
     placeholder: '搜索课程名、反思内容或教师...',
-    empty: '暂无教学反思',
+    empty: '',
     detailTitle: '教学反思详情',
     icon: Lightbulb,
     accent: 'from-amber-400 to-blue-600',
@@ -189,7 +189,7 @@ export function ContentLibraryPage({ kind }: { kind: ContentKind }) {
               <Icon className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-normal text-[#0f2354]">
+              <h1 className="text-4xl font-extrabold tracking-normal text-[#0f2354]">
                 {config.title}
               </h1>
               <p className="mt-2 text-base font-medium text-[#7587ad]">{config.subtitle}</p>
@@ -354,7 +354,7 @@ export function ContentLibraryPage({ kind }: { kind: ContentKind }) {
                 </tbody>
               </table>
             </div>
-            {filtered.length === 0 && (
+            {filtered.length === 0 && config.empty && (
               <div className="px-6 py-16 text-center text-base font-medium text-slate-400">
                 {config.empty}
               </div>

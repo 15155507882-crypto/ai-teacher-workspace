@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { LessonDetailPanel } from '@/components/lesson-detail-panel';
+import { Drawer } from '@/components/ui/drawer';
 import {
   BookOpen,
   ClipboardList,
@@ -90,11 +92,13 @@ export default function TeacherSpacePage() {
   const [search, setSearch] = useState('');
   const [cardMode, setCardMode] = useState(false);
   const [detail, setDetail] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const tk = () => localStorage.getItem('accessToken') || '';
 
   useEffect(() => {
+    const u = localStorage.getItem('teacher');
+    if (u) setCurrentUser(JSON.parse(u));
     fetchData();
   }, [id]);
 
@@ -124,19 +128,8 @@ export default function TeacherSpacePage() {
     }
   };
 
-  const openDetail = async (c: Content) => {
-    setDetailLoading(true);
-    try {
-      const res = await fetch('/api/contents/' + c.id, {
-        headers: { Authorization: 'Bearer ' + tk() },
-      });
-      const json = await res.json();
-      setDetail(json.code === 0 ? json.data : c);
-    } catch {
-      setDetail(c);
-    } finally {
-      setDetailLoading(false);
-    }
+  const openDetail = (c: Content) => {
+    setDetail(c);
   };
 
   const filtered = contents.filter((c) => {
@@ -324,59 +317,16 @@ export default function TeacherSpacePage() {
           </div>
         )}
 
-        {detail && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm"
-              onClick={() => setDetail(null)}
+        <Drawer open={!!detail} onClose={() => setDetail(null)} title="资料详情" width="max-w-3xl">
+          {detail && (
+            <LessonDetailPanel
+              contentId={detail.id}
+              token={tk()}
+              teacher={currentUser}
+              onClose={() => setDetail(null)}
             />
-            <div className="relative bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.22)] max-w-2xl w-full max-h-[80vh] overflow-y-auto animate-fade-in-up">
-              <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-5 flex items-center justify-between rounded-t-2xl z-10">
-                <h3 className="text-lg font-bold text-[#10234f] truncate">{detail.title}</h3>
-                <button
-                  onClick={() => setDetail(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                {detailLoading ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-6 bg-[#f7faff] rounded-lg animate-pulse" />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap gap-2 text-sm">
-                      <span className="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                        {typeLabels[detail.content_type]}
-                      </span>
-                      <span className="text-[#53688f]">
-                        {detail.academic_year} {detail.semester}
-                      </span>
-                      <span className="text-[#8ba0c5]">
-                        {new Date(detail.created_at).toLocaleString('zh-CN')}
-                      </span>
-                    </div>
-                    {detail.summary && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-[#30466f] mb-2">摘要</h4>
-                        <p className="text-sm text-[#53688f] leading-relaxed">{detail.summary}</p>
-                      </div>
-                    )}
-                    {detail.content_type === 'reflection' && (
-                      <div className="rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-700">
-                        📝 该教师对该课程的教学反思
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </Drawer>
       </main>
     </div>
   );

@@ -52,7 +52,7 @@ async function bootstrap() {
         const tempDir = path.join(os.tmpdir(), `preview-${fileId}-${Date.now()}`);
         const inputPath = path.join(tempDir, path.basename(storageKey));
         await fs.mkdir(tempDir, { recursive: true });
-        await fs.writeFile(inputPath, fileBuffer);
+        await fs.writeFile(inputPath, fileBuffer.body);
 
         // Also ensure output dir exists
         await fs.mkdir(outputDir, { recursive: true });
@@ -88,10 +88,6 @@ async function bootstrap() {
     {
       connection,
       concurrency: 2,
-      defaultJobOptions: {
-        attempts: 2,
-        backoff: { type: 'exponential', delay: 5000 },
-      },
     }
   );
 

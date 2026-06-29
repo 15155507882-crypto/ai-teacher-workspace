@@ -148,7 +148,17 @@ export class ContentController {
         });
       }
 
-      // Fallback: serve original file (images, PDFs)
+      // V2: For Office docs without preview, return status instead of raw file
+      const officeExts = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
+      if (officeExts.includes((file as any).file_ext || '')) {
+        return res.json({
+          code: 0,
+          message: '正在生成预览...',
+          data: { previewStatus: 'PENDING' },
+        });
+      }
+
+      // Fallback: images, PDFs serve directly
       const result = await this.storage.get(file.storage_key);
       if (result?.body) {
         res.setHeader(
@@ -226,6 +236,14 @@ export class ContentController {
     if (!body.comment_text?.trim() && !body.file_id) {
       return { code: 40000, message: '评论内容或附件不能为空' };
     }
+    // 时间限制：集体备课超过3天关闭留言
+    const glContent = await this.contentRepo.findOne({ where: { id: cid } });
+    if (glContent) {
+      const daysSince = (Date.now() - new Date(glContent.created_at).getTime()) / 86400000;
+      if (daysSince > 3 && req.user.role !== 'admin') {
+        return { code: 40300, message: '集体备课超过3天，留言通道已关闭' };
+      }
+    }
     const comment = this.commentRepo.create({
       group_lesson_id: gl.id,
       teacher_id: req.user.teacherId,
@@ -285,6 +303,18 @@ export class ContentController {
       pl = this.plRepo.create({ content_id: cid, teacher_id: req.user.teacherId });
       pl = await this.plRepo.save(pl);
     }
+    // 权限检查：个人备课只允许本人留言
+    const content = await this.contentRepo.findOne({ where: { id: cid } });
+    if (content && req.user.teacherId !== content.teacher_id && req.user.role !== 'admin') {
+      return { code: 40300, message: '个人备课仅允许本人留言' };
+    }
+    // 时间限制：个人备课超过7天关闭留言
+    if (content) {
+      const daysSince = (Date.now() - new Date(content.created_at).getTime()) / 86400000;
+      if (daysSince > 7 && req.user.role !== 'admin') {
+        return { code: 40300, message: '个人备课超过7天，留言通道已关闭' };
+      }
+    }
     if (!body.comment_text?.trim() && !body.file_id) {
       return { code: 40000, message: '评论内容或附件不能为空' };
     }
@@ -297,7 +327,6 @@ export class ContentController {
     const saved = await this.plCommentRepo.save(comment);
 
     // 自动创建教学反思记录（关联到该备课）
-    const content = await this.contentRepo.findOne({ where: { id: cid } });
     if (content) {
       const existingReflection = await this.reflectionRepo.findOne({
         where: { lesson_content_id: cid, teacher_id: req.user.teacherId },

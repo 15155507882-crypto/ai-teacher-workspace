@@ -6,6 +6,16 @@ import { ConversationSidebar } from '@/components/conversation-sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  ArrowLeft,
+  FilePlus2,
+  Paperclip,
+  Plus,
+  Search,
+  Send,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 
 interface Attachment {
   id: number;
@@ -19,6 +29,7 @@ interface Msg {
   text: string;
   attachments?: string[];
   result?: any;
+  saved?: boolean;
 }
 interface WorkItem {
   id: number;
@@ -264,7 +275,7 @@ export default function WorkspacePage() {
   };
 
   const deleteComment = async (commentId: number, isPersonal: boolean) => {
-    if (!confirm('确认删除这条留言？')) return;
+    if (!window.confirm('确认删除这条留言？')) return;
     const apiPath = isPersonal
       ? `/api/personal-lessons/comments/${commentId}`
       : `/api/group-lessons/comments/${commentId}`;
@@ -548,9 +559,9 @@ export default function WorkspacePage() {
   });
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[linear-gradient(180deg,#f6f9ff_0%,#fbfdff_52%,#f6f9ff_100%)] text-[#10234f]">
       <TopNav />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         <ConversationSidebar
           token={tk()}
           activeId={convId}
@@ -558,19 +569,23 @@ export default function WorkspacePage() {
             setConvId(id);
           }}
         />
-        <main className="flex-1 flex overflow-hidden">
-          <div className="flex-1 flex overflow-hidden">
+        <main className="flex flex-1 overflow-hidden p-4">
+          <div className="flex flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-[0_12px_42px_rgba(31,45,78,0.08)]">
             {/* LEFT: Chat 70% */}
-            <div className="flex-[7] flex flex-col min-w-0 border-r border-slate-200">
+            <div className="flex min-w-0 flex-[7] flex-col border-r border-slate-200 bg-[#fbfdff]">
               <div className="flex-1 overflow-y-auto">
                 <div className="max-w-[860px] mx-auto px-6 py-6 space-y-4">
                   {messages.length === 0 && !thinking && (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className="text-5xl mb-4">✨</div>
-                      <h3 className="text-lg font-semibold text-slate-700 mb-1">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 to-blue-700 text-white shadow-[0_10px_28px_rgba(37,99,235,0.3)]">
+                        <Sparkles className="h-8 w-8" />
+                      </div>
+                      <h3 className="mb-1 text-xl font-extrabold text-[#10234f]">
                         你好{teacher?.name ? `，${teacher.name}` : ''}
                       </h3>
-                      <p className="text-sm text-slate-400">上传课件或输入文字开始备课</p>
+                      <p className="text-sm font-medium text-[#7587ad]">
+                        上传课件或输入文字开始备课
+                      </p>
                     </div>
                   )}
 
@@ -580,12 +595,12 @@ export default function WorkspacePage() {
                       className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       {msg.sender === 'ai' ? (
-                        <div className="flex gap-2.5 max-w-[85%]">
-                          <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-xs shrink-0 mt-1">
-                            ✨
+                        <div className="flex max-w-[85%] gap-3">
+                          <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <Sparkles className="h-4 w-4" />
                           </div>
-                          <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm min-w-0">
-                            <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
+                          <div className="min-w-0 rounded-2xl rounded-tl-md border border-slate-200 bg-white px-5 py-3.5 shadow-[0_6px_20px_rgba(15,23,42,0.06)]">
+                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#30466f]">
                               {msg.text}
                             </p>
                             {msg.result?.actions && (
@@ -629,14 +644,12 @@ export default function WorkspacePage() {
                               msg.result.type !== 'duplicate' &&
                               msg.result.type !== 'rate_limited' &&
                               msg.result.type !== 'queue_full' && (
-                                <div className="mt-3 pt-3 border-t space-y-2.5">
-                                  <p className="text-xs font-semibold text-slate-500">
-                                    📄 资料预览
-                                  </p>
+                                <div className="mt-3 space-y-2.5 border-t border-slate-100 pt-3">
+                                  <p className="text-xs font-bold text-[#6d7fa7]">📄 资料预览</p>
 
                                   {/* 只读预览模式 */}
                                   {!editingCards.has(msg.id) ? (
-                                    <div className="space-y-2 bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-[#f7faff] p-4">
                                       <div className="flex items-baseline gap-2">
                                         <span className="text-xs text-slate-500">类型：</span>
                                         <span className="text-xs font-medium">
@@ -752,7 +765,7 @@ export default function WorkspacePage() {
                                     </div>
                                   ) : (
                                     /* 可编辑表单模式 */
-                                    <div className="space-y-2 bg-slate-50 rounded-lg p-3 border border-blue-200">
+                                    <div className="space-y-2 rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
                                       <div className="text-xs text-slate-600">
                                         资料类型：
                                         <span className="font-medium">
@@ -788,7 +801,7 @@ export default function WorkspacePage() {
                                               )
                                             )
                                           }
-                                          className="flex-1 border rounded px-2 py-1 text-xs"
+                                          className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                         />
                                       </div>
                                       <div className="grid grid-cols-2 gap-1 text-xs">
@@ -812,7 +825,7 @@ export default function WorkspacePage() {
                                                 )
                                               )
                                             }
-                                            className="border rounded px-1 py-0.5 text-xs w-full"
+                                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                           />
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -834,7 +847,7 @@ export default function WorkspacePage() {
                                                 )
                                               )
                                             }
-                                            className="border rounded px-1 py-0.5 text-xs w-full"
+                                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                             placeholder="学科"
                                           />
                                         </div>
@@ -857,7 +870,7 @@ export default function WorkspacePage() {
                                                 )
                                               )
                                             }
-                                            className="border rounded px-1 py-0.5 text-xs w-full"
+                                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                             placeholder="年级"
                                           />
                                         </div>
@@ -901,7 +914,7 @@ export default function WorkspacePage() {
                                                     )
                                                   );
                                                 }}
-                                                className="flex-1 border rounded px-1 py-0.5 text-xs"
+                                                className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                               />
                                             </div>
                                           ))}
@@ -925,7 +938,7 @@ export default function WorkspacePage() {
                                           onChange={(e) =>
                                             modifyType(msg.id, normalizeType(e.target.value))
                                           }
-                                          className="text-xs border rounded px-2 py-1.5"
+                                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                                         >
                                           <option value="personal_lesson">个人备课</option>
                                           <option value="reflection">教学反思</option>
@@ -964,7 +977,7 @@ export default function WorkspacePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-tr-md px-5 py-3 text-sm break-words leading-relaxed">
+                        <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-blue-600 px-5 py-3 text-sm leading-relaxed text-white shadow-[0_8px_24px_rgba(37,99,235,0.22)] break-words">
                           {msg.text}
                         </div>
                       )}
@@ -972,11 +985,11 @@ export default function WorkspacePage() {
                   ))}
 
                   {thinking && (
-                    <div className="flex gap-2.5 max-w-[85%]">
-                      <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-xs mt-1 animate-breathe">
-                        ✨
+                    <div className="flex max-w-[85%] gap-3">
+                      <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 animate-breathe">
+                        <Sparkles className="h-4 w-4" />
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm">
+                      <div className="rounded-2xl rounded-tl-md border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
                         <div className="flex items-center gap-2.5">
                           <span className="inline-flex gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-breathe" />
@@ -999,7 +1012,7 @@ export default function WorkspacePage() {
               </div>
 
               {/* Composer */}
-              <div className="border-t border-slate-200 bg-white">
+              <div className="border-t border-slate-200 bg-white/95">
                 <div className="max-w-[860px] mx-auto px-6 py-4">
                   {/* Attachments preview */}
                   {attachments.length > 0 && (
@@ -1007,9 +1020,9 @@ export default function WorkspacePage() {
                       {attachments.map((a) => (
                         <div
                           key={a.id}
-                          className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs"
+                          className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs"
                         >
-                          <span>{a.uploading ? '⏳' : '📄'}</span>
+                          <Paperclip className="h-3.5 w-3.5 text-blue-500" />
                           <span className="max-w-[120px] truncate text-slate-600">{a.name}</span>
                           <button
                             onClick={() => removeAttachment(a.id)}
@@ -1021,30 +1034,21 @@ export default function WorkspacePage() {
                       ))}
                     </div>
                   )}
-                  <div className="relative flex items-end gap-2 bg-white border border-slate-200 rounded-[20px] px-4 py-2 shadow-sm focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition">
+                  <div className="relative flex items-end gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-[0_8px_28px_rgba(15,23,42,0.08)] transition focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-100">
                     {/* + Button with popover */}
                     <div className="relative">
                       <button
                         onClick={() => setShowPicker(!showPicker)}
-                        className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-blue-500 transition shrink-0 mb-0.5"
+                        className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
                         title="添加附件"
                       >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
+                        <Plus className="h-5 w-5" />
                       </button>
                       {showPicker && (
-                        <div className="absolute bottom-full left-0 mb-2 w-40 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-10">
-                          <label className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer">
-                            <span>📄</span> 添加附件
+                        <div className="absolute bottom-full left-0 z-10 mb-2 w-44 rounded-xl border border-slate-200 bg-white py-1.5 shadow-[0_16px_42px_rgba(15,23,42,0.14)]">
+                          <label className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium text-[#53688f] hover:bg-[#f7faff]">
+                            <Paperclip className="h-4 w-4 text-blue-500" />
+                            添加附件
                             <input
                               type="file"
                               className="hidden"
@@ -1063,12 +1067,12 @@ export default function WorkspacePage() {
                       onKeyDown={handleKeyDown}
                       placeholder="输入文字或上传文件..."
                       rows={1}
-                      className="flex-1 resize-none border-0 bg-transparent py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none min-h-[24px] max-h-[120px]"
+                      className="max-h-[120px] min-h-[24px] flex-1 resize-none border-0 bg-transparent py-2 text-sm text-[#30466f] placeholder:text-[#8ca0c7] focus:outline-none"
                     />
                     <select
                       value={mode}
                       onChange={(e) => setMode(e.target.value)}
-                      className="text-xs rounded-lg border bg-slate-50 px-2 py-2 text-slate-500 shrink-0"
+                      className="shrink-0 rounded-xl border border-slate-200 bg-[#f7faff] px-2 py-2 text-xs font-medium text-[#53688f] outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="auto">自动识别</option>
                       <option value="normal_chat">普通聊天</option>
@@ -1084,6 +1088,7 @@ export default function WorkspacePage() {
                       disabled={!input.trim() && attachments.length === 0}
                       className="mb-0.5"
                     >
+                      <Send className="mr-1.5 h-4 w-4" />
                       发送
                     </Button>
                   </div>
@@ -1092,26 +1097,27 @@ export default function WorkspacePage() {
             </div>
 
             {/* RIGHT: Work results 30% */}
-            <div className="flex-[3] flex flex-col bg-white overflow-y-auto">
+            <div className="flex flex-[3] flex-col overflow-y-auto bg-white">
               {selectedWorkId ? (
                 /* === Detail View === */
                 <div className="flex flex-col h-full">
-                  <div className="p-3 border-b border-slate-100 flex items-center gap-2">
+                  <div className="flex items-center gap-2 border-b border-slate-100 bg-[#f7faff] p-4">
                     <button
                       onClick={() => {
                         setSelectedWorkId(null);
                         setWorkDetail(null);
                       }}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-blue-600 hover:bg-white hover:text-blue-800"
                     >
-                      ← 返回列表
+                      <ArrowLeft className="h-4 w-4" />
+                      返回列表
                     </button>
-                    <span className="text-sm text-slate-400">|</span>
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="text-sm text-red-500 hover:text-red-700 ml-auto"
+                      className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-red-500 hover:bg-red-50 hover:text-red-700"
                     >
-                      🗑 删除
+                      <Trash2 className="h-4 w-4" />
+                      删除
                     </button>
                   </div>
                   {workDetailLoading ? (
@@ -1121,40 +1127,40 @@ export default function WorkspacePage() {
                       ))}
                     </div>
                   ) : workDetail ? (
-                    <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-5">
                       <div>
                         {typeBadge(workDetail.content_type)}
-                        <h3 className="text-lg font-semibold text-slate-800 mt-2">
+                        <h3 className="mt-2 text-xl font-extrabold text-[#10234f]">
                           {workDetail.title}
                         </h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-slate-400">创建</span>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">创建</span>
                           <br />
                           {new Date(workDetail.created_at).toLocaleString('zh-CN')}
                         </div>
-                        <div>
-                          <span className="text-slate-400">更新</span>
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">更新</span>
                           <br />
                           {new Date(workDetail.updated_at).toLocaleString('zh-CN')}
                         </div>
-                        <div>
-                          <span className="text-slate-400">学年</span>
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">学年</span>
                           <br />
                           {workDetail.academic_year || '—'}
                         </div>
-                        <div>
-                          <span className="text-slate-400">学期</span>
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">学期</span>
                           <br />
                           {workDetail.semester || '—'}
                         </div>
-                        <div>
-                          <span className="text-slate-400">版本</span>
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">版本</span>
                           <br />v{workDetail.version || 1}
                         </div>
-                        <div>
-                          <span className="text-slate-400">状态</span>
+                        <div className="rounded-xl border border-slate-100 bg-[#f7faff] p-3 font-medium text-[#30466f]">
+                          <span className="text-xs text-[#8292b4]">状态</span>
                           <br />
                           {workDetail.status || 'draft'}
                         </div>
@@ -1173,7 +1179,7 @@ export default function WorkspacePage() {
                         workDetail.planSummary?.[0]?.body_text) && (
                         <div>
                           <p className="text-sm text-slate-400 mb-1">AI 识别概要</p>
-                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                          <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm leading-relaxed text-[#30466f] whitespace-pre-wrap">
                             {workDetail.personalLesson?.[0]?.body_text ||
                               workDetail.reflection?.[0]?.reflection_text ||
                               workDetail.groupLesson?.[0]?.body_text ||
@@ -1229,7 +1235,7 @@ export default function WorkspacePage() {
                             return (
                               <div
                                 key={att.id}
-                                className="border border-slate-200 rounded-lg p-2 space-y-2 mb-2"
+                                className="mb-3 space-y-2 rounded-2xl border border-slate-200 bg-[#f7faff] p-3"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm font-medium text-slate-700 truncate max-w-[160px]">
@@ -1244,16 +1250,16 @@ export default function WorkspacePage() {
                                   <img
                                     src={previewUrl}
                                     alt={att.file?.original_name || '图片'}
-                                    className="w-full max-h-72 object-contain border rounded bg-slate-50"
+                                    className="max-h-72 w-full rounded-xl border border-slate-200 bg-white object-contain"
                                   />
                                 ) : isPDF ? (
                                   <iframe
                                     src={previewUrl}
-                                    className="w-full h-72 border rounded bg-slate-50"
+                                    className="h-72 w-full rounded-xl border border-slate-200 bg-white"
                                     title="PDF预览"
                                   />
                                 ) : isWord ? (
-                                  <div className="w-full h-36 border rounded bg-amber-50 flex flex-col items-center justify-center text-center space-y-2">
+                                  <div className="flex h-36 w-full flex-col items-center justify-center space-y-2 rounded-xl border border-amber-100 bg-amber-50 text-center">
                                     <span className="text-3xl">📝</span>
                                     <p className="text-sm text-amber-700">
                                       Word 文档暂不支持在线预览
@@ -1263,7 +1269,7 @@ export default function WorkspacePage() {
                                 ) : att.file?.mime_type ? (
                                   <iframe
                                     src={previewUrl}
-                                    className="w-full h-72 border rounded bg-slate-50"
+                                    className="h-72 w-full rounded-xl border border-slate-200 bg-white"
                                     title="附件预览"
                                   />
                                 ) : null}
@@ -1273,7 +1279,7 @@ export default function WorkspacePage() {
                                       href={previewUrl}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="text-blue-500 hover:text-blue-700 flex-1 text-center py-1 bg-blue-50 rounded"
+                                      className="flex-1 rounded-lg bg-blue-50 py-1.5 text-center text-sm font-semibold text-blue-600 hover:bg-blue-100"
                                     >
                                       🔍 全屏预览
                                     </a>
@@ -1282,7 +1288,7 @@ export default function WorkspacePage() {
                                     href={downloadUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-blue-500 hover:text-blue-700 flex-1 text-center py-1 bg-blue-50 rounded"
+                                    className="flex-1 rounded-lg bg-blue-50 py-1.5 text-center text-sm font-semibold text-blue-600 hover:bg-blue-100"
                                   >
                                     ⬇ 下载
                                   </a>
@@ -1294,8 +1300,8 @@ export default function WorkspacePage() {
                       )}
                       {/* 集体备课：参与互动区 */}
                       {workDetail.content_type === 'group_lesson' && (
-                        <div className="flex flex-col min-h-0">
-                          <p className="text-sm text-slate-400 mb-1 shrink-0">参与互动</p>
+                        <div className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-4">
+                          <p className="mb-1 shrink-0 text-sm font-bold text-[#6d7fa7]">参与互动</p>
                           {(() => {
                             const participantIds = new Set<number>();
                             const participantNames: string[] = [];
@@ -1318,7 +1324,7 @@ export default function WorkspacePage() {
                             {comments.map((c: any) => (
                               <div
                                 key={c.id}
-                                className="bg-slate-50 border border-slate-100 rounded-lg p-2 group"
+                                className="group rounded-xl border border-slate-100 bg-[#f7faff] p-3"
                               >
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-sm font-medium text-slate-700">
@@ -1381,10 +1387,10 @@ export default function WorkspacePage() {
                                   }
                                 }}
                                 placeholder="输入评论或上传附件..."
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                                className="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                               />
-                              <label className="cursor-pointer flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-blue-500 shrink-0">
-                                <span className="text-lg">+</span>
+                              <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600">
+                                <Plus className="h-5 w-5" />
                                 <input
                                   type="file"
                                   ref={commentFileRef}
@@ -1411,9 +1417,9 @@ export default function WorkspacePage() {
                       )}
                       {/* 个人备课：教学反思 + 留言 */}
                       {workDetail.content_type === 'personal_lesson' && (
-                        <div className="flex flex-col min-h-0">
-                          <p className="text-sm text-slate-400 mb-2 shrink-0">教学反思</p>
-                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 shrink-0">
+                        <div className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-4">
+                          <p className="mb-2 shrink-0 text-sm font-bold text-[#6d7fa7]">教学反思</p>
+                          <div className="mb-3 shrink-0 rounded-2xl border border-blue-100 bg-blue-50/80 p-3">
                             <p className="text-sm text-slate-700 whitespace-pre-wrap">
                               {reflectionText || '无'}
                             </p>
@@ -1422,7 +1428,7 @@ export default function WorkspacePage() {
                             {plComments.map((c: any) => (
                               <div
                                 key={c.id}
-                                className="bg-slate-50 border border-slate-100 rounded-lg p-2 group"
+                                className="group rounded-xl border border-slate-100 bg-[#f7faff] p-3"
                               >
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-sm font-medium text-slate-700">
@@ -1485,10 +1491,10 @@ export default function WorkspacePage() {
                                   }
                                 }}
                                 placeholder="输入评论或上传附件..."
-                                className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                                className="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                               />
-                              <label className="cursor-pointer flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-blue-500 shrink-0">
-                                <span className="text-lg">+</span>
+                              <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600">
+                                <Plus className="h-5 w-5" />
                                 <input
                                   type="file"
                                   ref={commentFileRef}
@@ -1514,7 +1520,7 @@ export default function WorkspacePage() {
                         </div>
                       )}
                       {showDeleteConfirm && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+                        <div className="space-y-2 rounded-2xl border border-red-200 bg-red-50 p-4">
                           <p className="text-sm text-red-700 font-medium">
                             确认删除「{workDetail.title}」？
                           </p>
@@ -1545,9 +1551,9 @@ export default function WorkspacePage() {
               ) : (
                 /* === List View === */
                 <>
-                  <div className="p-4 border-b border-slate-100 space-y-3">
+                  <div className="space-y-4 border-b border-slate-100 bg-[#f7faff] p-4">
                     <div className="flex gap-1 flex-wrap">
-                      <span className="text-sm text-slate-400 py-1 mr-1">手动录入：</span>
+                      <span className="mr-1 py-1 text-sm font-bold text-[#6d7fa7]">手动录入：</span>
                       {[
                         { k: 'personal_lesson', label: '📖 个人备课' },
                         { k: 'group_lesson', label: '👥 集体备课' },
@@ -1559,18 +1565,21 @@ export default function WorkspacePage() {
                             const now = new Date().toISOString().slice(0, 10);
                             setManualAdd({ type: item.k, open: true, title: '', date: now });
                           }}
-                          className="px-2 py-1 rounded text-sm bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          className="rounded-lg bg-white px-2.5 py-1.5 text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-blue-100 hover:bg-blue-50"
                         >
                           + {item.label.slice(2)}
                         </button>
                       ))}
                     </div>
-                    <Input
-                      value={workSearch}
-                      onChange={(e) => setWorkSearch(e.target.value)}
-                      placeholder="搜索工作记录..."
-                      className="text-sm"
-                    />
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6f86bd]" />
+                      <Input
+                        value={workSearch}
+                        onChange={(e) => setWorkSearch(e.target.value)}
+                        placeholder="搜索工作记录..."
+                        className="h-11 rounded-xl bg-white pl-11 text-sm shadow-sm"
+                      />
+                    </div>
                     <div className="flex gap-1 flex-wrap">
                       {['', 'personal_lesson', 'group_lesson', 'reflection', 'plan_summary'].map(
                         (k) => {
@@ -1585,7 +1594,7 @@ export default function WorkspacePage() {
                             <button
                               key={k}
                               onClick={() => setWorkFilter(k)}
-                              className={`px-2.5 py-1 rounded-full text-xs transition ${workFilter === k ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${workFilter === k ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-[#6d7fa7] ring-1 ring-slate-200 hover:bg-blue-50 hover:text-blue-600'}`}
                             >
                               {l[k]}
                             </button>
@@ -1594,12 +1603,12 @@ export default function WorkspacePage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 p-3 space-y-2">
+                  <div className="flex-1 space-y-2 overflow-y-auto p-4">
                     {filteredWorks.map((w) => (
                       <div
                         key={w.id}
                         onClick={() => loadWorkDetail(w.id)}
-                        className={`p-3 rounded-xl border transition cursor-pointer ${highlightId === w.id ? 'border-blue-400 bg-blue-50' : 'border-slate-100 hover:border-blue-200 hover:bg-blue-50/30'}`}
+                        className={`cursor-pointer rounded-2xl border p-4 transition ${highlightId === w.id ? 'border-blue-300 bg-blue-50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-[#f7faff] hover:shadow-sm'}`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium text-slate-700 truncate">{w.title}</p>
@@ -1621,41 +1630,53 @@ export default function WorkspacePage() {
             </div>
             {/* 手动录入弹窗 */}
             {manualAdd?.open && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    新增 —{' '}
-                    {{
-                      personal_lesson: '个人备课',
-                      group_lesson: '集体备课',
-                      plan_summary: '计划总结',
-                    }[manualAdd.type] || manualAdd.type}
-                  </h3>
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 backdrop-blur-sm">
+                <div className="w-full max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                      <FilePlus2 className="h-6 w-6" />
+                    </span>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-[#10234f]">新增资料</h3>
+                      <p className="mt-1 text-sm font-medium text-[#7587ad]">
+                        {{
+                          personal_lesson: '个人备课',
+                          group_lesson: '集体备课',
+                          plan_summary: '计划总结',
+                        }[manualAdd.type] || manualAdd.type}
+                      </p>
+                    </div>
+                  </div>
                   <div>
-                    <label className="block text-sm text-slate-600 mb-1">
+                    <label className="mb-1.5 block text-sm font-semibold text-[#53688f]">
                       标题 <span className="text-red-400">*</span>
                     </label>
                     <input
                       value={manualAdd.title}
                       onChange={(e) => setManualAdd({ ...manualAdd, title: e.target.value })}
                       placeholder="请输入标题..."
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                      className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-[#30466f] outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 mb-1">日期</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-[#53688f]">
+                      日期
+                    </label>
                     <input
                       type="date"
                       value={manualAdd.date || ''}
                       onChange={(e) => setManualAdd({ ...manualAdd, date: e.target.value })}
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                      className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-[#30466f] outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600 mb-1">附件</label>
+                    <label className="mb-1.5 block text-sm font-semibold text-[#53688f]">
+                      附件
+                    </label>
                     <div className="flex items-center gap-2">
-                      <label className="cursor-pointer px-3 py-1.5 text-sm border rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600">
-                        📎 选择文件
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-[#f7faff] px-3 py-2 text-sm font-semibold text-[#53688f] hover:bg-blue-50 hover:text-blue-600">
+                        <Paperclip className="h-4 w-4" />
+                        选择文件
                         <input
                           type="file"
                           className="hidden"
@@ -1670,26 +1691,19 @@ export default function WorkspacePage() {
                         />
                       </label>
                       {manualAdd.file && (
-                        <span className="text-sm text-slate-500 truncate max-w-[200px]">
+                        <span className="max-w-[200px] truncate text-sm font-medium text-[#7587ad]">
                           {manualAdd.file.name}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      onClick={() => setManualAdd(null)}
-                      className="px-4 py-2 text-sm border rounded-lg hover:bg-slate-50"
-                    >
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button variant="outline" onClick={() => setManualAdd(null)}>
                       取消
-                    </button>
-                    <button
-                      onClick={saveManual}
-                      disabled={!manualAdd.title.trim()}
-                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40"
-                    >
+                    </Button>
+                    <Button onClick={saveManual} disabled={!manualAdd.title.trim()}>
                       保存
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -79,7 +79,7 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
           });
           var reflections =
             (refRes && refRes.data ? refRes.data.items : null) || (refRes && refRes.items) || [];
-          var linked = reflections.find(function (ref) {
+          var linked = reflections.find(function (ref: any) {
             return ref.linked_content_id === contentId || ref.lesson_content_id === contentId;
           });
           setReflectionText(linked ? linked.summary || linked.reflection_text || '' : '');
@@ -213,14 +213,19 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
 
   return React.createElement(
     'div',
-    { className: 'flex flex-col h-full' },
+    { className: 'flex h-full flex-col text-[#10234f]' },
     // Header bar with delete button
     React.createElement(
       'div',
       {
-        className: 'flex items-center justify-between pb-2 mb-2 border-b border-slate-100 shrink-0',
+        className:
+          'mb-5 flex shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-[#f7faff] px-4 py-3',
       },
-      React.createElement('span', { className: 'text-sm text-slate-400' }, '资料详情'),
+      React.createElement(
+        'span',
+        { className: 'text-sm font-semibold text-[#6d7fa7]' },
+        '资料详情'
+      ),
       !showDelete
         ? React.createElement(
             'button',
@@ -228,7 +233,8 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
               onClick: function () {
                 setShowDelete(true);
               },
-              className: 'text-sm text-red-400 hover:text-red-600',
+              className:
+                'rounded-lg px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-50',
             },
             '🗑 删除此资料'
           )
@@ -257,11 +263,11 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
     // Content area
     React.createElement(
       'div',
-      { className: 'flex-1 overflow-y-auto space-y-4' },
+      { className: 'flex-1 overflow-y-auto space-y-5' },
       // Type badge
       React.createElement(
         'div',
-        null,
+        { className: 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm' },
         React.createElement(
           Badge,
           { variant: typeColors[detail.content_type] || 'default' },
@@ -269,41 +275,49 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
         ),
         React.createElement(
           'h3',
-          { className: 'text-base font-semibold text-slate-800 mt-2' },
+          { className: 'mt-3 text-xl font-extrabold text-[#10234f]' },
           detail.title
         )
       ),
       // Metadata
       React.createElement(
         'div',
-        { className: 'grid grid-cols-2 gap-2 text-sm' },
+        { className: 'grid grid-cols-2 gap-3 text-sm' },
         React.createElement(
           'div',
-          null,
-          React.createElement('span', { className: 'text-slate-400' }, '学年'),
-          React.createElement('br'),
-          detail.academic_year || '—'
+          { className: 'rounded-xl border border-slate-100 bg-[#f7faff] p-4 font-semibold' },
+          React.createElement('span', { className: 'text-xs text-[#8292b4]' }, '学年'),
+          React.createElement(
+            'p',
+            { className: 'mt-1 text-[#30466f]' },
+            detail.academic_year || '—'
+          )
         ),
         React.createElement(
           'div',
-          null,
-          React.createElement('span', { className: 'text-slate-400' }, '学期'),
-          React.createElement('br'),
-          detail.semester || '—'
+          { className: 'rounded-xl border border-slate-100 bg-[#f7faff] p-4 font-semibold' },
+          React.createElement('span', { className: 'text-xs text-[#8292b4]' }, '学期'),
+          React.createElement('p', { className: 'mt-1 text-[#30466f]' }, detail.semester || '—')
         ),
         React.createElement(
           'div',
-          null,
-          React.createElement('span', { className: 'text-slate-400' }, '创建时间'),
-          React.createElement('br'),
-          new Date(detail.created_at).toLocaleString('zh-CN')
+          { className: 'rounded-xl border border-slate-100 bg-[#f7faff] p-4 font-semibold' },
+          React.createElement('span', { className: 'text-xs text-[#8292b4]' }, '创建时间'),
+          React.createElement(
+            'p',
+            { className: 'mt-1 text-[#30466f]' },
+            new Date(detail.created_at).toLocaleString('zh-CN')
+          )
         ),
         React.createElement(
           'div',
-          null,
-          React.createElement('span', { className: 'text-slate-400' }, '版本'),
-          React.createElement('br'),
-          'v' + (detail.version || 1)
+          { className: 'rounded-xl border border-slate-100 bg-[#f7faff] p-4 font-semibold' },
+          React.createElement('span', { className: 'text-xs text-[#8292b4]' }, '版本'),
+          React.createElement(
+            'p',
+            { className: 'mt-1 text-[#30466f]' },
+            'v' + (detail.version || 1)
+          )
         )
       ),
       // AI summary
@@ -314,7 +328,7 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
             'div',
             {
               className:
-                'bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed',
+                'rounded-2xl border border-blue-100 bg-blue-50/80 p-5 text-sm leading-relaxed text-[#30466f] whitespace-pre-wrap',
             },
             detail.personalLesson && detail.personalLesson[0]
               ? detail.personalLesson[0].body_text
@@ -329,13 +343,13 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
       detail.attachments && detail.attachments.length > 0
         ? React.createElement(
             'div',
-            null,
+            { className: 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm' },
             React.createElement(
               'p',
-              { className: 'text-sm text-slate-400 mb-1' },
+              { className: 'mb-3 text-sm font-bold text-[#6d7fa7]' },
               '附件（' + detail.attachments.length + '）'
             ),
-            detail.attachments.map(function (att) {
+            detail.attachments.map(function (att: any) {
               var isImage =
                 att.file && att.file.mime_type && att.file.mime_type.startsWith('image/');
               var isPDF = att.file && att.file.mime_type === 'application/pdf';
@@ -345,7 +359,10 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
               var previewUrl = '/api/files/' + att.file_id + '/preview';
               return React.createElement(
                 'div',
-                { key: att.id, className: 'border border-slate-200 rounded-lg p-2 mb-2' },
+                {
+                  key: att.id,
+                  className: 'mb-3 rounded-xl border border-slate-200 bg-[#f7faff] p-3 last:mb-0',
+                },
                 React.createElement(
                   'span',
                   { className: 'text-sm font-medium' },
@@ -376,7 +393,8 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
                   {
                     href: previewUrl,
                     target: '_blank',
-                    className: 'text-xs text-blue-500 block mt-1',
+                    className:
+                      'mt-2 inline-flex rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50',
                   },
                   '🔍 预览'
                 )
@@ -388,15 +406,15 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
       isPL
         ? React.createElement(
             'div',
-            null,
+            { className: 'rounded-2xl border border-blue-100 bg-blue-50/70 p-5' },
             React.createElement(
               'p',
-              { className: 'text-sm text-slate-600 font-medium mb-1' },
+              { className: 'mb-2 text-sm font-bold text-[#30466f]' },
               '教学反思'
             ),
             React.createElement(
               'p',
-              { className: 'text-sm text-slate-500' },
+              { className: 'text-sm leading-relaxed text-[#53688f]' },
               reflectionText || '暂无反思内容'
             )
           )
@@ -405,29 +423,30 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
       isGL || isPL
         ? React.createElement(
             'div',
-            { className: 'border-t pt-3 flex flex-col min-h-0' },
+            { className: 'flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-5' },
             React.createElement(
               'p',
-              { className: 'text-sm text-slate-400 mb-2 shrink-0' },
+              { className: 'mb-3 shrink-0 text-sm font-bold text-[#6d7fa7]' },
               (isGL ? '参与互动' : '留言') + ' (' + comments.length + ')'
             ),
             React.createElement(
               'div',
-              { className: 'flex-1 overflow-y-auto min-h-0 space-y-2' },
+              { className: 'min-h-0 flex-1 space-y-2 overflow-y-auto' },
               comments.length > 0
                 ? comments.map(function (c) {
                     return React.createElement(
                       'div',
                       {
                         key: c.id,
-                        className: 'bg-slate-50 border border-slate-100 rounded-lg p-2 group',
+                        className:
+                          'group rounded-xl border border-slate-100 bg-[#f7faff] p-3 transition hover:border-blue-100',
                       },
                       React.createElement(
                         'div',
-                        { className: 'flex items-center justify-between' },
+                        { className: 'mb-1 flex items-center justify-between' },
                         React.createElement(
                           'span',
-                          { className: 'text-sm font-medium' },
+                          { className: 'text-sm font-bold text-[#30466f]' },
                           c.teacher_name
                         ),
                         React.createElement(
@@ -466,7 +485,8 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
                             {
                               href: '/api/files/' + c.file_id + '/download',
                               target: '_blank',
-                              className: 'text-xs text-blue-500',
+                              className:
+                                'mt-1 inline-flex text-xs font-semibold text-blue-600 hover:text-blue-700',
                             },
                             '📎 ' + c.file_name
                           )
@@ -481,13 +501,13 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
             ),
             React.createElement(
               'div',
-              { className: 'shrink-0 pt-2 border-t border-slate-100' },
+              { className: 'mt-3 shrink-0 border-t border-slate-100 pt-3' },
               commentFile
                 ? React.createElement(
                     'div',
                     {
                       className:
-                        'flex items-center gap-2 text-sm bg-blue-50 rounded px-2 py-1 mb-2',
+                        'mb-2 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-[#30466f]',
                     },
                     React.createElement('span', null, '📎 ' + commentFile.name),
                     React.createElement(
@@ -517,13 +537,14 @@ export function LessonDetailPanel({ contentId, token, teacher, onClose }: Props)
                     }
                   },
                   placeholder: '输入评论...',
-                  className: 'flex-1 border rounded-lg px-3 py-1.5 text-sm',
+                  className:
+                    'h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100',
                 }),
                 React.createElement(
                   'label',
                   {
                     className:
-                      'cursor-pointer flex items-center justify-center w-7 h-7 rounded border hover:bg-slate-50 text-slate-400 shrink-0',
+                      'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600',
                   },
                   React.createElement('span', null, '+'),
                   React.createElement('input', {

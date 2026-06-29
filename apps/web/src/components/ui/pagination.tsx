@@ -16,8 +16,8 @@ export function Pagination({ page, pageSize, total, onChange }: PaginationProps)
   for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) pages.push(i);
 
   return (
-    <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
-      <span className="text-sm text-[var(--color-text-muted)]">
+    <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_6px_24px_rgba(15,23,42,0.05)] sm:flex-row sm:items-center sm:justify-between">
+      <span className="text-sm font-medium text-[#7587ad]">
         共 {total} 条，第 {page}/{totalPages} 页
       </span>
       <div className="flex gap-1">

@@ -30,8 +30,16 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-COPY --from=builder /app/dist ./dist
+# Copy API build output (apps/api/dist -> /app/dist)
+COPY --from=builder /app/apps/api/dist ./dist
+
+# Copy node_modules (includes pnpm symlinks to workspace packages)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Copy workspace packages (needed at runtime via pnpm symlinks)
+COPY --from=builder /app/packages ./packages
+
+# Copy app package.json for metadata
 COPY --from=builder /app/apps/api/package.json ./package.json
 
 # Run as non-root user
@@ -45,4 +53,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-CMD ["node", "dist/apps/api/src/main.js"]
+CMD ["node", "dist/main.js"]

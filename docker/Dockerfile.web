@@ -15,6 +15,10 @@ RUN pnpm install --frozen-lockfile
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 
+# Set API_URL for Next.js build-time config
+ARG API_URL=http://api:3000
+ENV API_URL=${API_URL}
+
 RUN pnpm --filter @workspace/shared build
 RUN pnpm --filter @workspace/web build
 
@@ -24,9 +28,17 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Copy Next.js build output
 COPY --from=builder /app/apps/web/.next ./.next
-COPY --from=builder /app/apps/web/package.json ./package.json
+
+# Copy node_modules (includes Next.js runtime deps)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Copy workspace packages (web may import shared types)
+COPY --from=builder /app/packages ./packages
+
+# Copy web package.json for scripts/start
+COPY --from=builder /app/apps/web/package.json ./package.json
 
 # Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -39,5 +51,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1
 
-# Use node directly for proper signal forwarding (not pnpm)
+# Use node directly for proper signal forwarding
 CMD ["node", "node_modules/.bin/next", "start", "-p", "8080"]

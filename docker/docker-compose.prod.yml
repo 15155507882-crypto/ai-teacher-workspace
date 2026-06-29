@@ -70,7 +70,7 @@ services:
   # ==================== 应用服务 ====================
 
   api:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-api:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-api:${IMAGE_TAG:-latest}
     container_name: ai-teacher-api
     restart: unless-stopped
     ports:
@@ -120,7 +120,7 @@ services:
         max-file: '3'
 
   web:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-web:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-web:${IMAGE_TAG:-latest}
     container_name: ai-teacher-web
     restart: unless-stopped
     ports:
@@ -142,7 +142,7 @@ services:
   # ==================== 消息队列 Worker ====================
 
   worker-ai:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-ai:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-worker-ai:${IMAGE_TAG:-latest}
     container_name: ai-teacher-worker-ai
     restart: unless-stopped
     environment:
@@ -168,7 +168,7 @@ services:
         max-file: '3'
 
   worker-preview:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-preview:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-worker-preview:${IMAGE_TAG:-latest}
     container_name: ai-teacher-worker-preview
     restart: unless-stopped
     environment:
@@ -190,7 +190,7 @@ services:
         max-file: '3'
 
   worker-export:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-export:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-worker-export:${IMAGE_TAG:-latest}
     container_name: ai-teacher-worker-export
     restart: unless-stopped
     environment:
@@ -212,7 +212,7 @@ services:
         max-file: '3'
 
   worker-schedule:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-15155507882-crypto}/ai-teacher-worker-schedule:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKER_NAMESPACE:-geliangbin7882}/ai-teacher-worker-schedule:${IMAGE_TAG:-latest}
     container_name: ai-teacher-worker-schedule
     restart: unless-stopped
     environment:

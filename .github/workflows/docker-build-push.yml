@@ -10,7 +10,7 @@ on:
 
 env:
   DOCKER_REGISTRY: docker.io
-  IMAGE_PREFIX: 15155507882-crypto
+  IMAGE_PREFIX: geliangbin7882
 
 jobs:
   build-and-push:

@@ -1,5 +1,74 @@
 # AI 教师工作空间 CHANGELOG
 
+## V2.8 更新日志（2026-06-29）
+
+### 新增功能
+
+#### 文档预览系统 V2
+
+- 双文件机制：原文件 + 预览 PDF 独立存储
+- LibreOffice Headless 转换：Word/Excel/PPT → PDF
+- 上传后自动入队预览队列（BullMQ）
+- 下载始终返回原文件
+- FileAsset 新增字段：preview_url / preview_status / preview_error / preview_updated_at
+
+#### 评论权限控制
+
+- 个人备课留言：仅限本人（+ 管理员可绕过）
+- 时间限制：个人备课 7 天 / 集体备课 3 天关闭留言通道
+- 管理员不受时间限制
+
+#### 通用确认弹窗
+
+- 新增 `ConfirmDialog` 组件，替换所有浏览器原生 `confirm()`
+- 支持 danger/普通 两种样式
+- 删除评论、删除会话等场景统一使用
+
+### 优化改进
+
+#### 后台管理 UI
+
+- 左侧品牌区 V2：160px 渐变头部 + Logo 56×56 + 版本标识 + 波浪装饰
+- 侧边栏 280px，菜单 48px 高度，蓝色左边框激活态
+- 统一颜色体系（#10234F/#53688F/#E8EEF7/#2E6CFF）
+- 表格卡片 rounded-2xl + 阴影 + bg-[#f7faff] 表头
+
+#### 教师空间页美化
+
+- 渐变背景 + 2xl 卡片 + lucide 图标统计区
+- 共用 `LessonDetailPanel` + `Drawer` 组件
+- 头像统一为 emoji 风格（移除"管"字）
+
+#### 首页性能优化
+
+- content-stats 接口防重复请求（useRef guard）
+- 修复 useEffect([router]) 无限循环（3 个文件）
+- 后端接口增加 x-caller 日志追踪
+
+#### 评论系统修复
+
+- 修复 ResponseInterceptor 包裹导致评论不即时显示
+- 修复删除后内容仍显示的 bug
+- 教学反思/计划总结评论加载补全
+
+#### 头部品牌区优化
+
+- Logo 48×48px + 学校名称 18px/700
+- 副标题改为"智能备课平台"
+- Header 72px + HarmonyOS Sans SC 字体
+
+#### 预览端点修复
+
+- Office 文件无预览时返回 PENDING 状态，不再触发浏览器下载
+
+### 数据库变更
+
+| 表           | 变更                                                                  |
+| ------------ | --------------------------------------------------------------------- |
+| `file_asset` | +preview_url / +preview_status / +preview_error / +preview_updated_at |
+
+---
+
 ## V2.7 更新日志
 
 ### 新增功能

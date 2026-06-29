@@ -61,6 +61,7 @@ export class TeacherService {
       gender: dto.gender || null,
       role: dto.role || 'teacher',
       status: 'active',
+      must_change_password: true,
       sort: dto.sort || 0,
       is_home_visible: dto.is_home_visible ?? true,
     });
@@ -158,7 +159,7 @@ export class TeacherService {
         // Gender mapping
         const genderMap: Record<string, string> = { 男: 'male', 女: 'female' };
         const gender = genderMap[row.gender] || row.gender || null;
-        const passwordHash = await bcrypt.hash(row.password || '123456', 10);
+        const passwordHash = await bcrypt.hash(row.password || 'admin@2026', 10);
         const teacher = this.teacherRepo.create({
           school_id: row.school_id || 1,
           department_id: Number(departmentId) || 1,
@@ -170,6 +171,7 @@ export class TeacherService {
           gender,
           role,
           status: 'active',
+          must_change_password: true,
         });
         await this.teacherRepo.save(teacher);
         results.push({ mobile: row.mobile, status: '成功', name: row.name });

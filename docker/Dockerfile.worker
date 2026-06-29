@@ -32,6 +32,7 @@ RUN pnpm --filter @workspace/adapter-preview build
 RUN pnpm --filter @workspace/adapter-storage build
 
 ARG WORKER_NAME=ai
+ENV WORKER_NAME=${WORKER_NAME}
 RUN pnpm --filter @workspace/worker-${WORKER_NAME} build
 
 # Create workspace symlinks
@@ -42,8 +43,6 @@ RUN mkdir -p node_modules/@workspace && \
     ln -sf ../../packages/adapter-storage node_modules/@workspace/adapter-storage && \
     ln -sf ../../packages/config node_modules/@workspace/config && \
     ln -sf ../../packages/logger node_modules/@workspace/logger
-
-RUN pnpm prune --prod 2>/dev/null || true
 
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \

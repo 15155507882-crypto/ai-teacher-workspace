@@ -26,6 +26,12 @@ export class School {
   @Column({ type: 'text', nullable: true })
   logo_data: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  login_bg_data: string | null;
+
+  @Column({ type: 'bigint', nullable: true })
+  login_bg_file_id: number | null;
+
   @Column({ type: 'json', nullable: true })
   settings: {
     academic_years?: string[];

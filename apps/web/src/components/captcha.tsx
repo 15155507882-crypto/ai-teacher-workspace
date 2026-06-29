@@ -32,6 +32,7 @@ export function Captcha({
     return (
       <div className="flex items-center gap-2" style={{ width, height }}>
         <button
+          type="button"
           onClick={onRefresh}
           className="w-full h-full rounded-lg border border-red-200 bg-red-50 flex items-center justify-center text-xs text-red-500 hover:bg-red-100 transition"
         >
@@ -54,7 +55,11 @@ export function Captcha({
         onClick={onRefresh}
         title="看不清？点击刷新"
       />
-      <button onClick={onRefresh} className="text-xs text-slate-400 hover:text-blue-500 shrink-0">
+      <button
+        type="button"
+        onClick={onRefresh}
+        className="text-xs text-slate-400 hover:text-blue-500 shrink-0"
+      >
         换一张
       </button>
     </div>

@@ -1,8 +1,39 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
-// Load .env before any imports that use process.env
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+/**
+ * Find and load .env from the most likely locations.
+ *
+ * Resolution order (first match wins):
+ *   1. Project root .env    — from __dirname: ../../../.env  (dist/ → apps/api/ → apps/ → root)
+ *   2. apps/api/.env        — from __dirname: ../.env        (dist/ → apps/api/)
+ *   3. CWD .env             — process.cwd()
+ *   4. CWD ../../.env       — for monorepo nesting
+ *
+ * This eliminates the need for symlinks. Only the project root .env
+ * needs to exist for any deployment (dev, PM2, Docker env vars).
+ */
+function loadEnvFile(): void {
+  const candidates = [
+    path.resolve(__dirname, '../../../.env'), // project root
+    path.resolve(__dirname, '../.env'), // apps/api/
+    path.resolve(process.cwd(), '.env'), // CWD
+    path.resolve(process.cwd(), '../../.env'), // CWD up to root (monorepo)
+  ];
+
+  for (const envPath of candidates) {
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      console.log(`[Env] Loaded .env from: ${envPath}`);
+      return;
+    }
+  }
+
+  console.warn('[Env] No .env file found — using process.env only');
+}
+
+loadEnvFile();
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { APP_GUARD } from '@nestjs/core';
+import * as path from 'path';
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
 import bullmqConfig from './config/bullmq.config';
@@ -22,7 +23,13 @@ import { HealthController } from './health.controller';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../../.env'],
+      // Absolute paths eliminate CWD dependency. Fallbacks for monorepo layouts.
+      envFilePath: [
+        path.resolve(__dirname, '../../../.env'), // project root (dist/ → root)
+        path.resolve(__dirname, '../.env'), // apps/api/ (dist/ → apps/api/)
+        '.env', // CWD fallback
+        '../../.env', // monorepo CWD fallback
+      ],
       load: [databaseConfig, redisConfig, bullmqConfig],
     }),
     TypeOrmModule.forRootAsync({

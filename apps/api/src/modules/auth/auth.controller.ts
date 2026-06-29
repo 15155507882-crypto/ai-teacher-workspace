@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, Res, Param } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
@@ -60,5 +60,28 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logout() {
     return { message: '已退出登录' };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Req() req: any,
+    @Body() body: { currentPassword: string; newPassword: string }
+  ) {
+    return this.authService.changePassword(
+      req.user.teacherId,
+      body.currentPassword,
+      body.newPassword
+    );
+  }
+
+  @Post(':teacherId/reset-password')
+  @UseGuards(JwtAuthGuard)
+  async resetPassword(@Param('teacherId') teacherId: string, @Req() req: any) {
+    // 仅管理员可重置
+    if (req.user.role !== 'admin') {
+      return { code: 40300, message: '仅管理员可重置密码' };
+    }
+    return this.authService.resetPassword(parseInt(teacherId, 10), 'admin@2026');
   }
 }

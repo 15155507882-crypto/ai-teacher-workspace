@@ -36,7 +36,7 @@ export class AuthService {
     dto: LoginDto,
     ip?: string,
     userAgent?: string
-  ): Promise<{ tokenPair: TokenPair; teacher: any }> {
+  ): Promise<{ tokenPair: TokenPair; teacher: any; mustChangePassword: boolean }> {
     const teacher = await this.teacherRepo.findByMobile(dto.mobile);
     const deviceInfo = this.parseUserAgent(userAgent);
 
@@ -80,6 +80,7 @@ export class AuthService {
         schoolId: teacher.school_id,
         departmentId: teacher.department_id,
       },
+      mustChangePassword: !!teacher.must_change_password,
     };
   }
 
@@ -130,7 +131,50 @@ export class AuthService {
       avatarFileId: teacher.avatar_file_id,
       status: teacher.status,
       lastLoginAt: teacher.last_login_at,
+      mustChangePassword: !!teacher.must_change_password,
     };
+  }
+
+  async changePassword(teacherId: number, currentPassword: string, newPassword: string) {
+    const teacher = await this.teacherRepo.findById(teacherId);
+    if (!teacher) throw new UnauthorizedException('用户不存在');
+
+    // 验证当前密码
+    const valid = await bcrypt.compare(currentPassword, teacher.password_hash);
+    if (!valid) throw new UnauthorizedException('当前密码错误');
+
+    // 新密码不能与当前密码一致
+    const sameAsCurrent = await bcrypt.compare(newPassword, teacher.password_hash);
+    if (sameAsCurrent) throw new UnauthorizedException('新密码不能与当前密码一致');
+
+    // 密码规则校验
+    if (!validatePasswordStrength(newPassword)) {
+      throw new UnauthorizedException(
+        '密码需8-32位，且至少包含大写字母、小写字母、数字、特殊字符中的两类'
+      );
+    }
+
+    teacher.password_hash = await bcrypt.hash(newPassword, 10);
+    teacher.must_change_password = false;
+    await this.teacherRepo.save(teacher);
+
+    return { message: '密码修改成功，请重新登录' };
+  }
+
+  async resetPassword(teacherId: number, newPassword: string) {
+    const teacher = await this.teacherRepo.findById(teacherId);
+    if (!teacher) throw new UnauthorizedException('用户不存在');
+
+    if (!validatePasswordStrength(newPassword)) {
+      throw new UnauthorizedException(
+        '密码需8-32位，且至少包含大写字母、小写字母、数字、特殊字符中的两类'
+      );
+    }
+
+    teacher.password_hash = await bcrypt.hash(newPassword, 10);
+    teacher.must_change_password = true;
+    await this.teacherRepo.save(teacher);
+    return { message: '密码已重置为初始密码' };
   }
 
   private generateTokenPair(payload: Omit<JwtPayload, 'type'>): TokenPair {
@@ -199,4 +243,15 @@ export class AuthService {
 
     return info;
   }
+}
+
+/** 密码强度校验：8-32位，至少包含两类（大写/小写/数字/特殊字符） */
+export function validatePasswordStrength(pwd: string): boolean {
+  if (!pwd || pwd.length < 8 || pwd.length > 32) return false;
+  let categories = 0;
+  if (/[A-Z]/.test(pwd)) categories++;
+  if (/[a-z]/.test(pwd)) categories++;
+  if (/[0-9]/.test(pwd)) categories++;
+  if (/[!@#$%^&*()_+\-=\[\]{};:,.<>?/]/.test(pwd)) categories++;
+  return categories >= 2;
 }

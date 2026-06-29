@@ -54,6 +54,8 @@ export default function AdminSchoolPage() {
   const [shortName, setShortName] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [loginBg, setLoginBg] = useState<string | null>(null);
+  const [loginBgFile, setLoginBgFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
   useEffect(() => {
@@ -70,6 +72,11 @@ export default function AdminSchoolPage() {
             setLogo(j.data.logo_data);
           } else if (j.data.logo_file_id) {
             setLogo(`/api/files/${j.data.logo_file_id}/preview`);
+          }
+          if (j.data.login_bg_data) {
+            setLoginBg(j.data.login_bg_data);
+          } else if (j.data.login_bg_file_id) {
+            setLoginBg(`/api/files/${j.data.login_bg_file_id}/preview`);
           }
         }
       });
@@ -102,6 +109,28 @@ export default function AdminSchoolPage() {
     const body: any = { name, short_name: shortName };
     if (logoData !== undefined) {
       body.logo_data = logoData;
+    }
+
+    // 登录背景图
+    let loginBgData: string | null | undefined = undefined;
+    if (loginBgFile) {
+      if (loginBgFile.size > 1024 * 1024) {
+        setMsg('背景图不能超过 1MB');
+        setLoading(false);
+        return;
+      }
+      try {
+        loginBgData = await compressImage(loginBgFile, 1920, 800);
+      } catch {
+        setMsg('背景图压缩失败');
+        setLoading(false);
+        return;
+      }
+    } else if (loginBg === null) {
+      loginBgData = null;
+    }
+    if (loginBgData !== undefined) {
+      body.login_bg_data = loginBgData;
     }
 
     const res = await fetch('/api/admin/school', {
@@ -190,6 +219,55 @@ export default function AdminSchoolPage() {
                 <p className="text-sm text-slate-400">
                   JPG/PNG，最大 1MB，上传后自动压缩至 100KB 以内
                 </p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-normal)] mb-1">
+              登录页背景图
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="w-32 h-20 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden shrink-0">
+                {loginBg ? (
+                  <img src={loginBg} alt="登录背景" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm text-slate-300">背景图</span>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="inline-block cursor-pointer px-4 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+                  上传图片
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 1024 * 1024) {
+                        setMsg('图片不能超过 1MB');
+                        return;
+                      }
+                      setLoginBgFile(file);
+                      const reader = new FileReader();
+                      reader.onload = () => setLoginBg(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {loginBg && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginBg(null);
+                      setLoginBgFile(null);
+                    }}
+                    className="block text-sm text-red-500 hover:underline"
+                  >
+                    移除
+                  </button>
+                )}
+                <p className="text-sm text-slate-400">建议 1920×1080，JPG/PNG，最大 1MB</p>
               </div>
             </div>
           </div>

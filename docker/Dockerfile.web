@@ -11,6 +11,9 @@ COPY tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
 
+# Force pnpm to hoist all deps to root node_modules
+RUN echo "shamefully-hoist=true" >> .npmrc
+
 RUN pnpm install --frozen-lockfile
 
 COPY packages/ packages/
@@ -26,7 +29,8 @@ RUN pnpm --filter @workspace/web build
 RUN mkdir -p node_modules/@workspace && \
     ln -sf ../../packages/shared node_modules/@workspace/shared
 
-RUN pnpm prune --prod 2>/dev/null || true
+# Symlink Next.js build output to expected location
+RUN ln -sf apps/web/.next .next
 
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
@@ -38,4 +42,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1
 
-CMD ["node", "node_modules/.bin/next", "start", "-p", "8080"]
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "8080"]

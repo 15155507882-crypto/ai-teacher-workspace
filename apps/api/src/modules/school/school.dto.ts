@@ -18,6 +18,10 @@ export class UpdateSchoolDto {
   @IsOptional()
   @IsString()
   logo_data?: string | null;
+
+  @IsOptional()
+  @IsString()
+  login_bg_data?: string | null;
 }
 
 export class SemesterDto {

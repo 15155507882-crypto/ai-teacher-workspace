@@ -65,6 +65,9 @@ export class Teacher {
   @Column({ type: 'int', default: 1 })
   token_version: number;
 
+  @Column({ type: 'boolean', default: true })
+  must_change_password: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

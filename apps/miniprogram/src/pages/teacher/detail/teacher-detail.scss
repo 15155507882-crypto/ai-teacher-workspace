@@ -1,0 +1,152 @@
+@import '../../../app.scss';
+
+$td-blue: #2879ff;
+$td-title: #071f49;
+$td-muted: #6e7fa2;
+$td-line: #dfe8f5;
+
+.td-scroll { flex: 1; }
+
+// 头部 - 完全参考 space-header__copy
+.td-header {
+  position: relative;
+  min-height: 200px;
+  padding: 52px 38px 18px;
+  overflow: hidden;
+
+  &__title {
+    display: block;
+    margin-bottom: 16px;
+    color: $td-title;
+    font-size: 58px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    line-height: 1.08;
+  }
+
+  &__desc {
+    display: block;
+    color: #50658f;
+    font-size: 28px;
+    font-weight: 500;
+  }
+}
+
+// 统计卡片 - 完全参考 space-stats
+.td-stats-wrap {
+  margin: -6px 36px 26px;
+  padding: 30px 30px 34px;
+  border-radius: 28px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 16px 42px rgba(70,105,152,0.12);
+  display: flex;
+}
+
+// 每个统计 - 完全参考 space-stat
+.td-stat {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 16px;
+    width: 1px;
+    height: 62px;
+    background: $td-line;
+  }
+  &:last-child::after { display: none; }
+
+  &__num {
+    display: block;
+    color: $td-title;
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  &__label {
+    margin-top: 14px;
+    color: #50658f;
+    font-size: 23px;
+    font-weight: 500;
+  }
+}
+
+// 最近内容区域 - 完全参考 space-section
+.td-section {
+  padding: 10px 36px 34px;
+
+  &__title {
+    color: $td-title;
+    font-size: 31px;
+    font-weight: 900;
+    margin: 14px 0 22px;
+    display: block;
+  }
+}
+
+// 内容卡片 - 完全参考 space-recent-card
+.td-recent-card {
+  display: flex;
+  align-items: center;
+  min-height: 106px;
+  margin-bottom: 18px;
+  padding: 22px 20px 22px 26px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 12px 30px rgba(70,105,152,0.08);
+
+  &__tag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 104px;
+    height: 52px;
+    margin-right: 28px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font-size: 24px;
+    font-weight: 900;
+    &--red { color: #f43f5e; background: #ffedf0; }
+    &--orange { color: #f97316; background: #fff1df; }
+    &--blue { color: $td-blue; background: #eaf3ff; }
+    &--green { color: #13b88b; background: #e8fbf5; }
+  }
+
+  &__body { flex: 1; min-width: 0; }
+
+  &__title {
+    display: block;
+    overflow: hidden;
+    color: $td-title;
+    font-size: 27px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    color: #7a8aaa;
+    font-size: 21px;
+    white-space: nowrap;
+  }
+
+  &__dot { margin: 0 12px; }
+
+  &__arrow {
+    margin-left: 10px;
+    color: #a5b4ca;
+    font-size: 42px;
+    font-weight: 300;
+  }
+}

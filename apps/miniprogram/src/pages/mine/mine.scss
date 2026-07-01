@@ -1,0 +1,269 @@
+// ====== 我的页面样式 ======
+@import '../../app.scss';
+
+.mine-header {
+  display: flex;
+  align-items: center;
+  padding: 42px 28px 30px;
+  background: transparent;
+}
+
+.mine-avatar {
+  width: 124px;
+  height: 124px;
+  border-radius: 42px;
+  background: linear-gradient(145deg, #f4d7c8, #5f83d5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24px;
+  border: 6px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 30px rgba(54, 99, 158, 0.16);
+
+  &__text {
+    font-size: 40px;
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+.mine-info {
+  flex: 1;
+}
+
+.mine-name {
+  font-size: $font-xl;
+  font-weight: 900;
+  color: $color-text-title;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mine-mobile {
+  font-size: $font-sm;
+  color: $color-text-muted;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.mine-role-tag {
+  display: inline-flex;
+  padding: 2px 12px;
+  background: #e9f2ff;
+  border-radius: $radius-full;
+  font-size: $font-xs;
+  color: $color-primary;
+}
+
+.mine-setting {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 28px 0;
+
+  text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 58px;
+    height: 58px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.92);
+    color: $color-primary;
+    font-size: $font-sm;
+    font-weight: 900;
+    box-shadow: $shadow-sm;
+  }
+}
+
+.mine-menu {
+  overflow: hidden;
+  margin: 20px 24px 0;
+  background: $color-bg-card;
+  border: 1px solid rgba(232, 238, 247, 0.9);
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+}
+
+.mine-menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 96px;
+  padding: 0 24px;
+  border-bottom: 1px solid $color-border-light;
+
+  &:active {
+    background: $color-bg-hover;
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 20px;
+    border: 2px solid #8b98aa;
+    border-radius: 12px;
+    color: $color-text-body;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__label {
+    font-size: $font-base;
+    color: $color-text-title;
+    display: block;
+  }
+
+  &__desc {
+    font-size: $font-xs;
+    color: $color-text-muted;
+    display: block;
+    margin-top: 4px;
+  }
+
+  &__arrow {
+    font-size: $font-lg;
+    color: $color-text-muted;
+  }
+}
+
+.mine-logout {
+  margin: 32px 24px;
+  height: 88px;
+  background: $color-bg-card;
+  border-radius: $radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-base;
+  color: $color-danger;
+
+  &:active {
+    background: #fef2f2;
+  }
+}
+
+.mine-version {
+  text-align: center;
+  padding: 20px;
+  font-size: $font-xs;
+  color: $color-text-muted;
+}
+
+// 统计卡片
+.mine-stats {
+  display: flex;
+  flex-wrap: wrap;
+  background: $color-bg-card;
+  padding: 26px 16px 20px;
+  margin: 16px 24px 0;
+  border-radius: $radius-lg;
+  gap: 8px;
+  border: 1px solid rgba(232, 238, 247, 0.9);
+  box-shadow: $shadow-sm;
+
+  &__title {
+    width: 100%;
+    margin: 0 8px 10px;
+    color: $color-text-title;
+    font-size: $font-base;
+    font-weight: 900;
+  }
+}
+
+.mine-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 4px;
+
+  &__num {
+    font-size: $font-xl;
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__label {
+    font-size: 18px;
+    color: $color-text-muted;
+    margin-top: 4px;
+  }
+}
+
+// 改密弹窗
+.mine-modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.mine-modal {
+  width: 600px;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: 40px 32px;
+
+  &__title {
+    font-size: $font-lg;
+    font-weight: 600;
+    color: $color-text-title;
+    text-align: center;
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  &__input {
+    width: 100%;
+    height: 80px;
+    padding: 0 16px;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: $font-base;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    background: $color-bg-page;
+  }
+
+  &__error {
+    color: $color-danger;
+    font-size: $font-sm;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border-radius: $radius-sm;
+  }
+
+  &__btn {
+    width: 100%;
+    height: 80px;
+    background: $color-primary;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: $font-base;
+    font-weight: 600;
+
+    &--disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &__cancel {
+    text-align: center;
+    padding: 16px;
+    font-size: $font-sm;
+    color: $color-text-muted;
+  }
+}

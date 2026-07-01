@@ -1,0 +1,148 @@
+// ====== 设计令牌 ======
+// 映射自 Web 端 globals.css 中的 CSS 变量
+
+$color-primary: #2879ff;
+$color-primary-light: #58a4ff;
+$color-primary-dark: #1463ee;
+
+$color-success: #16c7a0;
+$color-warning: #ff8f5a;
+$color-danger: #ef4444;
+
+$color-bg-page: #f1f7ff;
+$color-bg-card: rgba(255, 255, 255, 0.94);
+$color-bg-hover: #edf5ff;
+$color-bg-soft: #eaf3ff;
+
+$color-text-title: #172033;
+$color-text-body: #334155;
+$color-text-muted: #7d899a;
+$color-text-placeholder: #a1adbb;
+
+$color-border: #e8eef7;
+$color-border-light: #f2f6fb;
+
+$radius-sm: 12px;
+$radius-md: 16px;
+$radius-lg: 24px;
+$radius-full: 9999px;
+
+$shadow-sm: 0 10px 28px rgba(41, 91, 152, 0.08);
+$shadow-md: 0 16px 40px rgba(35, 89, 158, 0.12);
+$shadow-lg: 0 22px 55px rgba(32, 73, 124, 0.16);
+
+$font-xs: 20px;
+$font-sm: 24px;
+$font-base: 28px;
+$font-lg: 32px;
+$font-xl: 36px;
+$font-2xl: 40px;
+
+// ====== 全局样式 ======
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: $font-base;
+  color: $color-text-body;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(64, 160, 255, 0.18), transparent 28%),
+    linear-gradient(180deg, #fbfdff 0%, $color-bg-page 100%);
+  line-height: 1.6;
+}
+
+view,
+text,
+input {
+  box-sizing: border-box;
+}
+
+// ====== 通用卡片 ======
+.card {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  border: 1px solid rgba(233, 240, 249, 0.9);
+  padding: 28px;
+  margin: 18px 24px;
+}
+
+// ====== 通用标签 ======
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  border-radius: $radius-full;
+  font-size: $font-xs;
+  font-weight: 700;
+
+  &--blue {
+    background: #e9f2ff;
+    color: $color-primary;
+  }
+
+  &--green {
+    background: #ddfbf5;
+    color: $color-success;
+  }
+
+  &--orange {
+    background: #fff0e8;
+    color: $color-warning;
+  }
+
+  &--red {
+    background: #fef2f2;
+    color: $color-danger;
+  }
+
+  &--gray {
+    background: #f3f6fb;
+    color: $color-text-muted;
+  }
+}
+
+// ====== 分割线 ======
+.divider {
+  height: 1px;
+  background: $color-border;
+  margin: 16px 0;
+}
+
+// ====== 空状态 ======
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 32px;
+
+  &__icon {
+    font-size: 96px;
+    margin-bottom: 24px;
+    opacity: 0.3;
+  }
+
+  &__text {
+    color: $color-text-muted;
+    font-size: $font-base;
+    text-align: center;
+  }
+}
+
+// ====== 骨架屏 ======
+.skeleton {
+  background: linear-gradient(90deg, $color-bg-page 25%, $color-bg-hover 50%, $color-bg-page 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: $radius-sm;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ====== 底部安全区 ======
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

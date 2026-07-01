@@ -30,3 +30,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ====== 手机端响应式 ====== */
+@media (max-width: 768px) {
+  aside, nav .hidden, .w-72, .w-\[280px\] { display: none !important; }
+  .flex.w-full.h-full { flex-direction: column !important; }
+  .w-\[70\%\], .max-w-6xl, .max-w-4xl { width: 100% !important; max-width: 100% !important; padding: 0 12px !important; }
+  table, thead, tbody, th, td, tr { display: block !important; }
+  thead { display: none !important; }
+  tr { margin-bottom: 12px; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; }
+  .grid { grid-template-columns: 1fr !important; }
+}

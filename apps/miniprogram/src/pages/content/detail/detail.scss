@@ -1,0 +1,276 @@
+// ====== 内容详情样式 ======
+@import '../../../app.scss';
+
+.detail-scroll {
+  flex: 1;
+}
+
+.detail-header {
+  margin: 18px 24px 0;
+  padding: 26px;
+  background: $color-bg-card;
+  border: 1px solid rgba(232, 238, 247, 0.9);
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+
+  &__tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    font-size: $font-xl;
+    font-weight: 900;
+    color: $color-text-title;
+    display: block;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    &-item {
+      font-size: $font-xs;
+      color: $color-text-muted;
+    }
+  }
+}
+
+.detail-tabs {
+  display: flex;
+  margin: 16px 24px 0;
+  padding: 6px;
+  background: rgba(231, 240, 252, 0.86);
+  border-radius: $radius-full;
+  border-bottom: 0;
+}
+
+.detail-tab {
+  flex: 1;
+  text-align: center;
+  padding: 16px 20px;
+  font-size: $font-sm;
+  color: $color-text-muted;
+  border-bottom: 0;
+  border-radius: $radius-full;
+
+  &--active {
+    color: $color-primary;
+    background: #fff;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(49, 103, 174, 0.1);
+  }
+}
+
+.detail-body {
+  padding: 16px 24px;
+}
+
+.detail-section {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: 26px;
+  margin-bottom: 16px;
+  box-shadow: $shadow-sm;
+  border: 1px solid rgba(232, 238, 247, 0.9);
+
+  &__title {
+    font-size: $font-base;
+    font-weight: 900;
+    color: $color-text-title;
+    display: block;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 0;
+  }
+
+  &__text {
+    font-size: $font-sm;
+    color: $color-text-body;
+    line-height: 1.8;
+    display: block;
+  }
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+
+  &__label {
+    font-size: $font-sm;
+    color: $color-text-muted;
+    width: 120px;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  &__value {
+    font-size: $font-sm;
+    color: $color-text-body;
+    display: block;
+
+    &--link {
+      color: $color-primary;
+    }
+  }
+}
+
+.detail-attachment {
+  display: flex;
+  align-items: center;
+  padding: 16px 12px;
+  background: #f3f7fc;
+  border-radius: $radius-md;
+  margin-bottom: 8px;
+
+  &:active {
+    background: $color-bg-hover;
+  }
+
+  &__icon {
+    font-size: $font-base;
+    margin-right: 10px;
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  &__name {
+    font-size: $font-sm;
+    color: $color-text-body;
+    display: block;
+  }
+
+  &__size {
+    font-size: 20px;
+    color: $color-text-muted;
+    display: block;
+    margin-top: 2px;
+  }
+
+  &__arrow {
+    font-size: $font-lg;
+    color: $color-text-muted;
+    padding-left: 8px;
+  }
+}
+
+.detail-comment {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: $shadow-sm;
+  border: 1px solid rgba(232, 238, 247, 0.9);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  &__author {
+    font-size: $font-sm;
+    font-weight: 500;
+    color: $color-text-title;
+  }
+
+  &__time {
+    font-size: $font-xs;
+    color: $color-text-muted;
+  }
+
+  &__text {
+    font-size: $font-sm;
+    color: $color-text-body;
+    display: block;
+    line-height: 1.6;
+  }
+
+  &__file {
+    font-size: $font-xs;
+    color: $color-primary;
+    display: block;
+    margin-top: 8px;
+  }
+}
+
+.detail-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid rgba(232, 238, 247, 0.9);
+  padding: 10px 0 env(safe-area-inset-bottom);
+  box-shadow: 0 -12px 30px rgba(35, 89, 158, 0.08);
+}
+
+.detail-action {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 4px;
+    border-radius: 14px;
+    color: $color-primary;
+    background: #e9f2ff;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  &__label {
+    font-size: $font-xs;
+    color: $color-text-muted;
+  }
+}
+
+// 评论输入
+.detail-comment-input {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  border: 1px solid $color-border;
+
+  &__field {
+    flex: 1;
+    height: 64px;
+    padding: 0 12px;
+    font-size: $font-sm;
+    background: $color-bg-page;
+    border-radius: $radius-full;
+  }
+
+  &__send {
+    flex-shrink: 0;
+    margin-left: 12px;
+    padding: 12px 20px;
+    background: $color-primary;
+    border-radius: $radius-full;
+    color: #fff;
+    font-size: $font-sm;
+
+    &--disabled {
+      background: $color-border;
+      color: $color-text-muted;
+    }
+  }
+}

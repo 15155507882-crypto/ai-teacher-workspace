@@ -1,0 +1,132 @@
+// ====== 基础组件样式 ======
+@import '../../app.scss';
+
+.app-page {
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: $color-bg-page;
+
+  &--tab {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-navbar {
+  display: flex;
+  align-items: center;
+  height: 96px;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(232, 238, 247, 0.8);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(18px);
+
+  &__back {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+  }
+
+  &__back-icon {
+    font-size: 42px;
+    color: $color-text-title;
+  }
+
+  &__title {
+    flex: 1;
+    font-size: $font-lg;
+    font-weight: 800;
+    color: $color-text-title;
+    text-align: center;
+    margin-right: 68px; // 平衡返回按钮
+  }
+}
+
+// ====== 骨架屏 ======
+.skeleton-list {
+  padding: 16px 24px;
+}
+
+.skeleton--row {
+  height: 28px;
+  margin-bottom: 16px;
+  border-radius: $radius-sm;
+}
+
+.skeleton-card {
+  padding: 24px;
+  margin: 16px 24px;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+}
+
+.skeleton--title {
+  height: 36px;
+  width: 60%;
+  margin-bottom: 16px;
+}
+
+.skeleton--text {
+  height: 24px;
+  margin-bottom: 12px;
+}
+
+.skeleton--short {
+  width: 40%;
+}
+
+// ====== ActionSheet ======
+.action-sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.action-sheet {
+  width: 100%;
+  background: $color-bg-card;
+  border-radius: 32px 32px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -18px 40px rgba(35, 89, 158, 0.12);
+
+  &__item {
+    padding: 32px 24px;
+    text-align: center;
+    font-size: $font-base;
+    color: $color-text-body;
+    border-bottom: 1px solid $color-border;
+
+    &:active {
+      background: $color-bg-hover;
+    }
+  }
+
+  &__cancel {
+    padding: 32px 24px;
+    text-align: center;
+    font-size: $font-base;
+    color: $color-text-muted;
+    margin-top: 8px;
+
+    &:active {
+      background: $color-bg-hover;
+    }
+  }
+}
